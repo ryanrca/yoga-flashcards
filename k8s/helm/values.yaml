@@ -1,0 +1,61 @@
+# Default values for yoga-flashcards
+replicaCount: 1
+
+image:
+  backend:
+    repository: yoga-flashcards-backend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  frontend:
+    repository: yoga-flashcards-frontend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  backend:
+    port: 8000
+  frontend:
+    port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: yoga-flashcards.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Database configuration
+database:
+  host: mysql
+  port: 3306
+  name: yoga_flashcards
+  username: django_user
+  password: django_password
+
+# Environment variables
+env:
+  DEBUG: "0"
+  SECRET_KEY: "production-secret-key-change-me"

@@ -1,94 +1,186 @@
 # Yoga Flashcard Admin App
 
-A web-based admin system for creating, editing, managing, and versioning flashcards for yoga teacher study decks.
+A comprehensive web-based admin system for creating, editing, managing, and versioning flashcards for yoga teacher study decks.
 
-**Admin only.** All front-end routes require login. User accounts are managed via Django Admin. No sign-up or self-registration.  
+## Features
 
-The public-facing user site will be built later, once this admin system is complete.
+- **Admin-only access** - All routes require authentication
+- **Flashcard management** - CRUD operations with versioning
+- **Image support** - Front and back photos for each card
+- **Tagging system** - Organize cards with flexible tags
+- **Search and filtering** - Find cards across all text fields
+- **Version history** - Track changes and revert when needed
+- **CSV import** - Bulk import cards from CSV files
 
----
+## Tech Stack
 
-## Core Features
+- **Backend**: Django + Django REST Framework + MySQL
+- **Frontend**: Vue 3 + Quasar Framework + Pinia
+- **Development**: Docker Compose
+- **Production**: Kubernetes + Helm
 
-### Flashcard Model
+## Quick Start
 
-Each flashcard has:
+### Prerequisites
 
-- `title`: Short title of the card
-- `phrase`: The main phrase (e.g. Sanskrit term)
-- `definition`: The description or explanation
-- `created_at`, `updated_at`, `deleted_at`
-- `created_by`: ForeignKey to User
-- `views`: Integer counter
-- `enabled`: Boolean
-- `front_photo`, `back_photo`: Two images
+- Docker and Docker Compose
+- Git
 
-Images should **not** be stored in the database. They should be saved on disk (or object storage) with path references in the DB for better performance and maintainability.
+### Development Setup
 
----
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd yoga-flashcards
+```
 
-### Versioning
+2. Start the development environment:
+```bash
+docker-compose up
+```
 
-- Any edit to **text fields** creates a new **version** of the card.
-- Admin can view full version history.
-- Admin can revert to any previous version.
+3. Access the application:
+- Frontend: http://localhost:9000
+- Backend API: http://localhost:8000
+- Django Admin: http://localhost:8000/admin
 
----
+### Default Login
 
-### Tagging
+- Username: `admin`
+- Password: `admin123`
 
-- Many-to-many relationship between Cards and Tags.
-- Tags have their own table.
-- Admin can add, edit, delete tags globally.
-- Tags can be attached/detached from cards.
+## API Documentation
 
----
+The API follows REST principles with the following main endpoints:
 
-## Image Management
+- `GET /api/cards/` - List cards (with pagination, search, filtering)
+- `POST /api/cards/` - Create new card
+- `GET /api/cards/{id}/` - Get card details with version history
+- `PUT /api/cards/{id}/` - Update card (creates new version)
+- `POST /api/cards/{id}/soft_delete/` - Soft delete card
+- `POST /api/cards/{id}/revert_version/` - Revert to previous version
+- `GET /api/tags/` - List tags
+- `POST /api/tags/` - Create tag
+- `PUT /api/tags/{id}/` - Update tag
+- `DELETE /api/tags/{id}/` - Delete tag
 
-- Two images per card (front and back).
-- Stored on disk (or S3-compatible storage) with DB paths.
-- Uploading a new image for a card replaces the existing one.
-- Admin UI should support image upload and preview.
+### Authentication Endpoints
 
----
+- `POST /api/users/login/` - Login
+- `POST /api/users/logout/` - Logout  
+- `GET /api/users/auth-status/` - Check authentication status
 
-## API
+## CSV Import
 
-Built with Django + Django REST Framework.
+Import cards in bulk using the Django management command:
 
-- RESTful endpoints for managing cards, versions, tags, and images.
-- Pagination, search, sort for card list endpoint.
-- Search must work across all text fields.
+```bash
+docker-compose exec backend python manage.py import_cards /path/to/cards.csv
+```
 
----
+CSV format:
+```csv
+title,phrase,definition,tags
+"Downward Dog","Adho Mukha Svanasana","A foundational pose","Asana,Sanskrit"
+```
 
-## Admin Frontend (Vue 3 + Quasar)
+Options:
+- `--dry-run` - Preview import without making changes
+- `--user username` - Specify the creating user (default: admin)
 
-- Login screen for all unauthenticated users.
-- Quasar Table page:
-  - Server-side pagination, search, and sorting.
-  - Searchable on all text fields.
-  - Sortable on all columns.
-- Card Detail page:
-  - Show card data and images.
-  - Version history list with revert button.
-  - Image upload/replace feature.
-  - Edit button opens modal with all editable fields, including tags.
-- Tag Management page:
-  - Add, edit, delete tags.
+## Frontend Features
 
----
+- **Responsive design** with Quasar components
+- **Real-time search** and filtering
+- **Image upload** with preview
+- **Version history** with revert functionality
+- **Tag management** interface
+- **Session-based authentication**
 
-## CLI CSV Import Tool
+## Development
 
-- Django management command.
-- Reads CSV file with columns for:
-  - title
-  - phrase
-  - definition
-  - tags
-- Creates new cards in bulk.
-- Optional dry-run mode.
-- Supports upd
+### Backend Development
+
+The Django backend uses:
+- **Thin views, fat models** - Business logic in services
+- **DRF ModelViewSets** - RESTful API endpoints
+- **Django migrations** - Database schema management
+- **Factory Boy** - Test data generation
+- **Pytest** - Unit testing
+
+### Frontend Development
+
+The Vue 3 frontend uses:
+- **Composition API** - Modern Vue 3 patterns
+- **Pinia** - State management
+- **Quasar** - UI components and build system
+- **Axios** - HTTP client with interceptors
+- **Vue Router** - Navigation with auth guards
+
+### Testing
+
+Run backend tests:
+```bash
+docker-compose exec backend python -m pytest
+```
+
+## Production Deployment
+
+### Kubernetes with Helm
+
+1. Build and push Docker images:
+```bash
+# Backend
+docker build -t your-registry/yoga-flashcards-backend:latest ./backend
+docker push your-registry/yoga-flashcards-backend:latest
+
+# Frontend
+docker build -t your-registry/yoga-flashcards-frontend:latest ./frontend
+docker push your-registry/yoga-flashcards-frontend:latest
+```
+
+2. Deploy with Helm:
+```bash
+helm install yoga-flashcards ./k8s/helm \
+  --set image.backend.repository=your-registry/yoga-flashcards-backend \
+  --set image.frontend.repository=your-registry/yoga-flashcards-frontend \
+  --set env.SECRET_KEY=your-production-secret \
+  --set database.password=your-db-password
+```
+
+## Configuration
+
+### Environment Variables
+
+**Backend:**
+- `DEBUG` - Enable debug mode (default: 0)
+- `DJANGO_SECRET_KEY` - Django secret key
+- `DATABASE_URL` - Database connection string
+- `CORS_ALLOWED_ORIGINS` - Allowed CORS origins
+
+**Frontend:**
+- `API_BASE_URL` - Backend API base URL
+
+### Database
+
+The application uses MySQL with proper UTF-8 support for international characters in Sanskrit terms.
+
+## Security Features
+
+- **Session-based authentication** - No JWT tokens to manage
+- **CSRF protection** - Disabled for API routes in development
+- **CORS configuration** - Properly configured for frontend
+- **Admin-only access** - No public registration
+- **Soft deletes** - Cards are never permanently deleted
+
+## Contributing
+
+1. Follow the coding conventions in `.github/copilot-instructions.md`
+2. Write tests for new features
+3. Use the provided Docker environment for development
+4. Ensure migrations are included for model changes
+
+## License
+
+[Add your license here]
 
