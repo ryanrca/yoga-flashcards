@@ -180,7 +180,12 @@ The application uses MySQL with proper UTF-8 support for international character
 3. Use the provided Docker environment for development
 4. Ensure migrations are included for model changes
 
+## TODO
+- Collect images
+- Build script to rapidly input inital data
+- Build frontend
+- Hire designer to layout flashcards
+
 ## License
 
-[Add your license here]
 
