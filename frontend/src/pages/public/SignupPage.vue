@@ -155,14 +155,22 @@ const handleSignup = async () => {
   const result = await authStore.signup(userData.value)
 
   if (result.success) {
-    $q.notify({
-      type: 'positive',
-      message: 'Account created successfully! Please check your email to verify your account.',
-      timeout: 5000
-    })
+    if (result.autoLogin) {
+      $q.notify({
+        type: 'positive',
+        message: 'Account created and logged in successfully!',
+        timeout: 3000
+      })
+    } else {
+      $q.notify({
+        type: 'positive',
+        message: 'Account created successfully! Please check your email to verify your account.',
+        timeout: 5000
+      })
+    }
 
-    // Redirect to login page
-    router.push('/login')
+    // Redirect to home page
+    router.push('/')
   } else {
     error.value = result.error || 'Signup failed'
   }

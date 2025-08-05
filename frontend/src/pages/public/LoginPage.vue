@@ -113,22 +113,27 @@ const handleLogin = async () => {
   loading.value = true
   error.value = ''
 
-  const result = await authStore.login(credentials.value)
+  try {
+    const result = await authStore.login(credentials.value)
 
-  if (result.success) {
-    $q.notify({
-      type: 'positive',
-      message: 'Login successful!'
-    })
+    if (result.success) {
+      $q.notify({
+        type: 'positive',
+        message: 'Login successful!'
+      })
 
-    // Redirect to the intended page or home
-    const redirectTo = route.query.redirect || '/'
-    router.push(redirectTo)
-  } else {
-    error.value = result.error || 'Login failed'
+      // Redirect to the intended page or home
+      const redirectTo = route.query.redirect || '/'
+      await router.push(redirectTo)
+    } else {
+      error.value = result.error || 'Login failed'
+    }
+  } catch (err) {
+    console.error('Login error:', err)
+    error.value = 'An unexpected error occurred'
+  } finally {
+    loading.value = false
   }
-
-  loading.value = false
 }
 
 const handleGoogleLogin = () => {

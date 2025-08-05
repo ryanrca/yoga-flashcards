@@ -12,7 +12,7 @@ Logged in users can see all flashcards.
   - Admin (Full access, can CRUD everything including users and user permissions)
   - Curator (CRUD all flash cards, and other content.  Cannot edit users.)
   - User (front-end access only, no admin app access.)
-- **Sign up**: - users can enter email and password (twice) to create new user. Email is used as the login identifier.
+- **Sign up**: - users can enter email and password (twice) to create new user. Email is used as the login identifier. After successful signup, users are automatically logged in and redirected to the home page.
 - **Sign up with facebook or google**: - users can create a new user by using their google and facebook accounts.
 - **Admin and curator access** - All admin and curator routes require authentication.  
 - **Flashcard management** - Curators have all CRUD operations with versioning.
@@ -103,6 +103,23 @@ All data provided by the API is in JSON format. The API supports server-side pag
 
 **Note**: The system uses email addresses as the primary login identifier. Users log in with their email address and password.
 
+### Authentication Flow
+
+**Login Process:**
+1. User enters email and password on login page
+2. After successful authentication, user is redirected to home page (`/`)
+3. If user was redirected to login from a protected page, they return to that page after login
+
+**Signup Process:**
+1. User enters email and password (twice for confirmation) on signup page
+2. After successful account creation, user is automatically logged in
+3. User is redirected to home page (`/`) and can immediately access the application
+
+**Session Management:**
+- Uses Django session-based authentication (no JWT tokens)
+- Sessions persist across browser sessions
+- Automatic logout on session expiry
+
 ## CSV Import
 
 Import cards in bulk using the Django management command:
@@ -134,8 +151,8 @@ If the tag does not yet exist, it will be created. If the tag already exists, it
 ## Frontend User app Features
 
 - **Responsive design** with Quasar components
-- **Login/Logout** with Quasar components
-- **Signup** asks users for password twice. Must validate user by sending them an email with link
+- **Login/Logout** with Quasar components. After successful login, users are redirected to the home page.
+- **Signup** asks users for password twice. After successful signup, users are automatically logged in and redirected to the home page.
 - **Flashcard of the day** Displays today's flashcard (all visitors)
 - **Real-time search** and filtering when logged in
 - **User favorites** when logged in (Users can star and share flashcards with others.  Logged in users can edit their favorites list))

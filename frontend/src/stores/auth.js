@@ -77,8 +77,20 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     
     try {
-      const response = await api.post('/api/signup/', userData)
-      return { success: true, data: response.data }
+      const response = await api.post('/api/users/register/', userData)
+      
+      // After successful signup, automatically log in the user
+      const loginResult = await login({
+        email: userData.email,
+        password: userData.password
+      })
+      
+      if (loginResult.success) {
+        return { success: true, data: response.data, autoLogin: true }
+      } else {
+        // Signup succeeded but auto-login failed
+        return { success: true, data: response.data, autoLogin: false }
+      }
     } catch (err) {
       error.value = err.response?.data?.message || 'Signup failed'
       return { success: false, error: error.value }
