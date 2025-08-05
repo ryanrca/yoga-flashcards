@@ -133,8 +133,10 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     
     try {
       const response = await api.get('/api/tags/')
-      tags.value = response.data.results || response.data
-      return { success: true, data: response.data }
+      const tagsData = response.data.results || response.data
+      tags.value = tagsData
+      console.log('Fetched tags:', tagsData)
+      return { success: true, data: tagsData }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch tags'
       console.error('Error fetching tags:', err)

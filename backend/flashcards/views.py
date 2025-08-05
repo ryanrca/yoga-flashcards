@@ -39,7 +39,13 @@ class FlashcardViewSet(viewsets.ModelViewSet):
         tags = self.request.query_params.get('tags', None)
         if tags:
             tag_list = tags.split(',')
-            queryset = queryset.filter(tags__name__in=tag_list).distinct()
+            # Convert to integers if they're tag IDs, otherwise assume they're names
+            try:
+                tag_ids = [int(tag) for tag in tag_list]
+                queryset = queryset.filter(tags__id__in=tag_ids).distinct()
+            except ValueError:
+                # If conversion fails, assume they're tag names
+                queryset = queryset.filter(tags__name__in=tag_list).distinct()
         
         return queryset
     

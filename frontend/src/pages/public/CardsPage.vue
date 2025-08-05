@@ -260,7 +260,7 @@ const loadCards = async (params = {}) => {
     ...params
   }
 
-  if (selectedTags.value.length > 0) {
+  if (selectedTags.value && selectedTags.value.length > 0) {
     searchParams.tags = selectedTags.value.map(tag => tag.id).join(',')
   }
 
@@ -289,6 +289,10 @@ const searchCards = () => {
 }
 
 const filterCards = () => {
+  // Ensure selectedTags is always an array
+  if (!selectedTags.value) {
+    selectedTags.value = []
+  }
   currentPage.value = 1
   loadCards()
 }

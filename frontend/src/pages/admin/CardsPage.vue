@@ -304,7 +304,7 @@ const loadCards = async () => {
     ordering: pagination.value.descending ? `-${pagination.value.sortBy}` : pagination.value.sortBy
   }
 
-  if (selectedTags.value.length > 0) {
+  if (selectedTags.value && selectedTags.value.length > 0) {
     searchParams.tags = selectedTags.value.map(tag => tag.id).join(',')
   }
 
@@ -344,6 +344,10 @@ const searchCards = () => {
 }
 
 const filterCards = () => {
+  // Ensure selectedTags is always an array
+  if (!selectedTags.value) {
+    selectedTags.value = []
+  }
   pagination.value.page = 1
   loadCards()
 }
