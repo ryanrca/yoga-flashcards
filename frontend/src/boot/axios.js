@@ -1,18 +1,21 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 
-const api = axios.create({
+// Be careful when using SSR for cross-request state pollution
+// due to creating a Singleton instance here;
+// If any client changes this (global) instance, it might be a
+// good idea to move this instance creation inside of the
+// "export default () => {}" function below (which runs individually
+// for each client)
+const api = axios.create({ 
   baseURL: process.env.API_BASE_URL || 'http://localhost:8000',
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  }
+  withCredentials: true // Important for session authentication
 })
 
-// Request interceptor to handle CSRF token
+// Add request interceptor for CSRF token
 api.interceptors.request.use(
   (config) => {
-    // Get CSRF token from cookie
+    // Get CSRF token from cookie if available
     const csrfToken = document.cookie
       .split('; ')
       .find(row => row.startsWith('csrftoken='))
@@ -29,15 +32,15 @@ api.interceptors.request.use(
   }
 )
 
-// Response interceptor to handle errors
+// Add response interceptor for error handling
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
-      // Redirect to login if unauthorized
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
-      }
+      // Handle unauthorized - redirect to login
+      window.location.href = '/login'
     }
     return Promise.reject(error)
   }

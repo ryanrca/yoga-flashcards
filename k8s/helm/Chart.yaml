@@ -1,6 +1,17 @@
 apiVersion: v2
 name: yoga-flashcards
-description: A Helm chart for Yoga Flashcards Admin App
+description: A Helm chart for Yoga Flashcards application
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
+keywords:
+  - yoga
+  - flashcards
+  - django
+  - vue
+home: https://github.com/username/yoga-flashcards
+sources:
+  - https://github.com/username/yoga-flashcards
+maintainers:
+  - name: Your Name
+    email: your.email@example.com

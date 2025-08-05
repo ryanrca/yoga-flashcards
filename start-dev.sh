@@ -1,77 +1,49 @@
 #!/bin/bash
 
-echo "🧘 Starting Yoga Flashcards Admin App..."
-echo ""
+# Yoga Flashcards Development Setup Script
 
-# Check if docker-compose is available
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ docker-compose is required but not installed."
-    echo "Please install Docker and Docker Compose to continue."
+echo "🧘 Setting up Yoga Flashcards development environment..."
+
+# Check if Docker is running
+if ! docker info > /dev/null 2>&1; then
+    echo "❌ Docker is not running. Please start Docker and try again."
     exit 1
 fi
 
-# Stop any existing services
-echo "🛑 Stopping any existing services..."
-docker-compose down
+# Check if Docker Compose is available
+if ! command -v docker-compose &> /dev/null; then
+    echo "❌ Docker Compose is not installed. Please install Docker Compose and try again."
+    exit 1
+fi
+
+echo "✅ Docker is running"
 
 # Build and start the services
-echo "🐳 Building and starting Docker services..."
+echo "🏗️  Building and starting services..."
 docker-compose up --build -d
 
-echo ""
 echo "⏳ Waiting for services to be ready..."
-
-# Wait for backend to be ready
-echo "Waiting for backend..."
-timeout=60
-counter=0
-until docker-compose exec -T backend python -c "import django; django.setup(); from django.db import connection; connection.ensure_connection()" 2>/dev/null; do
-    if [ $counter -ge $timeout ]; then
-        echo "❌ Backend failed to start within ${timeout} seconds"
-        echo "Check logs with: docker-compose logs backend"
-        exit 1
-    fi
-    sleep 1
-    counter=$((counter + 1))
-done
-
-# Wait for frontend to be ready
-echo "Waiting for frontend..."
-timeout=60
-counter=0
-until curl -s http://localhost:9000 > /dev/null 2>&1; do
-    if [ $counter -ge $timeout ]; then
-        echo "❌ Frontend failed to start within ${timeout} seconds"
-        echo "Check logs with: docker-compose logs frontend"
-        exit 1
-    fi
-    sleep 1
-    counter=$((counter + 1))
-done
+sleep 30
 
 # Check if services are running
 if docker-compose ps | grep -q "Up"; then
-    echo ""
     echo "✅ Services are running!"
     echo ""
-    echo "🌐 Access the application:"
-    echo "  Frontend: http://localhost:9000"
-    echo "  Backend API: http://localhost:8000"
-    echo "  Django Admin: http://localhost:8000/admin"
+    echo "🌐 Application URLs:"
+    echo "   Frontend: http://localhost:9000"
+    echo "   Backend API: http://localhost:8000"
+    echo "   Django Admin: http://localhost:8000/admin"
     echo ""
-    echo "🔑 Default login credentials:"
-    echo "  Username: admin"
-    echo "  Password: admin123"
+    echo "🔑 Default admin credentials:"
+    echo "   Username: admin"
+    echo "   Password: admin123"
     echo ""
-    echo "📁 To import sample data:"
-    echo "  docker-compose exec backend python manage.py import_cards sample-cards.csv"
+    echo "📊 To view logs:"
+    echo "   docker-compose logs -f"
     echo ""
-    echo "📝 To stop the services, run:"
-    echo "  docker-compose down"
-    echo ""
-    echo "📊 To view logs, run:"
-    echo "  docker-compose logs -f"
+    echo "🛑 To stop:"
+    echo "   docker-compose down"
 else
-    echo "❌ Services failed to start. Check the logs with:"
-    echo "  docker-compose logs"
+    echo "❌ Services failed to start. Check logs with: docker-compose logs"
+    exit 1
 fi

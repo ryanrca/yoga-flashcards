@@ -1,19 +1,16 @@
-FROM node:18
+FROM node:24-alpine
 
 WORKDIR /app
 
-# Install Quasar CLI
-RUN npm install -g @quasar/cli
-
-# Copy package files
+# Copy package files and source code
 COPY package*.json ./
+COPY . .
 
 # Install dependencies
 RUN npm install
 
-# Copy project files
-COPY . .
-
+# Expose port
 EXPOSE 9000
 
-CMD ["quasar", "dev", "--host", "0.0.0.0", "--port", "9000"]
+# Start development server
+CMD ["npm", "run", "dev"]

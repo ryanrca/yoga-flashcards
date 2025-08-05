@@ -1,26 +1,30 @@
-# Default values for yoga-flashcards
+# Default values for yoga-flashcards.
+# This is a YAML-formatted file.
+
 replicaCount: 1
 
 image:
-  backend:
-    repository: yoga-flashcards-backend
-    pullPolicy: IfNotPresent
-    tag: "latest"
-  frontend:
-    repository: yoga-flashcards-frontend
-    pullPolicy: IfNotPresent
-    tag: "latest"
+  repository: yoga-flashcards
+  pullPolicy: IfNotPresent
+  tag: "latest"
 
-imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
 service:
   type: ClusterIP
-  backend:
-    port: 8000
-  frontend:
-    port: 80
+  port: 80
 
 ingress:
   enabled: false
@@ -33,7 +37,13 @@ ingress:
           pathType: Prefix
   tls: []
 
-resources: {}
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
 
 autoscaling:
   enabled: false
@@ -49,13 +59,27 @@ affinity: {}
 
 # Database configuration
 database:
-  host: mysql
+  host: yoga-flashcards-mysql
   port: 3306
   name: yoga_flashcards
-  username: django_user
-  password: django_password
+  user: yoga_user
+  password: yoga_password
 
 # Environment variables
 env:
-  DEBUG: "0"
-  SECRET_KEY: "production-secret-key-change-me"
+  DJANGO_DEBUG: "false"
+  DJANGO_SECRET_KEY: "your-secret-key-here"
+  DATABASE_URL: "mysql://yoga_user:yoga_password@yoga-flashcards-mysql:3306/yoga_flashcards"
+
+# MySQL subchart values
+mysql:
+  enabled: true
+  auth:
+    rootPassword: rootpassword
+    database: yoga_flashcards
+    username: yoga_user
+    password: yoga_password
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi

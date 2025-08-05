@@ -2,70 +2,19 @@
   <q-layout view="lHh Lpr lFf">
     <q-header elevated>
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
+        <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
 
-        <q-toolbar-title>
-          Yoga Flashcards Admin
-        </q-toolbar-title>
+        <q-toolbar-title> Quasar App </q-toolbar-title>
 
-        <div>
-          <q-btn-dropdown flat icon="account_circle" :label="user?.username">
-            <q-list>
-              <q-item clickable v-close-popup @click="logout">
-                <q-item-section>
-                  <q-item-label>Logout</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
-        </div>
+        <div>Quasar v{{ $q.version }}</div>
       </q-toolbar>
     </q-header>
 
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
+    <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
       <q-list>
-        <q-item-label
-          header
-        >
-          Navigation
-        </q-item-label>
+        <q-item-label header> Essential Links </q-item-label>
 
-        <q-item
-          clickable
-          :active="$route.path === '/cards'"
-          @click="$router.push('/cards')"
-        >
-          <q-item-section avatar>
-            <q-icon name="style" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Flashcards</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item
-          clickable
-          :active="$route.path === '/tags'"
-          @click="$router.push('/tags')"
-        >
-          <q-item-section avatar>
-            <q-icon name="local_offer" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Tags</q-item-label>
-          </q-item-section>
-        </q-item>
+        <EssentialLink v-for="link in linksList" :key="link.title" v-bind="link" />
       </q-list>
     </q-drawer>
 
@@ -75,44 +24,58 @@
   </q-layout>
 </template>
 
-<script>
-import { defineComponent, ref, computed } from 'vue'
-import { useAuthStore } from 'src/stores/auth'
-import { useRouter } from 'vue-router'
-import { useQuasar } from 'quasar'
+<script setup>
+import { ref } from 'vue'
+import EssentialLink from 'components/EssentialLink.vue'
 
-export default defineComponent({
-  name: 'MainLayout',
+const linksList = [
+  {
+    title: 'Docs',
+    caption: 'quasar.dev',
+    icon: 'school',
+    link: 'https://quasar.dev',
+  },
+  {
+    title: 'Github',
+    caption: 'github.com/quasarframework',
+    icon: 'code',
+    link: 'https://github.com/quasarframework',
+  },
+  {
+    title: 'Discord Chat Channel',
+    caption: 'chat.quasar.dev',
+    icon: 'chat',
+    link: 'https://chat.quasar.dev',
+  },
+  {
+    title: 'Forum',
+    caption: 'forum.quasar.dev',
+    icon: 'record_voice_over',
+    link: 'https://forum.quasar.dev',
+  },
+  {
+    title: 'Twitter',
+    caption: '@quasarframework',
+    icon: 'rss_feed',
+    link: 'https://twitter.quasar.dev',
+  },
+  {
+    title: 'Facebook',
+    caption: '@QuasarFramework',
+    icon: 'public',
+    link: 'https://facebook.quasar.dev',
+  },
+  {
+    title: 'Quasar Awesome',
+    caption: 'Community Quasar projects',
+    icon: 'favorite',
+    link: 'https://awesome.quasar.dev',
+  },
+]
 
-  setup() {
-    const leftDrawerOpen = ref(false)
-    const authStore = useAuthStore()
-    const router = useRouter()
-    const $q = useQuasar()
+const leftDrawerOpen = ref(false)
 
-    const user = computed(() => authStore.user)
-
-    const toggleLeftDrawer = () => {
-      leftDrawerOpen.value = !leftDrawerOpen.value
-    }
-
-    const logout = async () => {
-      const result = await authStore.logout()
-      if (result.success) {
-        $q.notify({
-          color: 'positive',
-          message: 'Logged out successfully'
-        })
-        router.push('/login')
-      }
-    }
-
-    return {
-      leftDrawerOpen,
-      toggleLeftDrawer,
-      user,
-      logout
-    }
-  }
-})
+function toggleLeftDrawer() {
+  leftDrawerOpen.value = !leftDrawerOpen.value
+}
 </script>
