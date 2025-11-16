@@ -4,44 +4,37 @@
 wait_for_mysql() {
     echo "Checking if MySQL is ready..."
     
-    # First, wait for MySQL port to be available
-    echo "⏳ Waiting for MySQL port..."
-    while ! nc -z db 3306; do
-        sleep 1
-    done
-    echo "✅ MySQL port is available"
-    
-    # Then wait for MySQL to accept connections with our credentials
-    echo "⏳ Waiting for MySQL authentication..."
-    for i in {1..60}; do
-        if mysql -h db -u django_user -pdjango_password -e "SELECT 1;" > /dev/null 2>&1; then
-            echo "✅ MySQL is ready and accepting connections!"
+    # Wait for MySQL to accept connections with our credentials
+    echo "Waiting for MySQL to be ready..."
+    for i in {1..30}; do
+        if python -c "import MySQLdb; MySQLdb.connect(host='db', user='django_user', passwd='django_password', db='yoga_flashcards')" 2>/dev/null; then
+            echo "MySQL is ready and accepting connections!"
             return 0
         else
-            echo "⏳ Waiting for MySQL authentication... (attempt $i/60)"
+            echo "Waiting for MySQL... (attempt $i/30)"
             sleep 2
         fi
     done
     
-    echo "❌ MySQL failed to become ready within 120 seconds"
+    echo "MySQL failed to become ready within 60 seconds"
     return 1
 }
 
 # Start the backend services
-echo "🧘 Starting Yoga Flashcards Backend..."
+echo "Starting Yoga Flashcards Backend..."
 
 # Wait for database
 wait_for_mysql || exit 1
 
 # Run Django setup commands
-echo "📚 Running migrations..."
+echo "Running migrations..."
 python manage.py migrate
 
-echo "📦 Collecting static files..."
+echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-echo "🌱 Seeding initial data..."
+echo "Seeding initial data..."
 python manage.py seed_initial_data || echo "Warning: Initial data seeding failed or already exists"
 
-echo "🚀 Starting Django development server..."
+echo "Starting Django development server..."
 python manage.py runserver 0.0.0.0:8000

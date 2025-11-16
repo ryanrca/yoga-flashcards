@@ -15,7 +15,7 @@
             />
           </div>
         </div>
-        
+
         <!-- Search and Filter Section -->
         <q-card class="q-mb-lg">
           <q-card-section>
@@ -34,7 +34,7 @@
                   </template>
                 </q-input>
               </div>
-              
+
               <div class="col-12 col-md-3">
                 <q-select
                   v-model="selectedTags"
@@ -46,9 +46,10 @@
                   outlined
                   clearable
                   @update:model-value="filterCards"
+                  popup-content-class="admin-dropdown-menu"
                 />
               </div>
-              
+
               <div class="col-12 col-md-3">
                 <q-select
                   v-model="sortBy"
@@ -56,9 +57,10 @@
                   label="Sort by"
                   outlined
                   @update:model-value="loadCards"
+                  popup-content-class="admin-dropdown-menu"
                 />
               </div>
-              
+
               <div class="col-12 col-md-2">
                 <q-btn
                   color="primary"
@@ -411,3 +413,34 @@ onMounted(() => {
   loadTags()
 })
 </script>
+
+<style>
+/* Global style for admin dropdown menus */
+.admin-dropdown-menu {
+  background: linear-gradient(135deg,
+    rgba(26, 11, 46, 0.98) 0%,
+    rgba(74, 20, 140, 0.95) 100%
+  ) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 107, 53, 0.3) !important;
+}
+
+.admin-dropdown-menu .q-item {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.admin-dropdown-menu .q-item:hover {
+  background: linear-gradient(90deg,
+    rgba(255, 107, 53, 0.2) 0%,
+    rgba(155, 77, 202, 0.2) 100%
+  ) !important;
+}
+
+.admin-dropdown-menu .q-item__label {
+  color: white !important;
+}
+
+.admin-dropdown-menu .q-checkbox__inner {
+  color: white !important;
+}
+</style>

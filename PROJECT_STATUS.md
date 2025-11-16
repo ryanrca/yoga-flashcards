@@ -1,6 +1,6 @@
 # Yoga Flashcards Application - Project Status
 
-## ✅ Completed Components
+## [DONE] Completed Components
 
 ### Backend (Django + DRF)
 - **Project Structure**: Complete Django project with proper app organization
@@ -35,7 +35,7 @@
 - **Kubernetes**: Helm chart structure for production deployment
 - **Initial Data**: CSV file with 18 yoga flashcards (8 limbs, yamas, niyamas)
 
-## 🚧 Areas for Future Development
+## [WIP] Areas for Future Development
 
 ### Frontend Features
 1. **Complete Admin Interface**:
@@ -94,7 +94,7 @@
    - Image upload and management
    - Content versioning and approval workflow
 
-## 🎯 Next Steps
+## [TODO] Next Steps
 
 1. **Immediate**:
    - Test the application with `./start-dev.sh`
@@ -116,7 +116,7 @@
    - Performance optimization
    - Advanced analytics and reporting
 
-## 🏗️ Architecture Overview
+## [ARCH] Architecture Overview
 
 ```
 Frontend (Vue 3 + Quasar)     Backend (Django + DRF)

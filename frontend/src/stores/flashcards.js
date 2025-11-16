@@ -20,15 +20,15 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
   const fetchCards = async (params = {}) => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await api.get('/api/cards/', { params })
       cards.value = response.data.results || response.data
-      
+
       if (response.data.count !== undefined) {
         pagination.value.rowsNumber = response.data.count
       }
-      
+
       return { success: true, data: response.data }
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to fetch cards'
@@ -42,7 +42,7 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
   const fetchDailyCard = async () => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await api.get('/api/dailycard/')
       dailyCard.value = response.data
@@ -59,7 +59,7 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
   const fetchCard = async (id) => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await api.get(`/api/cards/${id}/`)
       currentCard.value = response.data
@@ -76,7 +76,7 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
   const createCard = async (cardData) => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await api.post('/api/cards/', cardData)
       cards.value.unshift(response.data)
@@ -93,7 +93,7 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
   const updateCard = async (id, cardData) => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await api.put(`/api/cards/${id}/`, cardData)
       const index = cards.value.findIndex(card => card.id === id)
@@ -113,7 +113,7 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
   const deleteCard = async (id) => {
     loading.value = true
     error.value = null
-    
+
     try {
       await api.delete(`/api/cards/${id}/`)
       cards.value = cards.value.filter(card => card.id !== id)
@@ -130,7 +130,7 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
   const fetchTags = async () => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await api.get('/api/tags/')
       const tagsData = response.data.results || response.data
@@ -149,7 +149,7 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
   const createTag = async (tagData) => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await api.post('/api/tags/', tagData)
       tags.value.push(response.data)
@@ -157,6 +157,40 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     } catch (err) {
       error.value = err.response?.data?.message || 'Failed to create tag'
       console.error('Error creating tag:', err)
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchCardVersions = async (id) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await api.get(`/api/cards/${id}/versions/`)
+      return { success: true, data: response.data }
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to fetch card versions'
+      console.error('Error fetching card versions:', err)
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const revertCardVersion = async (cardId, versionId) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await api.post(`/api/cards/${cardId}/revert_version/`, {
+        version_id: versionId
+      })
+      return { success: true, data: response.data }
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to revert to version'
+      console.error('Error reverting version:', err)
       return { success: false, error: error.value }
     } finally {
       loading.value = false
@@ -172,7 +206,7 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     loading,
     error,
     pagination,
-    
+
     // Actions
     fetchCards,
     fetchDailyCard,
@@ -181,6 +215,8 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     updateCard,
     deleteCard,
     fetchTags,
-    createTag
+    createTag,
+    fetchCardVersions,
+    revertCardVersion
   }
 })

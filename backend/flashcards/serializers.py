@@ -27,9 +27,9 @@ class FlashcardSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'phrase', 'definition', 'front_image', 'back_image',
             'tags', 'tag_names', 'created_by', 'created_by_username',
-            'created_at', 'updated_at', 'is_active', 'version', 'parent_version'
+            'created_at', 'updated_at', 'is_active', 'version_group', 'version_number', 'is_live'
         ]
-        read_only_fields = ['created_by', 'created_at', 'updated_at', 'version', 'parent_version']
+        read_only_fields = ['created_by', 'created_at', 'updated_at', 'version_group', 'version_number', 'is_live']
 
     def create(self, validated_data):
         tag_names = validated_data.pop('tag_names', [])
@@ -45,18 +45,20 @@ class FlashcardSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         tag_names = validated_data.pop('tag_names', None)
         
-        # Create new version instead of updating in place
-        new_version = instance.create_new_version(
-            created_by=self.context['request'].user,
-            **validated_data
-        )
-        
-        # Handle tags for new version
+        # Prepare tags list for new version
+        tags_to_set = None
         if tag_names is not None:
-            new_version.tags.clear()
+            tags_to_set = []
             for tag_name in tag_names:
                 tag, created = Tag.objects.get_or_create(name=tag_name.strip())
-                new_version.tags.add(tag)
+                tags_to_set.append(tag)
+        
+        # Create new version instead of updating in place
+        new_version = instance.create_new_version(
+            updated_by=self.context['request'].user,
+            tags=tags_to_set,
+            **validated_data
+        )
         
         return new_version
 
@@ -71,7 +73,7 @@ class FlashcardVersionHistorySerializer(serializers.ModelSerializer):
         model = Flashcard
         fields = [
             'id', 'title', 'phrase', 'definition', 'tags', 'created_by_username',
-            'created_at', 'updated_at', 'version', 'is_active'
+            'created_at', 'updated_at', 'version_number', 'is_live', 'is_active'
         ]
 
 

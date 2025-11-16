@@ -15,10 +15,10 @@ class TagAdmin(admin.ModelAdmin):
 class FlashcardAdmin(admin.ModelAdmin):
     """Admin interface for Flashcard model."""
     
-    list_display = ['title', 'phrase', 'version', 'is_active', 'created_by', 'created_at']
-    list_filter = ['is_active', 'created_at', 'tags']
-    search_fields = ['title', 'phrase', 'definition']
-    readonly_fields = ['created_at', 'updated_at', 'version']
+    list_display = ['title', 'phrase', 'version_number', 'is_live', 'is_active', 'created_by', 'created_at']
+    list_filter = ['is_live', 'is_active', 'created_at', 'tags']
+    search_fields = ['title', 'phrase', 'definition', 'version_group']
+    readonly_fields = ['created_at', 'updated_at', 'version_number', 'version_group', 'is_live']
     filter_horizontal = ['tags']
     
     def get_queryset(self, request):

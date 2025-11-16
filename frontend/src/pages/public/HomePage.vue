@@ -3,52 +3,52 @@
     <div class="column items-center q-gutter-lg" style="max-width: 800px; width: 100%;">
       <!-- Hero Section -->
       <div class="text-center q-pa-lg">
-        <h1 class="text-h2 text-primary q-mb-md">Welcome to Yoga Flashcards</h1>
+        <h1 class="text-h2 text-primary q-mb-md">Yoga Flashcards</h1>
         <p class="text-h6 text-grey-7 q-mb-lg">
           Discover the wisdom of yoga through daily practice with our curated flashcards
         </p>
-        
-        <div class="q-gutter-md">
-          <q-btn
-            size="lg"
-            color="primary"
-            label="View Daily Card"
-            @click="$router.push('/daily')"
-            icon="today"
-          />
-          <q-btn
-            v-if="!authStore.isAuthenticated"
-            size="lg"
-            outline
-            color="primary"
-            label="Sign Up"
-            @click="$router.push('/signup')"
-            icon="person_add"
-          />
-          <q-btn
-            v-if="authStore.isAuthenticated"
-            size="lg"
-            outline
-            color="primary"
-            label="Browse All Cards"
-            @click="$router.push('/cards')"
-            icon="view_cards"
-          />
-        </div>
+      </div>
+
+      <!-- Daily Card Preview - Moved to top -->
+      <q-card v-if="dailyCard" class="full-width">
+        <q-card-section>
+          <div class="text-h5 text-center q-mb-md">Today's Featured Card</div>
+          <div class="text-center">
+            <div class="text-h6 text-primary">{{ dailyCard.title }}</div>
+            <div v-if="dailyCard.phrase" class="text-subtitle1 text-italic q-mt-sm">
+              {{ dailyCard.phrase }}
+            </div>
+            <p class="q-mt-md">{{ dailyCard.definition }}</p>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- Action Buttons -->
+      <div class="q-gutter-md">
+        <q-btn
+          v-if="!authStore.isAuthenticated"
+          size="lg"
+          outline
+          color="primary"
+          label="SIGN UP"
+          @click="$router.push('/signup')"
+          icon="person_add"
+          style="font-weight: 700; letter-spacing: 1.5px;"
+        />
+        <q-btn
+          v-if="authStore.isAuthenticated"
+          size="lg"
+          outline
+          color="primary"
+          label="BROWSE ALL CARDS"
+          @click="$router.push('/cards')"
+          icon="auto_stories"
+          style="font-weight: 700; letter-spacing: 1.5px;"
+        />
       </div>
 
       <!-- Features Section -->
-      <div class="row q-gutter-md full-width">
-        <q-card class="col-md-3 col-sm-6 col-xs-12">
-          <q-card-section class="text-center">
-            <q-icon name="today" size="3rem" color="primary" />
-            <div class="text-h6 q-mt-sm">Daily Card</div>
-            <p class="text-grey-7 q-mt-sm">
-              Discover a new yoga concept every day with our carefully selected daily flashcard
-            </p>
-          </q-card-section>
-        </q-card>
-
+      <div class="row q-gutter-md full-width justify-center">
         <q-card class="col-md-3 col-sm-6 col-xs-12">
           <q-card-section class="text-center">
             <q-icon name="search" size="3rem" color="primary" />
@@ -79,26 +79,6 @@
           </q-card-section>
         </q-card>
       </div>
-
-      <!-- Daily Card Preview -->
-      <q-card v-if="dailyCard" class="full-width q-mt-lg">
-        <q-card-section>
-          <div class="text-h5 text-center q-mb-md">Today's Featured Card</div>
-          <div class="text-center">
-            <div class="text-h6 text-primary">{{ dailyCard.title }}</div>
-            <div v-if="dailyCard.phrase" class="text-subtitle1 text-italic q-mt-sm">
-              {{ dailyCard.phrase }}
-            </div>
-            <p class="q-mt-md">{{ dailyCard.definition }}</p>
-            <q-btn
-              flat
-              color="primary"
-              label="View Full Card"
-              @click="$router.push('/daily')"
-            />
-          </div>
-        </q-card-section>
-      </q-card>
     </div>
   </q-page>
 </template>

@@ -1,1 +1,475 @@
-// app global css in SCSS form
+// Psychedelic Hindu-Inspired Yoga Flashcards
+// Vibrant, colorful, spiritual design
+
+// Import Google Fonts - bold and modern
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@300;400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&display=swap');
+
+// Base typography
+body {
+  font-family: 'Poppins', sans-serif;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(255, 107, 53, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(155, 77, 202, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(0, 217, 255, 0.2) 0%, transparent 50%),
+    linear-gradient(135deg, #1A0B2E 0%, #4A148C 50%, #311B92 100%);
+  background-attachment: fixed;
+  color: #FFFFFF;
+  letter-spacing: 0.3px;
+  overflow-x: hidden;
+}
+
+// Animated gradient background
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    linear-gradient(45deg, 
+      transparent 0%, 
+      rgba(255, 107, 53, 0.1) 25%, 
+      transparent 50%, 
+      rgba(155, 77, 202, 0.1) 75%, 
+      transparent 100%
+    );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+// Mandala pattern overlay
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 50% 50%, transparent 40%, rgba(255, 215, 0, 0.03) 41%, transparent 42%),
+    repeating-conic-gradient(from 0deg at 50% 50%, 
+      transparent 0deg, 
+      rgba(255, 107, 53, 0.05) 10deg, 
+      transparent 20deg, 
+      rgba(155, 77, 202, 0.05) 30deg,
+      transparent 40deg,
+      rgba(0, 217, 255, 0.05) 50deg,
+      transparent 60deg
+    );
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cinzel Decorative', serif;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #FF6B35 0%, #FFD700 50%, #FF1493 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+}
+
+// Smooth scrolling
+html {
+  scroll-behavior: smooth;
+}
+
+// Global container styling
+.yoga-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+// Psychedelic card styling
+.q-card {
+  border-radius: 24px;
+  background: linear-gradient(135deg, 
+    rgba(26, 11, 46, 0.95) 0%, 
+    rgba(74, 20, 140, 0.9) 100%
+  );
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 0 40px rgba(255, 107, 53, 0.3),
+    0 0 80px rgba(155, 77, 202, 0.2),
+    inset 0 0 60px rgba(255, 215, 0, 0.05);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+      #FF6B35, #9B4DCA, #00D9FF, #FFD700, #FF1493, #FF6B35
+    );
+    background-size: 400% 400%;
+    border-radius: 24px;
+    z-index: -1;
+    animation: borderGlow 6s linear infinite;
+  }
+  
+  &:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 
+      0 0 60px rgba(255, 107, 53, 0.5),
+      0 0 120px rgba(155, 77, 202, 0.3),
+      inset 0 0 80px rgba(255, 215, 0, 0.1);
+  }
+}
+
+@keyframes borderGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+// Neon glow effect
+.neon-glow {
+  text-shadow: 
+    0 0 10px rgba(255, 107, 53, 0.8),
+    0 0 20px rgba(255, 107, 53, 0.6),
+    0 0 30px rgba(255, 107, 53, 0.4),
+    0 0 40px rgba(155, 77, 202, 0.6);
+  animation: neonPulse 2s ease-in-out infinite;
+}
+
+@keyframes neonPulse {
+  0%, 100% { 
+    text-shadow: 
+      0 0 10px rgba(255, 107, 53, 0.8),
+      0 0 20px rgba(255, 107, 53, 0.6),
+      0 0 30px rgba(255, 107, 53, 0.4),
+      0 0 40px rgba(155, 77, 202, 0.6);
+  }
+  50% { 
+    text-shadow: 
+      0 0 20px rgba(255, 107, 53, 1),
+      0 0 30px rgba(255, 107, 53, 0.8),
+      0 0 40px rgba(255, 107, 53, 0.6),
+      0 0 60px rgba(155, 77, 202, 0.8);
+  }
+}
+
+// Vibrant button styling
+.q-btn {
+  border-radius: 16px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  
+  &.yoga-btn-primary {
+    background: linear-gradient(135deg, #FF6B35 0%, #FF1493 100%);
+    color: white;
+    box-shadow: 
+      0 4px 20px rgba(255, 107, 53, 0.5),
+      0 0 40px rgba(255, 20, 147, 0.3);
+    
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 
+        0 6px 30px rgba(255, 107, 53, 0.7),
+        0 0 60px rgba(255, 20, 147, 0.5);
+    }
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+    
+    &:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+  }
+  
+  &.yoga-btn-secondary {
+    background: linear-gradient(135deg, #9B4DCA 0%, #00D9FF 100%);
+    color: white;
+    box-shadow: 
+      0 4px 20px rgba(155, 77, 202, 0.5),
+      0 0 40px rgba(0, 217, 255, 0.3);
+    
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 
+        0 6px 30px rgba(155, 77, 202, 0.7),
+        0 0 60px rgba(0, 217, 255, 0.5);
+    }
+  }
+}
+
+// Input fields with neon styling
+.q-field {
+  .q-field__control {
+    border-radius: 16px;
+    background: rgba(26, 11, 46, 0.6);
+    border: 2px solid rgba(255, 107, 53, 0.3);
+    
+    &:before {
+      border: none;
+    }
+  }
+  
+  &.q-field--focused {
+    .q-field__control {
+      border-color: #FF6B35;
+      box-shadow: 
+        0 0 20px rgba(255, 107, 53, 0.5),
+        inset 0 0 20px rgba(255, 107, 53, 0.1);
+    }
+  }
+  
+  .q-field__label,
+  .q-field__native {
+    color: #FFFFFF;
+  }
+}
+
+// Page transitions with flair
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-30px) scale(1.05);
+}
+
+// Psychedelic divider
+.yoga-divider {
+  height: 3px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    #FF6B35 20%, 
+    #FFD700 40%,
+    #9B4DCA 60%,
+    #00D9FF 80%, 
+    transparent 100%
+  );
+  margin: 2rem 0;
+  border: none;
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+  animation: rainbowFlow 3s linear infinite;
+}
+
+@keyframes rainbowFlow {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+// Floating elements with dynamic animation
+@keyframes floatPsychedelic {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-15px) rotate(2deg);
+  }
+  75% {
+    transform: translateY(-5px) rotate(-2deg);
+  }
+}
+
+.yoga-float {
+  animation: floatPsychedelic 4s ease-in-out infinite;
+}
+
+// Cosmic loading state
+.yoga-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  
+  .q-spinner {
+    filter: drop-shadow(0 0 10px #FF6B35) drop-shadow(0 0 20px #9B4DCA);
+  }
+}
+
+// Header with cosmic gradient
+.q-header {
+  background: linear-gradient(135deg, 
+    rgba(26, 11, 46, 0.98) 0%, 
+    rgba(74, 20, 140, 0.95) 100%
+  );
+  backdrop-filter: blur(20px);
+  border-bottom: 2px solid rgba(255, 107, 53, 0.3);
+  box-shadow: 
+    0 4px 30px rgba(255, 107, 53, 0.3),
+    0 0 60px rgba(155, 77, 202, 0.2);
+  
+  .q-toolbar {
+    color: #FFFFFF;
+  }
+}
+
+// Drawer with mandala background
+.q-drawer {
+  background: 
+    radial-gradient(circle at 30% 30%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(155, 77, 202, 0.1) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(26, 11, 46, 0.98) 0%, rgba(74, 20, 140, 0.95) 100%);
+  border-right: 2px solid rgba(255, 107, 53, 0.3);
+  box-shadow: inset -5px 0 30px rgba(255, 107, 53, 0.2);
+}
+
+// List items with vibrant hover
+.q-item {
+  border-radius: 16px;
+  margin: 6px 12px;
+  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.9);
+  
+  &:hover {
+    background: linear-gradient(90deg, 
+      rgba(255, 107, 53, 0.2) 0%, 
+      rgba(155, 77, 202, 0.2) 100%
+    );
+    transform: translateX(8px);
+    box-shadow: 
+      0 0 20px rgba(255, 107, 53, 0.3),
+      inset 0 0 20px rgba(255, 107, 53, 0.1);
+  }
+  
+  &.q-router-link--active {
+    background: linear-gradient(90deg, 
+      rgba(255, 107, 53, 0.3) 0%, 
+      transparent 100%
+    );
+    border-left: 4px solid #FF6B35;
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+  }
+  
+  .q-icon {
+    filter: drop-shadow(0 0 5px currentColor);
+  }
+}
+
+// Tooltip with neon glow
+.q-tooltip {
+  background: linear-gradient(135deg, #1A0B2E 0%, #4A148C 100%);
+  border: 1px solid rgba(255, 107, 53, 0.5);
+  border-radius: 12px;
+  box-shadow: 
+    0 0 20px rgba(255, 107, 53, 0.4),
+    inset 0 0 20px rgba(255, 107, 53, 0.1);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+// Badge with glow
+.q-badge {
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  box-shadow: 0 0 15px currentColor;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+// Responsive utilities
+@media (max-width: 768px) {
+  .yoga-container {
+    padding: 1rem;
+  }
+  
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+}
+
+// Accessibility - focus states with glow
+*:focus-visible {
+  outline: 3px solid #FF6B35;
+  outline-offset: 3px;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
+}
+
+// Custom scrollbar with rainbow gradient
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(26, 11, 46, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    #FF6B35 0%, 
+    #9B4DCA 50%, 
+    #00D9FF 100%
+  );
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+  
+  &:hover {
+    background: linear-gradient(180deg, 
+      #00D9FF 0%, 
+      #9B4DCA 50%, 
+      #FF6B35 100%
+    );
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+  }
+}
+
+// Mandala decoration class
+.mandala-decoration {
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle, transparent 30%, rgba(255, 107, 53, 0.1) 31%, transparent 32%),
+      repeating-conic-gradient(from 0deg, 
+        transparent 0deg, 
+        rgba(255, 215, 0, 0.1) 5deg, 
+        transparent 10deg
+      );
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}

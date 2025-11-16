@@ -35,7 +35,7 @@
                   </template>
                 </q-input>
               </div>
-              
+
               <div class="col-12 col-md-4">
                 <q-select
                   v-model="roleFilter"
@@ -44,9 +44,10 @@
                   outlined
                   clearable
                   @update:model-value="filterUsers"
+                  popup-content-class="admin-dropdown-menu"
                 />
               </div>
-              
+
               <div class="col-12 col-md-2">
                 <q-btn
                   color="primary"
@@ -199,6 +200,7 @@
               label="Role"
               outlined
               :rules="[val => !!val || 'Role is required']"
+              popup-content-class="admin-dropdown-menu"
             />
 
             <q-input
@@ -222,9 +224,9 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Cancel" @click="closeDialog" />
-          <q-btn 
-            color="primary" 
-            :label="editingUser ? 'Update' : 'Create'" 
+          <q-btn
+            color="primary"
+            :label="editingUser ? 'Update' : 'Create'"
             @click="saveUser"
             :loading="saving"
           />
@@ -244,10 +246,10 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Cancel" @click="showDeleteDialog = false" />
-          <q-btn 
-            flat 
-            label="Delete" 
-            color="negative" 
+          <q-btn
+            flat
+            label="Delete"
+            color="negative"
             @click="deleteUser"
           />
         </q-card-actions>
@@ -369,7 +371,7 @@ const mockUsers = [
 // Methods
 const loadUsers = async () => {
   loading.value = true
-  
+
   // Simulate API call
   setTimeout(() => {
     users.value = mockUsers
@@ -446,12 +448,12 @@ const saveUser = async () => {
   try {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
+
     $q.notify({
       type: 'positive',
       message: editingUser.value ? 'User updated successfully!' : 'User created successfully!'
     })
-    
+
     loadUsers()
     closeDialog()
   } catch {
@@ -468,9 +470,9 @@ const toggleUserStatus = async (user) => {
   try {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500))
-    
+
     user.is_active = !user.is_active
-    
+
     $q.notify({
       type: 'positive',
       message: `User ${user.is_active ? 'activated' : 'deactivated'} successfully`
@@ -494,12 +496,12 @@ const deleteUser = async () => {
   try {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
+
     const index = users.value.findIndex(u => u.id === userToDelete.value.id)
     if (index !== -1) {
       users.value.splice(index, 1)
     }
-    
+
     $q.notify({
       type: 'positive',
       message: 'User deleted successfully'
@@ -528,3 +530,30 @@ onMounted(() => {
   loadUsers()
 })
 </script>
+
+<style>
+/* Global style for admin dropdown menus */
+.admin-dropdown-menu {
+  background: linear-gradient(135deg,
+    rgba(26, 11, 46, 0.98) 0%,
+    rgba(74, 20, 140, 0.95) 100%
+  ) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 107, 53, 0.3) !important;
+}
+
+.admin-dropdown-menu .q-item {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.admin-dropdown-menu .q-item:hover {
+  background: linear-gradient(90deg,
+    rgba(255, 107, 53, 0.2) 0%,
+    rgba(155, 77, 202, 0.2) 100%
+  ) !important;
+}
+
+.admin-dropdown-menu .q-item__label {
+  color: white !important;
+}
+</style>

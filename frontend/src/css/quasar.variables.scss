@@ -8,18 +8,25 @@
 // Your own variables (that are declared here) and Quasar's own
 // ones will be available out of the box in your .vue/.scss/.sass files
 
-// It's highly recommended to change the default colors
-// to match your app's branding.
-// Tip: Use the "Theme Builder" on Quasar's documentation website.
+// Vibrant psychedelic Hindu-inspired color palette
+// Bold, energetic, spiritual colors
 
-$primary: #1976d2;
-$secondary: #26a69a;
-$accent: #9c27b0;
+$primary: #FF6B35;      // Vibrant saffron orange - sacred Hindu color
+$secondary: #9B4DCA;    // Deep purple - spiritual consciousness
+$accent: #00D9FF;       // Electric cyan - third eye chakra
 
-$dark: #1d1d1d;
-$dark-page: #121212;
+$dark: #1A0B2E;         // Deep cosmic purple
+$dark-page: #0D0221;    // Deepest space purple
 
-$positive: #21ba45;
-$negative: #c10015;
-$info: #31ccec;
-$warning: #f2c037;
+$positive: #00F5A0;     // Neon green
+$negative: #FF006E;     // Hot pink
+$info: #00B4D8;         // Bright cyan
+$warning: #FFBE0B;      // Golden yellow
+
+// Psychedelic theme variables
+$hindu-gold: #FFD700;
+$hindu-red: #DC143C;
+$hindu-pink: #FF1493;
+$hindu-turquoise: #40E0D0;
+$hindu-violet: #8B00FF;
+$hindu-lotus: #FF69B4;

@@ -7,21 +7,21 @@
 
 ### Docker & Node.js Issues - LESSONS LEARNED
 
-**❌ Common Quasar/Node.js Pitfalls:**
+**[X] Common Quasar/Node.js Pitfalls:**
 - Using Node.js 18/20 with latest Quasar (causes webpack inject.style-rules.js errors)
 - Manually creating Quasar projects instead of using official CLI
 - Copying package.json before source code in Dockerfile
 - Using old Quasar CLI versions or webpack instead of Vite
 - Not using `--host 0.0.0.0` for Docker container access
 
-**✅ Solutions that Work:**
+**[OK] Solutions that Work:**
 - **Always use Node.js 24 LTS** (24.4.1+)
 - **Always use `npm create quasar`** for new projects
 - **Copy source code before `npm install`** in Dockerfile
 - **Use latest Quasar with Vite** (not webpack)
 - **Test locally first** with `npm run dev` before Docker
 
-**🔧 If Quasar Build Fails:**
+**[FIX] If Quasar Build Fails:**
 ```bash
 # Clean slate approach (always works):
 rm -rf frontend
@@ -32,7 +32,7 @@ npm install pinia axios
 npm run dev  # Test locally first
 ```
 
-**📝 Terminal Directory Issues:**
+**[NOTE] Terminal Directory Issues:**
 - Always use explicit paths: `cd ~/repos/yoga-flashcards/frontend && npm run dev`
 - NPM often runs from wrong directory, causing "package.json not found"
 
@@ -124,9 +124,9 @@ npm run dev  # Test locally first
 
 ### Quasar Setup - CRITICAL INSTRUCTIONS
 
-**❌ NEVER manually create Quasar projects or try to fix version conflicts**
+**[X] NEVER manually create Quasar projects or try to fix version conflicts**
 
-**✅ ALWAYS use official Quasar CLI:**
+**[OK] ALWAYS use official Quasar CLI:**
 
 ```bash
 # Remove any existing frontend directory first
@@ -151,7 +151,7 @@ cd frontend
 npm install pinia axios
 ```
 
-**✅ This gives you the latest tested versions:**
+**[OK] This gives you the latest tested versions:**
 - Quasar v2.18.2+
 - @quasar/app-vite v2.3.0+
 - Vue 3.4.18+
@@ -160,7 +160,7 @@ npm install pinia axios
 
 ### Frontend Dockerfile - CRITICAL
 
-**❌ Wrong order causes build failures:**
+**[X] Wrong order causes build failures:**
 ```dockerfile
 # DON'T copy package.json first, then source later
 COPY package*.json ./
@@ -168,7 +168,7 @@ RUN npm install  # FAILS: quasar prepare needs source code
 COPY . .
 ```
 
-**✅ Correct Dockerfile for Quasar:**
+**[OK] Correct Dockerfile for Quasar:**
 ```dockerfile
 FROM node:24-alpine
 
@@ -187,7 +187,7 @@ CMD ["npm", "run", "dev"]
 
 ### Docker Compose Configuration
 
-**✅ Working frontend service:**
+**[OK] Working frontend service:**
 ```yaml
 frontend:
   build: ./frontend
@@ -263,6 +263,7 @@ frontend:
 - `kebab-case` filenames
 - 2-space indentation
 - Scoped SASS in SFCs
+- **NO EMOJI or non-ASCII characters** in any code, comments, or documentation files
 
 ---
 

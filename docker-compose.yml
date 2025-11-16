@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:8.0
@@ -13,6 +11,12 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "django_user", "-pdjango_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
 
   backend:
     build: ./backend
@@ -27,7 +31,8 @@ services:
       - ./backend:/app
       - backend_media:/app/media
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     command: ["./start.sh"]
 
   frontend:

@@ -1,158 +1,91 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+  <q-layout view="hHh lpR fFf">
+    <q-header elevated class="psychedelic-header">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
-
-        <q-toolbar-title>
-          <router-link to="/" class="text-white no-underline">
-            Yoga Flashcards
+        <q-toolbar-title class="psychedelic-title">
+          <router-link to="/" class="no-underline">
+            <div class="row items-center no-wrap">
+              <q-icon name="self_improvement" size="md" class="q-mr-sm glow-icon" />
+              <div class="text-h4 neon-glow" style="font-family: 'Cinzel Decorative', serif; font-weight: 900;">
+                YOGA FLASHCARDS
+              </div>
+            </div>
           </router-link>
         </q-toolbar-title>
 
-        <div class="q-gutter-sm row items-center no-wrap">
+        <q-space />
+
+        <!-- Auth buttons when not logged in -->
+        <div v-if="!authStore.isAuthenticated" class="row q-gutter-md items-center">
           <q-btn
-            v-if="!authStore.isAuthenticated"
             flat
-            label="Login"
-            @click="$router.push('/login')"
-          />
-          <q-btn
-            v-if="!authStore.isAuthenticated"
-            flat
-            label="Sign Up"
+            label="SIGN UP"
             @click="$router.push('/signup')"
+            class="yoga-btn-secondary auth-btn"
+            style="font-weight: 700; letter-spacing: 1.5px; padding: 8px 24px;"
           />
-          
-          <q-btn-dropdown
-            v-if="authStore.isAuthenticated"
-            flat
-            :label="authStore.user?.email || 'User'"
-            icon="account_circle"
-          >
-            <q-list>
-              <q-item clickable v-close-popup @click="$router.push('/profile')">
-                <q-item-section>
-                  <q-item-label>Profile</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item clickable v-close-popup @click="$router.push('/favorites')">
-                <q-item-section>
-                  <q-item-label>Favorites</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-item 
-                v-if="authStore.isCurator"
-                clickable 
-                v-close-popup 
-                @click="$router.push('/admin')"
-              >
-                <q-item-section>
-                  <q-item-label>Admin Panel</q-item-label>
-                </q-item-section>
-              </q-item>
-              <q-separator />
-              <q-item clickable v-close-popup @click="handleLogout">
-                <q-item-section>
-                  <q-item-label>Logout</q-item-label>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-btn-dropdown>
+          <q-btn
+            unelevated
+            label="LOGIN"
+            @click="$router.push('/login')"
+            class="yoga-btn-primary auth-btn"
+            style="font-weight: 700; letter-spacing: 1.5px; padding: 8px 24px;"
+          />
         </div>
+
+        <!-- User menu when logged in -->
+        <q-btn-dropdown
+          v-if="authStore.isAuthenticated"
+          flat
+          :label="authStore.user?.email || 'User'"
+          icon="account_circle"
+          class="glow-icon"
+          size="lg"
+          style="font-weight: 700; letter-spacing: 1px;"
+        >
+          <q-list style="min-width: 200px; background: linear-gradient(135deg, rgba(26, 11, 46, 0.98) 0%, rgba(74, 20, 140, 0.95) 100%); color: white;">
+            <q-item clickable v-close-popup @click="$router.push('/profile')">
+              <q-item-section avatar>
+                <q-icon name="person" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label style="font-weight: 600;">PROFILE</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup @click="$router.push('/favorites')">
+              <q-item-section avatar>
+                <q-icon name="favorite" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label style="font-weight: 600;">FAVORITES</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item
+              v-if="authStore.isCurator"
+              clickable
+              v-close-popup
+              @click="$router.push('/admin')"
+            >
+              <q-item-section avatar>
+                <q-icon name="flare" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label style="font-weight: 600;">ADMIN</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-separator style="background: rgba(255, 107, 53, 0.3);" />
+            <q-item clickable v-close-popup @click="handleLogout">
+              <q-item-section avatar>
+                <q-icon name="logout" />
+              </q-item-section>
+              <q-item-section>
+                <q-item-label style="font-weight: 600;">LOGOUT</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
       </q-toolbar>
     </q-header>
-
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
-      <q-list>
-        <q-item-label header>
-          Navigation
-        </q-item-label>
-
-        <q-item clickable @click="$router.push('/')">
-          <q-item-section avatar>
-            <q-icon name="home" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Home</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item clickable @click="$router.push('/daily')">
-          <q-item-section avatar>
-            <q-icon name="today" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Daily Card</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item 
-          v-if="authStore.isAuthenticated"
-          clickable 
-          @click="$router.push('/cards')"
-        >
-          <q-item-section avatar>
-            <q-icon name="view_cards" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>All Cards</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item 
-          v-if="authStore.isAuthenticated"
-          clickable 
-          @click="$router.push('/favorites')"
-        >
-          <q-item-section avatar>
-            <q-icon name="favorite" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Favorites</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-separator v-if="!authStore.isAuthenticated" />
-
-        <q-item 
-          v-if="!authStore.isAuthenticated"
-          clickable 
-          @click="$router.push('/login')"
-        >
-          <q-item-section avatar>
-            <q-icon name="login" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Login</q-item-label>
-          </q-item-section>
-        </q-item>
-
-        <q-item 
-          v-if="!authStore.isAuthenticated"
-          clickable 
-          @click="$router.push('/signup')"
-        >
-          <q-item-section avatar>
-            <q-icon name="person_add" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Sign Up</q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
-    </q-drawer>
 
     <q-page-container>
       <router-view />
@@ -161,18 +94,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
-
-const leftDrawerOpen = ref(false)
-
-const toggleLeftDrawer = () => {
-  leftDrawerOpen.value = !leftDrawerOpen.value
-}
 
 const handleLogout = async () => {
   const result = await authStore.logout()
@@ -181,19 +108,54 @@ const handleLogout = async () => {
       type: 'positive',
       message: 'Logged out successfully'
     })
-    // Redirect to home
     window.location.href = '/'
   }
 }
 
 onMounted(() => {
-  // Check auth status on app load
   authStore.checkAuthStatus()
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .no-underline {
   text-decoration: none;
+  color: inherit;
+}
+
+.psychedelic-header {
+  background: linear-gradient(135deg,
+    rgba(26, 11, 46, 0.98) 0%,
+    rgba(74, 20, 140, 0.95) 100%
+  );
+  backdrop-filter: blur(20px);
+  border-bottom: 2px solid rgba(255, 107, 53, 0.5);
+  box-shadow:
+    0 4px 30px rgba(255, 107, 53, 0.4),
+    0 0 60px rgba(155, 77, 202, 0.3);
+}
+
+.psychedelic-title {
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+
+.glow-icon {
+  filter: drop-shadow(0 0 8px currentColor);
+  transition: all 0.3s ease;
+
+  &:hover {
+    filter: drop-shadow(0 0 15px currentColor) drop-shadow(0 0 25px currentColor);
+    transform: scale(1.2);
+  }
+}
+
+.auth-btn {
+  border-radius: 16px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
 }
 </style>

@@ -22,8 +22,8 @@ class FlashcardViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
     
     def get_queryset(self):
-        """Return active flashcards with filtering and search."""
-        queryset = Flashcard.objects.filter(is_active=True).select_related('created_by').prefetch_related('tags')
+        """Return active live flashcards with filtering and search."""
+        queryset = Flashcard.objects.filter(is_active=True, is_live=True).select_related('created_by').prefetch_related('tags')
         
         # Search functionality
         search = self.request.query_params.get('search', None)
@@ -57,10 +57,7 @@ class FlashcardViewSet(viewsets.ModelViewSet):
     def versions(self, request, pk=None):
         """Get version history for a flashcard."""
         flashcard = self.get_object()
-        root_card = flashcard.parent_version or flashcard
-        versions = Flashcard.objects.filter(
-            Q(id=root_card.id) | Q(parent_version=root_card)
-        ).order_by('-version')
+        versions = flashcard.get_version_history()
         
         serializer = FlashcardVersionHistorySerializer(versions, many=True)
         return Response(serializer.data)
@@ -78,20 +75,11 @@ class FlashcardViewSet(viewsets.ModelViewSet):
             target_version = Flashcard.objects.get(id=version_id)
             
             # Verify this version belongs to the same card family
-            if (target_version.parent_version != current_card.parent_version and 
-                target_version.id != (current_card.parent_version.id if current_card.parent_version else current_card.id)):
-                return Response({'error': 'Invalid version'}, status=status.HTTP_400_BAD_REQUEST)
+            if target_version.version_group != current_card.version_group:
+                return Response({'error': 'Invalid version - not part of same card'}, status=status.HTTP_400_BAD_REQUEST)
             
-            # Create new version based on target version
-            new_version = current_card.create_new_version(
-                title=target_version.title,
-                phrase=target_version.phrase,
-                definition=target_version.definition,
-                front_image=target_version.front_image,
-                back_image=target_version.back_image,
-                created_by=request.user,
-                tags=target_version.tags.all()
-            )
+            # Use model method to revert
+            new_version = target_version.revert_to_this_version(reverted_by=request.user)
             
             serializer = FlashcardSerializer(new_version)
             return Response(serializer.data)

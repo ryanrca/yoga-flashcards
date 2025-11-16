@@ -6,11 +6,11 @@
           <q-card-section class="text-center">
             <div class="text-h4 text-primary q-mb-md">Daily Yoga Card</div>
             <div class="text-subtitle1 text-grey-7 q-mb-lg">
-              {{ new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              {{ new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               }) }}
             </div>
           </q-card-section>
@@ -30,9 +30,9 @@
               {{ error }}
             </q-banner>
             <div class="text-center q-mt-md">
-              <q-btn 
-                color="primary" 
-                label="Try Again" 
+              <q-btn
+                color="primary"
+                label="Try Again"
                 @click="loadDailyCard"
               />
             </div>
@@ -42,8 +42,8 @@
             <div class="text-center">
               <!-- Card Image -->
               <div v-if="dailyCard.front_image" class="q-mb-md">
-                <q-img 
-                  :src="dailyCard.front_image" 
+                <q-img
+                  :src="dailyCard.front_image"
                   style="max-width: 300px; max-height: 200px; border-radius: 8px;"
                   class="q-mx-auto"
                 />
@@ -78,8 +78,8 @@
 
               <!-- Back Image -->
               <div v-if="dailyCard.back_image" class="q-mt-md">
-                <q-img 
-                  :src="dailyCard.back_image" 
+                <q-img
+                  :src="dailyCard.back_image"
                   style="max-width: 300px; max-height: 200px; border-radius: 8px;"
                   class="q-mx-auto"
                 />
@@ -100,7 +100,7 @@
               color="primary"
               label="Browse All Cards"
               @click="$router.push('/cards')"
-              icon="view_cards"
+              icon="auto_stories"
             />
             <q-btn
               flat
@@ -144,15 +144,15 @@ const error = ref(null)
 const loadDailyCard = async () => {
   loading.value = true
   error.value = null
-  
+
   const result = await flashcardsStore.fetchDailyCard()
-  
+
   if (result.success) {
     dailyCard.value = result.data
   } else {
     error.value = result.error || 'Failed to load daily card'
   }
-  
+
   loading.value = false
 }
 
@@ -166,7 +166,7 @@ const shareCard = () => {
   } else {
     // Fallback to copying to clipboard
     const shareText = `Daily Yoga Card: ${dailyCard.value.title}\n${dailyCard.value.phrase ? dailyCard.value.phrase + '\n' : ''}${dailyCard.value.definition}\n\n${window.location.href}`
-    
+
     navigator.clipboard.writeText(shareText).then(() => {
       $q.notify({
         type: 'positive',

@@ -16,10 +16,11 @@ Logged in users can see all flashcards.
 - **Sign up with facebook or google**: - users can create a new user by using their google and facebook accounts.
 - **Admin and curator access** - All admin and curator routes require authentication.  
 - **Flashcard management** - Curators have all CRUD operations with versioning.
+- **Version Control** - All card edits create new versions while preserving history. Each edit creates a new version marked as "LIVE". Previous versions remain accessible and can be reverted to at any time. All versions of a card share a version_group UUID.
 - **Image support** - Front and back photos can be uploaded, edited and deleted for each card
 - **Tagging system** - Organize cards with flexible tags
 - **Search and filtering** - Find cards across all text fields
-- **Version history** - Track changes and revert when needed
+- **Version history** - View complete edit history for each card with ability to revert to any previous version
 - **CSV import** - Bulk import cards from CSV files.  A script is provided to import new or update existing cards in bulk.
 - **Default photo** - The AI system must generate one simple .jpg or vector file to display when there is not an actual picture defined.
 - **Initial Data** - A CSV file is provided with some initial data containing:
@@ -83,16 +84,28 @@ The API follows REST principles with the following main endpoints:
 - `GET /api/cards/` - List cards (with pagination, search, filtering), all users, authenticated only
 - `GET /api/dailycard/` - See the card of the day, all users, regardless of authenticated status
 - `POST /api/cards/` - Create new card (Admin and curators only)
-- `GET /api/cards/{id}/` - Get card details with version history (admin and curator)
-- `PUT /api/cards/{id}/` - Update card (creates new version) (admin and curator only)
+- `GET /api/cards/{id}/` - Get card details (admin and curator)
+- `PUT /api/cards/{id}/` - Update card (creates new version, marks it as live) (admin and curator only)
 - `DELETE /api/cards/{id}/` - Delete card (admin and curator only)
-- `POST /api/cards/{id}/revert_version/` - Revert to previous version (admin and curator only)
+- `GET /api/cards/{id}/versions/` - Get version history for a card (admin and curator only)
+- `POST /api/cards/{id}/revert_version/` - Revert to previous version (creates new live version from selected version) (admin and curator only)
 - `GET /api/tags/` - List tags (all users)
 - `POST /api/tags/` - Create tag  (admin and curator only)
 - `PUT /api/tags/{id}/` - Update tag (admin and curator only)
 - `DELETE /api/tags/{id}/` - Delete tag (admin and curator only)
 
 All data provided by the API is in JSON format. The API supports server-side pagination, search, and filtering for cards.
+
+### Versioning System
+
+The flashcard versioning system works as follows:
+
+- **Version Groups**: All versions of the same card share a unique `version_group` UUID
+- **Live Version**: Only one version per group is marked as `is_live=True` - this is the current active version
+- **Creating Versions**: When a card is edited, a new copy is created with an incremented `version_number` and marked as live. The previous live version remains in the database but `is_live` is set to False
+- **Version History**: All previous versions are preserved and can be viewed in the admin interface
+- **Reverting**: Reverting to a previous version creates a new version (with the highest version number) that copies the content from the selected version and marks it as live
+- **Querying**: By default, only live versions are returned in list queries. Version history can be accessed via the `/api/cards/{id}/versions/` endpoint
 
 ### Authentication Endpoints
 

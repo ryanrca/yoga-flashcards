@@ -40,7 +40,8 @@ class DailyCardService:
     @staticmethod
     def _select_next_card():
         """Select the next card to be the daily card."""
-        active_cards = Flashcard.objects.filter(is_active=True)
+        # Only select from live versions of active cards
+        active_cards = Flashcard.objects.filter(is_active=True, is_live=True)
         
         if not active_cards.exists():
             return None
@@ -67,8 +68,8 @@ class DailyCardService:
         """Get the current cycle number."""
         latest_log = CardUsageLog.objects.order_by('-cycle_number').first()
         if latest_log:
-            # Check if all active cards have been used in this cycle
-            active_card_count = Flashcard.objects.filter(is_active=True).count()
+            # Check if all active live cards have been used in this cycle
+            active_card_count = Flashcard.objects.filter(is_active=True, is_live=True).count()
             used_in_current_cycle = CardUsageLog.objects.filter(
                 cycle_number=latest_log.cycle_number
             ).count()
