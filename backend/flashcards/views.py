@@ -6,12 +6,14 @@ from rest_framework.response import Response
 from .models import Flashcard, Tag
 from .serializers import FlashcardSerializer, TagSerializer, FlashcardVersionHistorySerializer
 from .permissions import IsCuratorOrAdmin
+from .pagination import CardPagination
 
 
 class FlashcardViewSet(viewsets.ModelViewSet):
     """ViewSet for managing flashcards."""
     
     serializer_class = FlashcardSerializer
+    pagination_class = CardPagination
     
     def get_permissions(self):
         """Set permissions based on action."""
@@ -93,6 +95,7 @@ class TagViewSet(viewsets.ModelViewSet):
     
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    pagination_class = CardPagination
     
     def get_permissions(self):
         """Set permissions based on action."""

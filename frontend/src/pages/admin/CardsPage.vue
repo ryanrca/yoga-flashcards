@@ -121,8 +121,8 @@
 
           <template v-slot:body-cell-definition="props">
             <q-td :props="props">
-              <div class="text-body2" style="max-width: 300px;">
-                {{ props.value.length > 100 ? props.value.substring(0, 100) + '...' : props.value }}
+              <div class="definition-cell">
+                {{ props.value }}
               </div>
             </q-td>
           </template>
@@ -442,5 +442,31 @@ onMounted(() => {
 
 .admin-dropdown-menu .q-checkbox__inner {
   color: white !important;
+}
+
+/* Definition column truncation */
+.definition-cell {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Style for table pagination dropdown (Records per page) */
+.q-table__bottom .q-select__dialog {
+  background: white !important;
+  color: black !important;
+}
+
+.q-table__bottom .q-item {
+  color: black !important;
+}
+
+.q-table__bottom .q-item:hover {
+  background: rgba(155, 77, 202, 0.1) !important;
+}
+
+.q-table__bottom .q-item__label {
+  color: black !important;
 }
 </style>

@@ -473,3 +473,22 @@ html {
     pointer-events: none;
   }
 }
+
+// Fix table pagination dropdown text visibility
+.q-table__bottom .q-field__native,
+.q-table__bottom .q-field__label,
+.q-table__bottom option {
+  color: #000000 !important;
+  background-color: #FFFFFF !important;
+}
+
+.q-menu.q-position-engine {
+  .q-item {
+    color: #000000 !important;
+    background-color: #FFFFFF !important;
+    
+    &:hover {
+      background-color: rgba(155, 77, 202, 0.2) !important;
+    }
+  }
+}
