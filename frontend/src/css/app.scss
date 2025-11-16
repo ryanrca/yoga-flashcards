@@ -474,7 +474,45 @@ html {
   }
 }
 
-// Fix table pagination dropdown text visibility
+// Admin dropdown menu styling (for all admin pages)
+.admin-dropdown-menu.q-menu {
+  background: linear-gradient(135deg,
+    rgba(26, 11, 46, 0.98) 0%,
+    rgba(74, 20, 140, 0.95) 100%
+  ) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 107, 53, 0.3) !important;
+
+  .q-list {
+    background: transparent !important;
+  }
+
+  .q-item {
+    color: rgba(255, 255, 255, 0.9) !important;
+    background-color: transparent !important;
+
+    &:hover {
+      background: linear-gradient(90deg,
+        rgba(255, 107, 53, 0.2) 0%,
+        rgba(155, 77, 202, 0.2) 100%
+      ) !important;
+    }
+  }
+
+  .q-item__label {
+    color: white !important;
+  }
+
+  .q-item-section {
+    color: white !important;
+  }
+
+  .q-icon {
+    color: white !important;
+  }
+}
+
+// Fix table pagination dropdown text visibility (ONLY for pagination, not other dropdowns)
 .q-table__bottom .q-field__native,
 .q-table__bottom .q-field__label,
 .q-table__bottom option {
@@ -482,7 +520,8 @@ html {
   background-color: #FFFFFF !important;
 }
 
-.q-menu.q-position-engine {
+// Only apply white background to pagination dropdown menu
+.q-table__bottom + .q-menu.q-position-engine {
   .q-item {
     color: #000000 !important;
     background-color: #FFFFFF !important;

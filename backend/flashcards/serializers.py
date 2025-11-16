@@ -47,7 +47,23 @@ class FlashcardSerializer(serializers.ModelSerializer):
         
         # Prepare tags list for new version
         tags_to_set = None
-        if tag_names is not None:
+        
+        # Check if 'tags' field exists in request data (FormData from frontend)
+        if 'tags' in self.context['request'].data:
+            # Get tag IDs - could be [''] if all tags removed, or list of IDs
+            tag_ids = self.context['request'].data.getlist('tags', [])
+            tags_to_set = []
+            for tag_id in tag_ids:
+                # Skip empty string marker
+                if tag_id == '':
+                    continue
+                try:
+                    tag = Tag.objects.get(id=int(tag_id))
+                    tags_to_set.append(tag)
+                except (Tag.DoesNotExist, ValueError):
+                    pass
+        # Handle tag names (sent as JSON)
+        elif tag_names is not None:
             tags_to_set = []
             for tag_name in tag_names:
                 tag, created = Tag.objects.get_or_create(name=tag_name.strip())

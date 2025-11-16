@@ -218,11 +218,35 @@
         </q-card>
       </div>
     </div>
+
+    <!-- Revert Confirmation Dialog -->
+    <q-dialog v-model="showRevertDialog" persistent>
+      <q-card>
+        <q-card-section class="row items-center">
+          <q-avatar icon="restore" color="primary" text-color="white" />
+          <span class="q-ml-sm">
+            Are you sure you want to revert to version {{ versionToRevert?.version_number }}?
+          </span>
+        </q-card-section>
+
+        <q-card-section>
+          <q-banner class="bg-info text-white">
+            This will create a new version with the content from version {{ versionToRevert?.version_number }}.
+            The current version will be preserved in the history.
+          </q-banner>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" @click="showRevertDialog = false" />
+          <q-btn flat label="Revert" color="primary" @click="confirmRevert" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useFlashcardsStore } from 'src/stores/flashcards'
@@ -248,6 +272,8 @@ const cardData = ref({
 const availableTags = ref([])
 const loading = ref(false)
 const versionHistory = ref([])
+const showRevertDialog = ref(false)
+const versionToRevert = ref(null)
 
 // Version history table columns
 const versionColumns = [
@@ -302,6 +328,7 @@ const loadCard = async () => {
   if (result.success) {
     const card = result.data
     cardData.value = {
+      id: card.id,
       title: card.title || '',
       phrase: card.phrase || '',
       definition: card.definition || '',
@@ -398,11 +425,14 @@ const saveCard = async () => {
     formData.append('phrase', cardData.value.phrase || '')
     formData.append('definition', cardData.value.definition)
 
-    // Add tags
+    // Add tags (always include, even if empty, so backend knows to clear them)
     if (cardData.value.tags.length > 0) {
       cardData.value.tags.forEach(tag => {
         formData.append('tags', tag.id)
       })
+    } else {
+      // Send empty marker so backend knows to clear all tags
+      formData.append('tags', '')
     }
 
     // Add images if they exist
@@ -425,33 +455,19 @@ const saveCard = async () => {
         type: 'positive',
         message: isEditing.value ? 'Card updated successfully!' : 'Card created successfully!'
       })
-      
+
       if (isEditing.value) {
-        // When editing, stay on page and reload version history
-        await loadVersionHistory()
-        
-        // Update the form with the returned data (don't reload, just use what we got back)
-        const card = result.data
-        cardData.value = {
-          title: card.title || '',
-          phrase: card.phrase || '',
-          definition: card.definition || '',
-          tags: card.tags || [],
-          front_image: card.front_image,
-          back_image: card.back_image
+        // When a card is updated, a new version is created with a new ID
+        // We need to redirect to the new card's edit page
+        const newCardId = result.data.id
+
+        if (newCardId && newCardId !== parseInt(route.params.id)) {
+          // Redirect to the new card's edit page
+          router.push(`/admin/cards/${newCardId}/edit`)
+        } else {
+          // If ID didn't change (shouldn't happen), reload the page
+          await loadCard()
         }
-        
-        // Update image previews
-        if (card.front_image) {
-          frontImagePreview.value = card.front_image
-        }
-        if (card.back_image) {
-          backImagePreview.value = card.back_image
-        }
-        
-        // Clear the file inputs since images are now saved
-        frontImageFile.value = null
-        backImageFile.value = null
       } else {
         // When creating new card, redirect to cards list
         router.push('/admin/cards')
@@ -472,31 +488,49 @@ const saveCard = async () => {
   loading.value = false
 }
 
-const revertToVersion = async (version) => {
-  $q.dialog({
-    title: 'Revert to Version',
-    message: `Are you sure you want to revert to version ${version.version_number}? This will create a new version with the content from version ${version.version_number}.`,
-    cancel: true,
-    persistent: true
-  }).onOk(async () => {
-    loading.value = true
-    const result = await flashcardsStore.revertCardVersion(route.params.id, version.id)
+const revertToVersion = (version) => {
+  console.log('revertToVersion called with version:', version)
+  console.log('Current cardData.value.id:', cardData.value.id)
+  console.log('Version ID to revert to:', version.id)
 
-    if (result.success) {
-      $q.notify({
-        type: 'positive',
-        message: `Successfully reverted to version ${version.version_number}`
-      })
+  versionToRevert.value = version
+  showRevertDialog.value = true
+}
+
+const confirmRevert = async () => {
+  if (!versionToRevert.value) return
+
+  console.log('Confirming revert to version:', versionToRevert.value)
+  showRevertDialog.value = false
+  loading.value = true
+
+  // Use cardData.value.id (current live card) instead of route.params.id
+  const result = await flashcardsStore.revertCardVersion(cardData.value.id, versionToRevert.value.id)
+  console.log('revertCardVersion result:', result)
+
+  if (result.success) {
+    $q.notify({
+      type: 'positive',
+      message: `Successfully reverted to version ${versionToRevert.value.version_number}`
+    })
+
+    // Redirect to the new card's edit page (revert creates a new version with new ID)
+    const newCardId = result.data.id
+    if (newCardId && newCardId !== cardData.value.id) {
+      router.push(`/admin/cards/${newCardId}/edit`)
+    } else {
       // Reload card and version history
       await loadCard()
-    } else {
-      $q.notify({
-        type: 'negative',
-        message: result.error || 'Failed to revert version'
-      })
     }
-    loading.value = false
-  })
+  } else {
+    $q.notify({
+      type: 'negative',
+      message: result.error || 'Failed to revert version'
+    })
+  }
+
+  loading.value = false
+  versionToRevert.value = null
 }
 
 const formatDate = (dateString) => {
@@ -514,6 +548,13 @@ const formatDate = (dateString) => {
 onMounted(() => {
   loadTags()
   if (isEditing.value) {
+    loadCard()
+  }
+})
+
+// Watch for route changes (when navigating to a different card ID after revert)
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId && newId !== oldId && isEditing.value) {
     loadCard()
   }
 })
