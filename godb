@@ -1,0 +1,4 @@
+#!/bin/bash
+
+docker exec -it yoga-flashcards-db-1 mysql -u django_user -pdjango_password yoga_flashcards
+

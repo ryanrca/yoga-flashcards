@@ -295,8 +295,16 @@ const loadDashboardData = async () => {
       dailyCard.value = dailyResult.data
     }
 
-    // Mock users count (would come from a users API)
-    stats.value.totalUsers = 25
+    // Load user statistics from API
+    try {
+      const response = await authStore.fetchUserStats()
+      if (response && response.total !== undefined) {
+        stats.value.totalUsers = response.total
+      }
+    } catch (error) {
+      console.error('Error loading user stats:', error)
+      stats.value.totalUsers = 0
+    }
   } catch (error) {
     console.error('Error loading dashboard data:', error)
   }

@@ -99,6 +99,66 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const fetchUserStats = async () => {
+    try {
+      const response = await api.get('/api/users/manage/stats/')
+      return response.data
+    } catch (err) {
+      console.error('Error fetching user stats:', err)
+      return { total: 0, active: 0, admins: 0 }
+    }
+  }
+
+  const fetchUsers = async (params = {}) => {
+    try {
+      const response = await api.get('/api/users/manage/', { params })
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error fetching users:', err)
+      return { success: false, error: err.response?.data || 'Failed to fetch users' }
+    }
+  }
+
+  const createUser = async (userData) => {
+    try {
+      const response = await api.post('/api/users/manage/', userData)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error creating user:', err)
+      return { success: false, error: err.response?.data || 'Failed to create user' }
+    }
+  }
+
+  const updateUser = async (userId, userData) => {
+    try {
+      const response = await api.patch(`/api/users/manage/${userId}/`, userData)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error updating user:', err)
+      return { success: false, error: err.response?.data || 'Failed to update user' }
+    }
+  }
+
+  const deleteUser = async (userId) => {
+    try {
+      await api.delete(`/api/users/manage/${userId}/`)
+      return { success: true }
+    } catch (err) {
+      console.error('Error deleting user:', err)
+      return { success: false, error: err.response?.data || 'Failed to delete user' }
+    }
+  }
+
+  const toggleUserStatus = async (userId) => {
+    try {
+      const response = await api.post(`/api/users/manage/${userId}/toggle_active/`)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error toggling user status:', err)
+      return { success: false, error: err.response?.data || 'Failed to toggle user status' }
+    }
+  }
+
   return {
     // State
     user,
@@ -115,6 +175,12 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     checkAuthStatus,
-    signup
+    signup,
+    fetchUserStats,
+    fetchUsers,
+    createUser,
+    updateUser,
+    deleteUser,
+    toggleUserStatus
   }
 })

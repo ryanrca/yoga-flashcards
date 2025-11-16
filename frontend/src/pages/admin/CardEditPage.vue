@@ -425,7 +425,37 @@ const saveCard = async () => {
         type: 'positive',
         message: isEditing.value ? 'Card updated successfully!' : 'Card created successfully!'
       })
-      router.push('/admin/cards')
+      
+      if (isEditing.value) {
+        // When editing, stay on page and reload version history
+        await loadVersionHistory()
+        
+        // Update the form with the returned data (don't reload, just use what we got back)
+        const card = result.data
+        cardData.value = {
+          title: card.title || '',
+          phrase: card.phrase || '',
+          definition: card.definition || '',
+          tags: card.tags || [],
+          front_image: card.front_image,
+          back_image: card.back_image
+        }
+        
+        // Update image previews
+        if (card.front_image) {
+          frontImagePreview.value = card.front_image
+        }
+        if (card.back_image) {
+          backImagePreview.value = card.back_image
+        }
+        
+        // Clear the file inputs since images are now saved
+        frontImageFile.value = null
+        backImageFile.value = null
+      } else {
+        // When creating new card, redirect to cards list
+        router.push('/admin/cards')
+      }
     } else {
       $q.notify({
         type: 'negative',

@@ -1,5 +1,30 @@
 # Copilot Instructions for Yoga Flashcard Admin App
 
+## Development Environment
+
+**[CRITICAL] Always Use WSL Ubuntu Shell for Terminal Commands**
+- **NEVER use Windows PowerShell** for this project
+- **ALWAYS use WSL Ubuntu shell** when running terminal commands
+- This project runs in WSL Ubuntu, so all Docker, npm, and bash commands must be executed there
+- When using `run_in_terminal`, ensure commands are appropriate for bash/Ubuntu, not PowerShell
+
+**[OK] Correct terminal usage:**
+```bash
+# Use bash commands in WSL Ubuntu
+cd ~/repos/yoga-flashcards
+docker compose restart backend
+./start-dev.sh
+```
+
+**[X] Wrong terminal usage:**
+```powershell
+# DON'T use PowerShell commands
+cd \\wsl.localhost\Ubuntu\home\ryan\repos\yoga-flashcards
+docker-compose restart backend
+```
+
+---
+
 ## Overall Stack Guidelines
 
 - **Backend:** Python 3.x, Django, Django REST Framework (DRF), MySQL

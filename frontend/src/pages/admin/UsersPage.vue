@@ -27,8 +27,7 @@
                   label="Search users..."
                   outlined
                   clearable
-                  @update:model-value="searchUsers"
-                  @keyup.enter="searchUsers"
+                  @update:model-value="debouncedSearch"
                 >
                   <template v-slot:prepend>
                     <q-icon name="search" />
@@ -43,7 +42,7 @@
                   label="Filter by role"
                   outlined
                   clearable
-                  @update:model-value="filterUsers"
+                  @update:model-value="loadUsers"
                   popup-content-class="admin-dropdown-menu"
                 />
               </div>
@@ -259,7 +258,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
 
@@ -273,6 +272,7 @@ const loading = ref(false)
 // Search and filter
 const searchQuery = ref('')
 const roleFilter = ref(null)
+let searchTimeout = null
 
 // Pagination
 const pagination = ref({
@@ -344,40 +344,49 @@ const columns = [
   }
 ]
 
-// Mock data (replace with real API calls)
-const mockUsers = [
-  {
-    id: 1,
-    username: 'admin',
-    email: 'admin@example.com',
-    first_name: 'Admin',
-    last_name: 'User',
-    role: 'admin',
-    is_active: true,
-    last_login: new Date().toISOString()
-  },
-  {
-    id: 2,
-    username: 'curator1',
-    email: 'curator@example.com',
-    first_name: 'Yoga',
-    last_name: 'Curator',
-    role: 'curator',
-    is_active: true,
-    last_login: new Date(Date.now() - 86400000).toISOString()
-  }
-]
-
 // Methods
 const loadUsers = async () => {
   loading.value = true
 
-  // Simulate API call
-  setTimeout(() => {
-    users.value = mockUsers
-    pagination.value.rowsNumber = mockUsers.length
+  try {
+    const params = {}
+    
+    // Add search parameter (uses DRF's SearchFilter)
+    if (searchQuery.value && searchQuery.value.trim()) {
+      params.search = searchQuery.value.trim()
+    }
+    
+    // Add role filter
+    if (roleFilter.value) {
+      params.role = roleFilter.value
+    }
+
+    const result = await authStore.fetchUsers(params)
+    
+    if (result.success) {
+      // Handle both paginated and non-paginated responses
+      if (result.data.results) {
+        users.value = result.data.results
+        pagination.value.rowsNumber = result.data.count
+      } else if (Array.isArray(result.data)) {
+        users.value = result.data
+        pagination.value.rowsNumber = result.data.length
+      }
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to load users'
+      })
+    }
+  } catch (error) {
+    console.error('Error loading users:', error)
+    $q.notify({
+      type: 'negative',
+      message: 'Error loading users'
+    })
+  } finally {
     loading.value = false
-  }, 1000)
+  }
 }
 
 const onRequest = () => {
@@ -385,14 +394,15 @@ const onRequest = () => {
   loadUsers()
 }
 
-const searchUsers = () => {
-  // Implement search
-  loadUsers()
-}
-
-const filterUsers = () => {
-  // Implement role filtering
-  loadUsers()
+// Debounced search to prevent blinking
+const debouncedSearch = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  
+  searchTimeout = setTimeout(() => {
+    loadUsers()
+  }, 500) // Wait 500ms after user stops typing
 }
 
 const clearFilters = () => {
@@ -446,38 +456,73 @@ const saveUser = async () => {
   saving.value = true
 
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    let result
+    if (editingUser.value) {
+      // Update existing user
+      const updateData = {
+        email: userForm.value.email,
+        first_name: userForm.value.first_name,
+        last_name: userForm.value.last_name,
+        role: userForm.value.role,
+        is_active: userForm.value.is_active
+      }
+      
+      // Only include password if it's provided
+      if (userForm.value.password) {
+        updateData.password = userForm.value.password
+      }
+      
+      result = await authStore.updateUser(editingUser.value.id, updateData)
+    } else {
+      // Create new user
+      result = await authStore.createUser(userForm.value)
+    }
 
-    $q.notify({
-      type: 'positive',
-      message: editingUser.value ? 'User updated successfully!' : 'User created successfully!'
-    })
+    if (result.success) {
+      $q.notify({
+        type: 'positive',
+        message: editingUser.value ? 'User updated successfully!' : 'User created successfully!'
+      })
 
-    loadUsers()
-    closeDialog()
-  } catch {
+      loadUsers()
+      closeDialog()
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: result.error?.detail || result.error || 'Failed to save user'
+      })
+    }
+  } catch (error) {
+    console.error('Error saving user:', error)
     $q.notify({
       type: 'negative',
       message: 'Failed to save user'
     })
+  } finally {
+    saving.value = false
   }
-
-  saving.value = false
 }
 
 const toggleUserStatus = async (user) => {
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const result = await authStore.toggleUserStatus(user.id)
 
-    user.is_active = !user.is_active
-
-    $q.notify({
-      type: 'positive',
-      message: `User ${user.is_active ? 'activated' : 'deactivated'} successfully`
-    })
-  } catch {
+    if (result.success) {
+      $q.notify({
+        type: 'positive',
+        message: result.data.message || `User ${user.is_active ? 'deactivated' : 'activated'} successfully`
+      })
+      
+      // Reload users to get updated data
+      loadUsers()
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to update user status'
+      })
+    }
+  } catch (error) {
+    console.error('Error toggling user status:', error)
     $q.notify({
       type: 'negative',
       message: 'Failed to update user status'
@@ -494,27 +539,31 @@ const deleteUser = async () => {
   if (!userToDelete.value) return
 
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const result = await authStore.deleteUser(userToDelete.value.id)
 
-    const index = users.value.findIndex(u => u.id === userToDelete.value.id)
-    if (index !== -1) {
-      users.value.splice(index, 1)
+    if (result.success) {
+      $q.notify({
+        type: 'positive',
+        message: 'User deleted successfully'
+      })
+      
+      loadUsers()
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: 'Failed to delete user'
+      })
     }
-
-    $q.notify({
-      type: 'positive',
-      message: 'User deleted successfully'
-    })
-  } catch {
+  } catch (error) {
+    console.error('Error deleting user:', error)
     $q.notify({
       type: 'negative',
       message: 'Failed to delete user'
     })
+  } finally {
+    showDeleteDialog.value = false
+    userToDelete.value = null
   }
-
-  showDeleteDialog.value = false
-  userToDelete.value = null
 }
 
 const formatDate = (dateString) => {
@@ -528,6 +577,12 @@ const formatDate = (dateString) => {
 // Lifecycle
 onMounted(() => {
   loadUsers()
+})
+
+onBeforeUnmount(() => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
 })
 </script>
 
