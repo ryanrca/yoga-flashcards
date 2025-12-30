@@ -26,6 +26,7 @@ class Flashcard(models.Model):
     title = models.CharField(max_length=200)
     phrase = models.CharField(max_length=500, blank=True, null=True, help_text="Sanskrit phrase or term")
     definition = models.TextField(help_text="English definition or description")
+    short_answer = models.TextField(blank=True, null=True, help_text="Brief answer or key points")
     front_image = models.ImageField(upload_to='flashcard_images/', blank=True, null=True)
     back_image = models.ImageField(upload_to='flashcard_images/', blank=True, null=True)
     tags = models.ManyToManyField(Tag, blank=True, related_name='flashcards')

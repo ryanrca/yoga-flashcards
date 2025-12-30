@@ -47,6 +47,16 @@
                 :rules="[val => !!val || 'Definition is required']"
               />
 
+              <!-- Short Answer -->
+              <q-input
+                v-model="cardData.short_answer"
+                label="Short Answer"
+                type="textarea"
+                rows="3"
+                outlined
+                hint="Optional brief answer or key points"
+              />
+
               <!-- Tags -->
               <q-select
                 v-model="cardData.tags"
@@ -264,6 +274,7 @@ const cardData = ref({
   title: '',
   phrase: '',
   definition: '',
+  short_answer: '',
   tags: [],
   front_image: null,
   back_image: null
@@ -332,6 +343,7 @@ const loadCard = async () => {
       title: card.title || '',
       phrase: card.phrase || '',
       definition: card.definition || '',
+      short_answer: card.short_answer || '',
       tags: card.tags || [],
       front_image: card.front_image,
       back_image: card.back_image
@@ -424,6 +436,7 @@ const saveCard = async () => {
     formData.append('title', cardData.value.title)
     formData.append('phrase', cardData.value.phrase || '')
     formData.append('definition', cardData.value.definition)
+    formData.append('short_answer', cardData.value.short_answer || '')
 
     // Add tags (always include, even if empty, so backend knows to clear them)
     if (cardData.value.tags.length > 0) {

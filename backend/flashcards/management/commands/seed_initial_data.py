@@ -6,13 +6,19 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = 'Create initial data for the yoga flashcards application'
+    help = 'Erase and recreate initial data for the yoga flashcards application'
 
     def handle(self, *args, **options):
-        # Create superuser if it doesn't exist (check both username and email for backward compatibility)
+        # Clear existing data
+        self.stdout.write('Clearing existing flashcards and tags...')
+        Flashcard.objects.all().delete()
+        Tag.objects.all().delete()
+        self.stdout.write(self.style.SUCCESS('Cleared existing data'))
+
+        # Create superuser if it doesn't exist
         if not User.objects.filter(username='admin').exists() and not User.objects.filter(email='admin@example.com').exists():
             admin_user = User.objects.create_superuser(
-                username='admin',  # Still need username for Django, but login will use email
+                username='admin',
                 email='admin@example.com',
                 password='admin123',
                 role='admin'
@@ -21,7 +27,6 @@ class Command(BaseCommand):
                 self.style.SUCCESS(f'Created admin user: admin@example.com / admin123')
             )
         else:
-            # Update existing admin user's email if needed
             try:
                 admin_user = User.objects.get(username='admin')
                 if admin_user.email != 'admin@example.com':
@@ -102,8 +107,8 @@ class Command(BaseCommand):
         # Create initial tags
         tag_data = [
             {'name': '8 Limbs', 'description': 'The eight limbs of yoga according to Patanjali'},
-            {'name': 'Yamas', 'description': 'The first limb - ethical restraints'},
-            {'name': 'Niyamas', 'description': 'The second limb - observances'},
+            {'name': 'Yamas', 'description': 'Ethical restraints - how we relate to others'},
+            {'name': 'Niyamas', 'description': 'Personal observances - how we relate to ourselves'},
         ]
 
         created_tags = {}
@@ -115,58 +120,64 @@ class Command(BaseCommand):
             created_tags[tag_info['name']] = tag
             if created:
                 self.stdout.write(f'Created tag: {tag.name}')
-            else:
-                self.stdout.write(f'Tag already exists: {tag.name}')
 
         # Initial flashcard data
         flashcard_data = [
-            # 8 Limbs of Yoga
+            # The 8 Limbs of Yoga
             {
-                'title': 'Yama',
+                'title': 'Yamas',
                 'phrase': 'यम',
-                'definition': 'The first limb of yoga, consisting of ethical restraints and moral disciplines that guide our interactions with others and the world.',
-                'tags': ['8 Limbs', 'Yamas']
+                'short_answer': 'Ethical restraints or "how we relate to others".',
+                'definition': 'These are the social disciplines that guide our interactions with the world around us. They include five specific practices (Ahimsa, Satya, Asteya, Brahmacarya, and Aparigraha) that help us act with awareness rather than reacting out of habit or vice.',
+                'tags': ['8 Limbs']
             },
             {
-                'title': 'Niyama',
+                'title': 'Niyamas',
                 'phrase': 'नियम',
-                'definition': 'The second limb of yoga, consisting of observances and practices that guide our relationship with ourselves.',
-                'tags': ['8 Limbs', 'Niyamas']
+                'short_answer': 'Personal observances or "how we relate to ourselves".',
+                'definition': 'These are internal practices and disciplines meant to improve our own character and being. They consist of Sauca, Samtosa, Tapas, Svadhaya, and Isharapranidhana, focusing on internal cleanliness, contentment, and devotion.',
+                'tags': ['8 Limbs']
             },
             {
                 'title': 'Asana',
                 'phrase': 'आसन',
-                'definition': 'The third limb of yoga, referring to the physical postures and seat for meditation.',
+                'short_answer': 'Physical postures; literally meaning "to sit" or "being seated".',
+                'definition': 'Originally referring to sitting with a master to receive knowledge, it has evolved into the physical practice of postures. The goal is to find a balance between Sthira (steadiness/effort) and Sukha (comfort/ease) so the body is alert but unstressed.',
                 'tags': ['8 Limbs']
             },
             {
                 'title': 'Pranayama',
                 'phrase': 'प्राणायाम',
-                'definition': 'The fourth limb of yoga, the practice of breath control and extension of life force energy.',
+                'short_answer': 'Breath control and the regulation of life force.',
+                'definition': 'This practice involves joining the breath with movement to integrate the body and mind. It includes techniques like Ujjayi (calming) or Kapalabhati (energizing) to help the mind become slower, deeper, and more focused.',
                 'tags': ['8 Limbs']
             },
             {
                 'title': 'Pratyahara',
                 'phrase': 'प्रत्याहार',
-                'definition': 'The fifth limb of yoga, withdrawal of the senses from external objects to turn attention inward.',
+                'short_answer': 'Withdrawal of the senses; not chasing the "shiny object".',
+                'definition': 'It is the practice of filtering out external distractions to focus inward. For example, when a siren goes off during savasana, you use Pratyahara to stay present in your practice rather than following the noise.',
                 'tags': ['8 Limbs']
             },
             {
                 'title': 'Dharana',
                 'phrase': 'धारणा',
-                'definition': 'The sixth limb of yoga, concentration and focused attention on a single object or point.',
+                'short_answer': 'Concentration; holding the mind in one direction.',
+                'definition': 'We create the conditions to focus the mind\'s attention on a single object, like the breath, a candle, or a mandala. This prevents the "monkey mind" from jumping in many different directions.',
                 'tags': ['8 Limbs']
             },
             {
                 'title': 'Dhyana',
                 'phrase': 'ध्यान',
-                'definition': 'The seventh limb of yoga, meditation and sustained awareness without effort.',
+                'short_answer': 'Meditation; a continuous flow of concentration.',
+                'definition': 'In this state, the mind moves in one direction like a quiet river. You perceive an object and focus only on it, forming a deep communication where nothing else is happening.',
                 'tags': ['8 Limbs']
             },
             {
                 'title': 'Samadhi',
                 'phrase': 'समाधि',
-                'definition': 'The eighth and final limb of yoga, union and absorption in the object of meditation.',
+                'short_answer': 'Union; becoming one with the object of meditation.',
+                'definition': 'This is the experience of realizing non-dualistic existence, seeing things clearly without the Maya (illusion). It is pure flow where you are no longer a separate physical creature but are united with the divine or the fabric of the universe.',
                 'tags': ['8 Limbs']
             },
             
@@ -174,86 +185,93 @@ class Command(BaseCommand):
             {
                 'title': 'Ahimsa',
                 'phrase': 'अहिंसा',
-                'definition': 'Non-violence and non-harming in thought, word, and action toward all living beings.',
+                'short_answer': 'Non-violence; do no harm.',
+                'definition': 'This is the practice of justice and non-violence toward all beings. In yoga class, it means finding a balance with Satya—for example, not pushing yourself or a student so hard that it causes injury, but also not avoiding the truth of where growth is needed.',
                 'tags': ['Yamas']
             },
             {
                 'title': 'Satya',
                 'phrase': 'सत्य',
-                'definition': 'Truthfulness and honesty in speech and thought, living in alignment with truth.',
+                'short_answer': 'Truthfulness.',
+                'definition': 'This involves being honest with ourselves and others. As a teacher, it means providing "radical candor" or a "+1 nudge" to help students see their flaws and grow, provided the feedback comes from a sincere, caring place.',
                 'tags': ['Yamas']
             },
             {
                 'title': 'Asteya',
                 'phrase': 'अस्तेय',
-                'definition': 'Non-stealing, not taking what is not freely given, including time, energy, and material possessions.',
+                'short_answer': 'Non-stealing.',
+                'definition': 'Beyond just not taking physical objects, it involves not stealing others\' time or energy. It is a reminder to avoid vices and distractions, focusing instead on what we have earned.',
                 'tags': ['Yamas']
             },
             {
-                'title': 'Brahmacharya',
+                'title': 'Brahmacarya',
                 'phrase': 'ब्रह्मचर्य',
-                'definition': 'Moderation and conservation of energy, traditionally celibacy, but more broadly mindful use of sexual energy.',
+                'short_answer': 'Responsible behavior; moderation of the senses.',
+                'definition': 'Often interpreted as respect for family life and not overdoing sexual pleasure, it is a subtle call to move toward the truth through responsible, disciplined behavior.',
                 'tags': ['Yamas']
             },
             {
                 'title': 'Aparigraha',
                 'phrase': 'अपरिग्रह',
-                'definition': 'Non-possessiveness and non-attachment, freedom from greed and the desire to accumulate.',
+                'short_answer': 'Non-greed or non-attachment; only taking what is necessary.',
+                'definition': 'This means not taking advantage of a situation and only taking what you have earned. It is the practice of non-coveting, which helps us stay away from addiction and ego-centrism.',
                 'tags': ['Yamas']
             },
             
             # The 5 Niyamas
             {
-                'title': 'Saucha',
+                'title': 'Sauca',
                 'phrase': 'शौच',
-                'definition': 'Cleanliness and purity of body, mind, and environment, both external and internal purification.',
+                'short_answer': 'Cleanliness; purity of body and mind.',
+                'definition': 'This includes internal cleanliness (proper eating and breathing) and external cleanliness in our physical environment. It is about getting rid of "rubbish" in the body through healthy habits.',
                 'tags': ['Niyamas']
             },
             {
-                'title': 'Santosha',
+                'title': 'Samtosa',
                 'phrase': 'संतोष',
-                'definition': 'Contentment and satisfaction with what is, finding joy and peace in the present moment.',
+                'short_answer': 'Contentment; being okay with what is.',
+                'definition': 'To be content with what we already have and to accept outcomes even when they don\'t meet our expectations. It is the appreciation of what did happen rather than focusing on what we wanted to happen.',
                 'tags': ['Niyamas']
             },
             {
                 'title': 'Tapas',
                 'phrase': 'तपस्',
-                'definition': 'Disciplined practice and austerity, the burning enthusiasm and self-discipline to maintain practice.',
+                'short_answer': 'Discipline or "heat"; keeping the body fit.',
+                'definition': 'The activity of "heating" the body through posture and breath to cleanse it. It is the effort and discipline required to maintain health and burn away impurities.',
                 'tags': ['Niyamas']
             },
             {
-                'title': 'Svadhyaya',
+                'title': 'Svadhaya',
                 'phrase': 'स्वाध्याय',
-                'definition': 'Self-study and study of sacred texts, introspection and learning about the true Self.',
+                'short_answer': 'Self-study; inquiry and examination.',
+                'definition': 'This is the study of ancient texts and the examination of one\'s own inner dialogue. It is an inquiry into who is "living in you" and identifying the labels we carry that are not our true identity.',
                 'tags': ['Niyamas']
             },
             {
-                'title': 'Ishvara Pranidhana',
-                'phrase': 'ईश्वर प्रणिधान',
-                'definition': 'Surrender to the Divine, devotion and dedication of all actions to a higher power.',
+                'title': 'Isharapranidhana',
+                'phrase': 'ईश्वरप्रणिधान',
+                'short_answer': 'Surrender to a higher power.',
+                'definition': 'Literally meaning to "lay all your actions at the feet of God," it involves offering the "fruits of your labor" to something larger than yourself. It is the realization that you are not the most important thing and surrendering to the divine.',
                 'tags': ['Niyamas']
             },
         ]
 
         created_count = 0
         for card_data in flashcard_data:
-            # Check if card already exists
-            if not Flashcard.objects.filter(title=card_data['title'], is_active=True).exists():
-                flashcard = Flashcard.objects.create(
-                    title=card_data['title'],
-                    phrase=card_data['phrase'],
-                    definition=card_data['definition'],
-                    created_by=admin_user
-                )
-                
-                # Add tags
-                for tag_name in card_data['tags']:
-                    flashcard.tags.add(created_tags[tag_name])
-                
-                created_count += 1
-                self.stdout.write(f'Created flashcard: {flashcard.title}')
-            else:
-                self.stdout.write(f'Flashcard already exists: {card_data["title"]}')
+            flashcard = Flashcard.objects.create(
+                title=card_data['title'],
+                phrase=card_data['phrase'],
+                short_answer=card_data['short_answer'],
+                definition=card_data['definition'],
+                created_by=admin_user
+            )
+            
+            # Add tags
+            for tag_name in card_data['tags']:
+                flashcard.tags.add(created_tags[tag_name])
+            
+            created_count += 1
+            self.stdout.write(f'Created flashcard: {flashcard.title}')
 
         self.stdout.write(
             self.style.SUCCESS(f'Initial data setup completed. Created {created_count} flashcards.')

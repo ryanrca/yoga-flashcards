@@ -3,7 +3,7 @@
     <div class="column items-center q-gutter-lg" style="max-width: 800px; width: 100%;">
       <!-- Hero Section -->
       <div class="text-center q-pa-lg">
-        <h1 class="text-h2 text-primary q-mb-md">Yoga Flashcards</h1>
+        <h1 class="text-h2 text-primary q-mb-md">Yoga Sutra Flashcards</h1>
         <p class="text-h6 text-grey-7 q-mb-lg">
           Discover the wisdom of yoga through daily practice with our curated flashcards
         </p>
@@ -12,15 +12,32 @@
       <!-- Daily Card Preview - Moved to top -->
       <q-card v-if="dailyCard" class="full-width">
         <q-card-section>
-          <div class="text-h5 text-center q-mb-md">Today's Featured Card</div>
+          <div class="text-h5 text-center q-mb-md">Today's Sutra</div>
           <div class="text-center">
             <div class="text-h6 text-primary">{{ dailyCard.title }}</div>
             <div v-if="dailyCard.phrase" class="text-subtitle1 text-italic q-mt-sm">
               {{ dailyCard.phrase }}
             </div>
-            <p class="q-mt-md">{{ dailyCard.definition }}</p>
+
+            <!-- Short Answer Preview -->
+            <div v-if="dailyCard.short_answer" class="q-mt-md q-pa-md" style="background-color: rgba(155, 77, 202, 0.1); border-radius: 8px;">
+              <p class="text-body1" style="margin: 0;">{{ dailyCard.short_answer }}</p>
+            </div>
+
+            <!-- Fallback to definition if no short answer -->
+            <p v-else class="q-mt-md">{{ dailyCard.definition }}</p>
           </div>
         </q-card-section>
+
+        <q-card-actions align="center">
+          <q-btn
+            color="primary"
+            label="Go Deeper"
+            icon="info"
+            @click="$router.push('/daily')"
+            unelevated
+          />
+        </q-card-actions>
       </q-card>
 
       <!-- Action Buttons -->
@@ -48,7 +65,7 @@
       </div>
 
       <!-- Features Section -->
-      <div class="row q-gutter-md full-width justify-center">
+      <div class="row q-gutter-md full-width justify-center q-mb-xl q-pb-xl">
         <q-card class="col-md-3 col-sm-6 col-xs-12">
           <q-card-section class="text-center">
             <q-icon name="search" size="3rem" color="primary" />

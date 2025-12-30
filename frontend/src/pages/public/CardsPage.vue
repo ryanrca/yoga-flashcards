@@ -179,6 +179,11 @@
 
           <div class="text-body1 definition-text">{{ selectedCard.definition }}</div>
 
+          <div v-if="selectedCard.short_answer" class="q-mt-md">
+            <div class="text-subtitle1 text-weight-medium text-primary">Short Answer:</div>
+            <div class="text-body2 q-mt-xs">{{ selectedCard.short_answer }}</div>
+          </div>
+
           <div v-if="selectedCard.back_image" class="text-center q-mt-md">
             <q-img
               :src="selectedCard.back_image"

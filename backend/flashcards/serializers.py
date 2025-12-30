@@ -25,7 +25,7 @@ class FlashcardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flashcard
         fields = [
-            'id', 'title', 'phrase', 'definition', 'front_image', 'back_image',
+            'id', 'title', 'phrase', 'definition', 'short_answer', 'front_image', 'back_image',
             'tags', 'tag_names', 'created_by', 'created_by_username',
             'created_at', 'updated_at', 'is_active', 'version_group', 'version_number', 'is_live'
         ]

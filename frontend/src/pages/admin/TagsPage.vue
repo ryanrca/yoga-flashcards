@@ -35,8 +35,8 @@
 
         <!-- Tags List -->
         <div v-else class="row q-gutter-md">
-          <q-card 
-            v-for="tag in tags" 
+          <q-card
+            v-for="tag in tags"
             :key="tag.id"
             class="col-12 col-sm-6 col-md-4"
           >
@@ -74,10 +74,10 @@
             </q-card-section>
 
             <q-card-actions>
-              <q-btn 
-                flat 
-                color="primary" 
-                label="View Cards" 
+              <q-btn
+                flat
+                color="primary"
+                label="View Cards"
                 @click="viewTagCards(tag)"
               />
             </q-card-actions>
@@ -117,7 +117,7 @@
               autofocus
               :rules="[val => !!val || 'Tag name is required']"
             />
-            
+
             <q-input
               v-model="tagForm.description"
               label="Description"
@@ -131,9 +131,9 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Cancel" @click="closeDialog" />
-          <q-btn 
-            color="primary" 
-            :label="editingTag ? 'Update' : 'Create'" 
+          <q-btn
+            color="primary"
+            :label="editingTag ? 'Update' : 'Create'"
             @click="saveTag"
             :loading="saving"
           />
@@ -153,17 +153,17 @@
 
         <q-card-section v-if="tagToDelete?.card_count > 0">
           <q-banner type="warning">
-            This tag is used by {{ tagToDelete.card_count }} card(s). 
+            This tag is used by {{ tagToDelete.card_count }} card(s).
             Deleting it will remove the tag from all cards.
           </q-banner>
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn flat label="Cancel" @click="showDeleteDialog = false" />
-          <q-btn 
-            flat 
-            label="Delete" 
-            color="negative" 
+          <q-btn
+            flat
+            label="Delete"
+            color="negative"
             @click="deleteTag"
             :loading="deleting"
           />
@@ -301,12 +301,12 @@ const deleteTag = async () => {
     if (index !== -1) {
       tags.value.splice(index, 1)
     }
-    
+
     $q.notify({
       type: 'positive',
       message: 'Tag deleted successfully'
     })
-    
+
     showDeleteDialog.value = false
     tagToDelete.value = null
     deleting.value = false

@@ -59,9 +59,16 @@
                 {{ dailyCard.phrase }}
               </div>
 
-              <!-- Definition -->
-              <div class="text-body1 q-mb-lg" style="text-align: justify;">
-                {{ dailyCard.definition }}
+              <!-- Short Answer (if available) -->
+              <div v-if="dailyCard.short_answer" class="q-mb-lg q-pa-md" style="background-color: rgba(155, 77, 202, 0.1); border-radius: 8px;">
+                <div class="text-subtitle1 text-weight-medium text-primary q-mb-sm">Short Answer:</div>
+                <div class="text-body1" style="text-align: justify;">{{ dailyCard.short_answer }}</div>
+              </div>
+
+              <!-- Full Definition -->
+              <div class="q-mb-lg" style="text-align: justify;">
+                <div class="text-subtitle1 text-weight-medium text-primary q-mb-sm">Full Definition:</div>
+                <div class="text-body1">{{ dailyCard.definition }}</div>
               </div>
 
               <!-- Tags -->
@@ -140,10 +147,12 @@ const flashcardsStore = useFlashcardsStore()
 const dailyCard = ref(null)
 const loading = ref(false)
 const error = ref(null)
+const showFullDetails = ref(false)
 
 const loadDailyCard = async () => {
   loading.value = true
   error.value = null
+  showFullDetails.value = false
 
   const result = await flashcardsStore.fetchDailyCard()
 

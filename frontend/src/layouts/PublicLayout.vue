@@ -87,9 +87,19 @@
       </q-toolbar>
     </q-header>
 
-    <q-page-container>
+    <q-page-container class="q-pb-xl">
       <router-view />
     </q-page-container>
+
+    <q-footer elevated class="psychedelic-footer">
+      <q-toolbar>
+        <q-toolbar-title class="text-center">
+          <div class="text-body2">
+            © {{ new Date().getFullYear() }} Yoga Flashcards · Made with ❤️ for the yoga community
+          </div>
+        </q-toolbar-title>
+      </q-toolbar>
+    </q-footer>
   </q-layout>
 </template>
 
@@ -157,5 +167,14 @@ onMounted(() => {
   &:hover {
     transform: scale(1.1);
   }
+}
+
+.psychedelic-footer {
+  background: linear-gradient(135deg,
+    rgba(26, 11, 46, 0.98) 0%,
+    rgba(74, 20, 140, 0.95) 100%
+  );
+  border-top: 2px solid rgba(255, 107, 53, 0.5);
+  color: rgba(255, 255, 255, 0.9);
 }
 </style>
