@@ -257,7 +257,10 @@ The application uses MySQL with proper UTF-8 support for international character
 4. Ensure migrations are included for model changes
 
 ## TODO
-By a human at later iterations
+CODE:
+
+
+CONTENT: By a human at later iterations
 - Collect images
 - Carefully create and edit new card content
 - Hire designer to layout flashcards in adobe in-design

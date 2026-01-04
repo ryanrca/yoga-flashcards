@@ -176,14 +176,18 @@
               flat
               bordered
               :rows-per-page-options="[10, 25, 50]"
+              :row-class="versionRowClass"
               class="version-history-table"
             >
               <template v-slot:body-cell-version_number="props">
                 <q-td :props="props">
-                  <q-badge
-                    :color="props.row.is_live ? 'positive' : 'grey'"
-                    :label="props.row.is_live ? `v${props.row.version_number} (LIVE)` : `v${props.row.version_number}`"
-                  />
+                  <div class="row items-center q-gutter-sm">
+                    <q-badge
+                      :color="props.row.is_live ? 'positive' : 'grey'"
+                      :label="`v${props.row.version_number}`"
+                    />
+                    <q-badge v-if="props.row.is_live" color="primary" outline label="Current" />
+                  </div>
                 </q-td>
               </template>
 
@@ -200,9 +204,9 @@
                 </q-td>
               </template>
 
-              <template v-slot:body-cell-created_at="props">
+              <template v-slot:body-cell-updated_at="props">
                 <q-td :props="props">
-                  <div>{{ formatDate(props.row.created_at) }}</div>
+                  <div>{{ formatDate(props.row.updated_at || props.row.created_at) }}</div>
                   <div class="text-caption text-grey-7">{{ props.row.created_by_username }}</div>
                 </q-td>
               </template>
@@ -241,8 +245,8 @@
 
         <q-card-section>
           <q-banner class="bg-info text-white">
-            This will create a new version with the content from version {{ versionToRevert?.version_number }}.
-            The current version will be preserved in the history.
+            This will load the content from version {{ versionToRevert?.version_number }} into the form.
+            Edit if needed, then click Save to create a new version while keeping the current live version intact.
           </q-banner>
         </q-card-section>
 
@@ -304,14 +308,14 @@ const versionColumns = [
   },
   {
     name: 'definition',
-    label: 'Definition',
+    label: 'Description',
     field: 'definition',
     align: 'left'
   },
   {
-    name: 'created_at',
-    label: 'Modified',
-    field: 'created_at',
+    name: 'updated_at',
+    label: 'Last Updated',
+    field: 'updated_at',
     align: 'left',
     sortable: true
   },
@@ -517,33 +521,45 @@ const confirmRevert = async () => {
   showRevertDialog.value = false
   loading.value = true
 
-  // Use cardData.value.id (current live card) instead of route.params.id
-  const result = await flashcardsStore.revertCardVersion(cardData.value.id, versionToRevert.value.id)
-  console.log('revertCardVersion result:', result)
+  applyVersionToForm(versionToRevert.value)
 
-  if (result.success) {
-    $q.notify({
-      type: 'positive',
-      message: `Successfully reverted to version ${versionToRevert.value.version_number}`
-    })
-
-    // Redirect to the new card's edit page (revert creates a new version with new ID)
-    const newCardId = result.data.id
-    if (newCardId && newCardId !== cardData.value.id) {
-      router.push(`/admin/cards/${newCardId}/edit`)
-    } else {
-      // Reload card and version history
-      await loadCard()
-    }
-  } else {
-    $q.notify({
-      type: 'negative',
-      message: result.error || 'Failed to revert version'
-    })
-  }
+  $q.notify({
+    type: 'positive',
+    message: `Loaded version ${versionToRevert.value.version_number} into the form. Edit and save to create a new version.`
+  })
 
   loading.value = false
   versionToRevert.value = null
+}
+
+const applyVersionToForm = (version) => {
+  const normalizedTags = Array.isArray(version.tags)
+    ? version.tags
+        .map(tag => {
+          if (typeof tag === 'number') {
+            return availableTags.value.find(t => t.id === tag)
+          }
+          return tag
+        })
+        .filter(Boolean)
+    : []
+
+  cardData.value = {
+    ...cardData.value,
+    title: version.title || '',
+    phrase: version.phrase || '',
+    definition: version.definition || '',
+    short_answer: version.short_answer || '',
+    tags: normalizedTags,
+    front_image: version.front_image || null,
+    back_image: version.back_image || null
+  }
+
+  // Reset upload inputs to avoid stale File objects and reflect version images
+  frontImageFile.value = null
+  backImageFile.value = null
+  frontImagePreview.value = version.front_image || null
+  backImagePreview.value = version.back_image || null
 }
 
 const formatDate = (dateString) => {
@@ -555,6 +571,10 @@ const formatDate = (dateString) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+const versionRowClass = (row) => {
+  return row.is_live ? 'current-version-row' : ''
 }
 
 // Lifecycle
@@ -624,5 +644,9 @@ watch(() => route.params.id, (newId, oldId) => {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 300px;
+}
+
+.current-version-row {
+  background: rgba(34, 197, 94, 0.08);
 }
 </style>

@@ -1,13 +1,13 @@
 <template>
   <q-layout view="hHh lpR fFf">
-    <q-header elevated class="psychedelic-header">
+    <q-header elevated class="natural-header">
       <q-toolbar>
-        <q-toolbar-title class="psychedelic-title">
+        <q-toolbar-title class="natural-title">
           <router-link to="/" class="no-underline">
             <div class="row items-center no-wrap">
-              <q-icon name="self_improvement" size="md" class="q-mr-sm glow-icon" />
-              <div class="text-h4 neon-glow" style="font-family: 'Cinzel Decorative', serif; font-weight: 900;">
-                YOGA FLASHCARDS
+              <q-icon name="self_improvement" size="md" class="q-mr-sm" color="primary" />
+              <div class="text-h5" style="font-family: 'Playfair Display', serif; font-weight: 600; color: #3D3D3D;">
+                Yoga Flashcards
               </div>
             </div>
           </router-link>
@@ -19,17 +19,17 @@
         <div v-if="!authStore.isAuthenticated" class="row q-gutter-md items-center">
           <q-btn
             flat
-            label="SIGN UP"
+            label="Sign Up"
             @click="$router.push('/signup')"
             class="yoga-btn-secondary auth-btn"
-            style="font-weight: 700; letter-spacing: 1.5px; padding: 8px 24px;"
+            style="font-weight: 500; letter-spacing: 0.3px; padding: 8px 24px;"
           />
           <q-btn
             unelevated
-            label="LOGIN"
+            label="Login"
             @click="$router.push('/login')"
             class="yoga-btn-primary auth-btn"
-            style="font-weight: 700; letter-spacing: 1.5px; padding: 8px 24px;"
+            style="font-weight: 500; letter-spacing: 0.3px; padding: 8px 24px;"
           />
         </div>
 
@@ -39,25 +39,24 @@
           flat
           :label="authStore.user?.email || 'User'"
           icon="account_circle"
-          class="glow-icon"
           size="lg"
-          style="font-weight: 700; letter-spacing: 1px;"
+          style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;"
         >
-          <q-list style="min-width: 200px; background: linear-gradient(135deg, rgba(26, 11, 46, 0.98) 0%, rgba(74, 20, 140, 0.95) 100%); color: white;">
+          <q-list class="natural-user-menu">
             <q-item clickable v-close-popup @click="$router.push('/profile')">
               <q-item-section avatar>
-                <q-icon name="person" />
+                <q-icon name="person" color="primary" />
               </q-item-section>
               <q-item-section>
-                <q-item-label style="font-weight: 600;">PROFILE</q-item-label>
+                <q-item-label style="font-weight: 500;">Profile</q-item-label>
               </q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="$router.push('/favorites')">
               <q-item-section avatar>
-                <q-icon name="favorite" />
+                <q-icon name="favorite" color="primary" />
               </q-item-section>
               <q-item-section>
-                <q-item-label style="font-weight: 600;">FAVORITES</q-item-label>
+                <q-item-label style="font-weight: 500;">Favorites</q-item-label>
               </q-item-section>
             </q-item>
             <q-item
@@ -67,19 +66,19 @@
               @click="$router.push('/admin')"
             >
               <q-item-section avatar>
-                <q-icon name="flare" />
+                <q-icon name="dashboard" color="primary" />
               </q-item-section>
               <q-item-section>
-                <q-item-label style="font-weight: 600;">ADMIN</q-item-label>
+                <q-item-label style="font-weight: 500;">Admin</q-item-label>
               </q-item-section>
             </q-item>
-            <q-separator style="background: rgba(255, 107, 53, 0.3);" />
+            <q-separator style="background: rgba(139, 115, 85, 0.2);" />
             <q-item clickable v-close-popup @click="handleLogout">
               <q-item-section avatar>
-                <q-icon name="logout" />
+                <q-icon name="logout" color="primary" />
               </q-item-section>
               <q-item-section>
-                <q-item-label style="font-weight: 600;">LOGOUT</q-item-label>
+                <q-item-label style="font-weight: 500;">Logout</q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
@@ -91,7 +90,7 @@
       <router-view />
     </q-page-container>
 
-    <q-footer elevated class="psychedelic-footer">
+    <q-footer elevated class="natural-footer">
       <q-toolbar>
         <q-toolbar-title class="text-center">
           <div class="text-body2">
@@ -133,48 +132,48 @@ onMounted(() => {
   color: inherit;
 }
 
-.psychedelic-header {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  );
-  backdrop-filter: blur(20px);
-  border-bottom: 2px solid rgba(255, 107, 53, 0.5);
-  box-shadow:
-    0 4px 30px rgba(255, 107, 53, 0.4),
-    0 0 60px rgba(155, 77, 202, 0.3);
+.natural-header {
+  background: #FFFFFF;
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(139, 115, 85, 0.15);
+  box-shadow: 0 2px 8px rgba(61, 61, 61, 0.06);
 }
 
-.psychedelic-title {
-  font-weight: 900;
-  letter-spacing: 3px;
-}
-
-.glow-icon {
-  filter: drop-shadow(0 0 8px currentColor);
-  transition: all 0.3s ease;
-
-  &:hover {
-    filter: drop-shadow(0 0 15px currentColor) drop-shadow(0 0 25px currentColor);
-    transform: scale(1.2);
-  }
+.natural-title {
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .auth-btn {
-  border-radius: 16px;
-  transition: all 0.3s ease;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 
   &:hover {
-    transform: scale(1.1);
+    transform: translateY(-2px);
   }
 }
 
-.psychedelic-footer {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  );
-  border-top: 2px solid rgba(255, 107, 53, 0.5);
-  color: rgba(255, 255, 255, 0.9);
+.natural-user-menu {
+  min-width: 200px;
+  background: #FFFFFF;
+  color: #3D3D3D;
+  border: 1px solid rgba(139, 115, 85, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(61, 61, 61, 0.12);
+
+  .q-item {
+    color: #3D3D3D;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(139, 115, 85, 0.08);
+    }
+  }
+}
+
+.natural-footer {
+  background: #FFFFFF;
+  border-top: 1px solid rgba(139, 115, 85, 0.15);
+  color: #3D3D3D;
 }
 </style>

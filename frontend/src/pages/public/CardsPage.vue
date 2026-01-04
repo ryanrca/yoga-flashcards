@@ -70,7 +70,7 @@
         </q-banner>
 
         <!-- Cards Grid -->
-        <div v-else class="row q-gutter-md">
+        <div v-else class="row q-gutter-md justify-center">
           <div
             v-for="card in cards"
             :key="card.id"
@@ -169,13 +169,28 @@
         </q-card-section>
 
         <q-card-section v-if="selectedCard" class="q-pt-none">
-          <div v-if="selectedCard.front_image" class="text-center q-mb-md">
-            <q-img
-              :src="selectedCard.front_image"
-              class="dialog-image"
-              fit="contain"
-            />
-          </div>
+            <div v-if="selectedCard" class="hero-container" v-ripple>
+              <q-img
+                v-if="selectedCard.front_image"
+                :src="selectedCard.front_image"
+                class="hero-image"
+                :ratio="16/9"
+                fit="cover"
+              >
+                <div class="absolute-bottom hero-overlay">
+                  <div class="text-h5 text-white text-weight-bold">{{ selectedCard.title }}</div>
+                  <div v-if="selectedCard.phrase" class="text-subtitle2 text-white text-italic">
+                    {{ selectedCard.phrase }}
+                  </div>
+                </div>
+              </q-img>
+              <div v-else class="hero-placeholder">
+                <div class="text-h5 text-primary">{{ selectedCard.title }}</div>
+                <div v-if="selectedCard.phrase" class="text-subtitle2 text-italic text-grey-7">
+                  {{ selectedCard.phrase }}
+                </div>
+              </div>
+            </div>
 
           <div class="text-body1 definition-text">{{ selectedCard.definition }}</div>
 
@@ -419,6 +434,26 @@ onMounted(() => {
   max-width: 700px;
   width: 90vw;
   overflow: hidden;
+}
+
+.hero-container {
+  overflow: hidden;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.hero-image {
+  width: 100%;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.hero-overlay {
+  background: linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 60%, transparent 100%);
+  padding: 16px;
+}
+
+.hero-placeholder {
+  padding: 24px;
 }
 
 .dialog-image {
