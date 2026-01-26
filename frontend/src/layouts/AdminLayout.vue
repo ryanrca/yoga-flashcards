@@ -29,26 +29,25 @@
             flat
             :label="authStore.user?.email || 'User'"
             icon="account_circle"
-            class="glow-icon"
             size="lg"
-            style="font-weight: 700; letter-spacing: 1px;"
+            style="font-weight: 500; letter-spacing: 0.3px;"
           >
             <q-list class="user-dropdown-menu">
               <q-item clickable v-close-popup @click="$router.push('/profile')">
                 <q-item-section avatar>
-                  <q-icon name="person" />
+                  <q-icon name="person" color="primary" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label style="font-weight: 600;">PROFILE</q-item-label>
+                  <q-item-label style="font-weight: 500;">Profile</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-separator style="background: rgba(255, 107, 53, 0.3);" />
+              <q-separator style="background: rgba(139, 115, 85, 0.2);" />
               <q-item clickable v-close-popup @click="handleLogout">
                 <q-item-section avatar>
-                  <q-icon name="logout" />
+                  <q-icon name="logout" color="primary" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label style="font-weight: 600;">LOGOUT</q-item-label>
+                  <q-item-label style="font-weight: 500;">Logout</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -65,43 +64,43 @@
     >
       <q-list padding>
         <div class="q-pa-md text-center">
-          <q-icon name="flare" size="xl" class="glow-icon" color="primary" />
-          <div class="text-h5 q-mt-md neon-glow" style="font-family: 'Cinzel Decorative', serif; font-weight: 900;">
-            ADMIN
+          <q-icon name="self_improvement" size="xl" color="primary" />
+          <div class="text-h5 q-mt-md" style="font-family: 'Playfair Display', serif; font-weight: 600; color: #3D3D3D;">
+            Admin
           </div>
-          <div class="text-subtitle2" style="color: rgba(255,255,255,0.8); letter-spacing: 2px;">
-            COSMIC CONTROL
+          <div class="text-subtitle2" style="color: #8B7355; letter-spacing: 1px; font-weight: 500;">
+            Content Management
           </div>
           <div class="yoga-divider q-my-md"></div>
         </div>
 
         <q-item clickable @click="$router.push('/admin')" class="nav-item">
           <q-item-section avatar>
-            <q-icon name="dashboard" size="md" />
+            <q-icon name="dashboard" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 700; letter-spacing: 1px;">DASHBOARD</q-item-label>
-            <q-item-label caption style="color: rgba(255,255,255,0.7);">Overview</q-item-label>
+            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Dashboard</q-item-label>
+            <q-item-label caption style="color: #6B6B6B;">Overview</q-item-label>
           </q-item-section>
         </q-item>
 
         <q-item clickable @click="$router.push('/admin/cards')" class="nav-item">
           <q-item-section avatar>
-            <q-icon name="auto_stories" size="md" />
+            <q-icon name="auto_stories" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 700; letter-spacing: 1px;">CARDS</q-item-label>
-            <q-item-label caption style="color: rgba(255,255,255,0.7);">Manage content</q-item-label>
+            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Cards</q-item-label>
+            <q-item-label caption style="color: #6B6B6B;">Manage content</q-item-label>
           </q-item-section>
         </q-item>
 
         <q-item clickable @click="$router.push('/admin/tags')" class="nav-item">
           <q-item-section avatar>
-            <q-icon name="local_offer" size="md" />
+            <q-icon name="local_offer" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 700; letter-spacing: 1px;">TAGS</q-item-label>
-            <q-item-label caption style="color: rgba(255,255,255,0.7);">Organize cards</q-item-label>
+            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Tags</q-item-label>
+            <q-item-label caption style="color: #6B6B6B;">Organize cards</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -112,11 +111,11 @@
           class="nav-item"
         >
           <q-item-section avatar>
-            <q-icon name="people" size="md" />
+            <q-icon name="people" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 700; letter-spacing: 1px;">USERS</q-item-label>
-            <q-item-label caption style="color: rgba(255,255,255,0.7);">Manage access</q-item-label>
+            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Users</q-item-label>
+            <q-item-label caption style="color: #6B6B6B;">Manage access</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -127,8 +126,8 @@
             <q-icon name="add_circle" size="md" color="positive" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 700; letter-spacing: 1px;">NEW CARD</q-item-label>
-            <q-item-label caption style="color: rgba(255,255,255,0.7);">Create content</q-item-label>
+            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">New Card</q-item-label>
+            <q-item-label caption style="color: #6B6B6B;">Create content</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -136,11 +135,11 @@
 
         <q-item clickable @click="$router.push('/')" class="nav-item">
           <q-item-section avatar>
-            <q-icon name="public" size="md" />
+            <q-icon name="public" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 700; letter-spacing: 1px;">PUBLIC SITE</q-item-label>
-            <q-item-label caption style="color: rgba(255,255,255,0.7);">View frontend</q-item-label>
+            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Public Site</q-item-label>
+            <q-item-label caption style="color: #6B6B6B;">View frontend</q-item-label>
           </q-item-section>
         </q-item>
       </q-list>
@@ -195,75 +194,44 @@ const handleLogout = async () => {
 }
 
 .admin-drawer {
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255, 107, 53, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 70% 70%, rgba(155, 77, 202, 0.15) 0%, transparent 50%),
-    linear-gradient(180deg, rgba(26, 11, 46, 0.98) 0%, rgba(74, 20, 140, 0.95) 100%);
-  border-right: 2px solid rgba(255, 107, 53, 0.4);
-  color: white;
-}
-
-.glow-icon {
-  filter: drop-shadow(0 0 8px currentColor);
-  transition: all 0.3s ease;
-
-  &:hover {
-    filter: drop-shadow(0 0 15px currentColor) drop-shadow(0 0 25px currentColor);
-    transform: scale(1.2);
-  }
+  background: #FFFFFF;
+  border-right: 1px solid rgba(139, 115, 85, 0.12);
+  color: #3D3D3D;
 }
 
 .nav-item {
-  border-radius: 16px;
-  margin: 6px 12px;
-  transition: all 0.3s ease;
-  color: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  margin: 4px 8px;
+  transition: all 0.2s ease;
+  color: #3D3D3D;
 
   &:hover {
-    background: linear-gradient(90deg,
-      rgba(255, 107, 53, 0.2) 0%,
-      rgba(155, 77, 202, 0.2) 100%
-    );
-    transform: translateX(8px);
-    box-shadow:
-      0 0 20px rgba(255, 107, 53, 0.3),
-      inset 0 0 20px rgba(255, 107, 53, 0.1);
-  }
-
-  .q-icon {
-    filter: drop-shadow(0 0 5px currentColor);
+    background: rgba(139, 115, 85, 0.08);
+    transform: translateX(4px);
   }
 }
 
 .user-dropdown-menu {
   min-width: 200px;
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  );
-  color: white;
-  border: 1px solid rgba(255, 107, 53, 0.3);
-  border-radius: 8px;
+  background: #FFFFFF;
+  color: #3D3D3D;
+  border: 1px solid rgba(139, 115, 85, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(61, 61, 61, 0.12);
 
   .q-item {
-    color: rgba(255, 255, 255, 0.9);
-    transition: all 0.3s ease;
+    color: #3D3D3D;
+    transition: all 0.2s ease;
 
     &:hover {
-      background: linear-gradient(90deg,
-        rgba(255, 107, 53, 0.2) 0%,
-        rgba(155, 77, 202, 0.2) 100%
-      );
+      background: rgba(139, 115, 85, 0.08);
     }
   }
 }
 
 .admin-footer {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  );
-  border-top: 2px solid rgba(255, 107, 53, 0.5);
-  color: rgba(255, 255, 255, 0.9);
+  background: #FFFFFF;
+  border-top: 1px solid rgba(139, 115, 85, 0.15);
+  color: #3D3D3D;
 }
 </style>

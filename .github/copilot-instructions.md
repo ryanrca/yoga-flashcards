@@ -1,202 +1,151 @@
-# Copilot Instructions for Yoga Flashcard Admin App
+# AI Assistant Instructions - Yoga Flashcard Admin App
 
-## Development Environment
+This document provides instructions for AI coding assistants (GitHub Copilot, Claude Code, etc.) working on the Yoga Flashcards application.
 
-**[CRITICAL] Always Use WSL Ubuntu Shell for Terminal Commands**
-- **NEVER use Windows PowerShell** for this project
-- **ALWAYS use WSL Ubuntu shell** when running terminal commands
-- This project runs in WSL Ubuntu, so all Docker, npm, and bash commands must be executed there
-- When using `run_in_terminal`, ensure commands are appropriate for bash/Ubuntu, not PowerShell
+## Documentation Reference
 
-**[OK] Correct terminal usage:**
-```bash
-# Use bash commands in WSL Ubuntu
-cd ~/repos/yoga-flashcards
-docker compose restart backend
-./start-dev.sh
-```
-
-**[X] Wrong terminal usage:**
-```powershell
-# DON'T use PowerShell commands
-cd \\wsl.localhost\Ubuntu\home\ryan\repos\yoga-flashcards
-docker-compose restart backend
-```
+For comprehensive information, see:
+- `CLAUDE.md` - Main AI assistant instructions (root directory)
+- `backend/CLAUDE.md` - Backend-specific instructions
+- `frontend/CLAUDE.md` - Frontend-specific instructions
+- `docs/FUNCTIONAL_SPEC.md` - Complete functional specification
+- `docs/API_REFERENCE.md` - API endpoint documentation
 
 ---
 
-## Overall Stack Guidelines
+## Development Environment
 
-- **Backend:** Python 3.x, Django, Django REST Framework (DRF), MySQL
-- **Frontend:*## Hints to Avoid Past Gotchas
+### CRITICAL: Always Use WSL Ubuntu Shell
 
-### Docker & Node.js Issues - LESSONS LEARNED
+- **NEVER use Windows PowerShell** for this project
+- **ALWAYS use WSL Ubuntu shell** for all terminal commands
+- All Docker, npm, and bash commands must execute in WSL
 
-**[X] Common Quasar/Node.js Pitfalls:**
-- Using Node.js 18/20 with latest Quasar (causes webpack inject.style-rules.js errors)
-- Manually creating Quasar projects instead of using official CLI
-- Copying package.json before source code in Dockerfile
-- Using old Quasar CLI versions or webpack instead of Vite
-- Not using `--host 0.0.0.0` for Docker container access
-
-**[OK] Solutions that Work:**
-- **Always use Node.js 24 LTS** (24.4.1+)
-- **Always use `npm create quasar`** for new projects
-- **Copy source code before `npm install`** in Dockerfile
-- **Use latest Quasar with Vite** (not webpack)
-- **Test locally first** with `npm run dev` before Docker
-
-**[FIX] If Quasar Build Fails:**
 ```bash
-# Clean slate approach (always works):
-rm -rf frontend
-npm create quasar
-# Follow interactive prompts
-cd frontend
-npm install pinia axios
-npm run dev  # Test locally first
+# Correct
+cd ~/repos/yoga-flashcards
+docker compose up --build
+
+# Wrong (PowerShell)
+cd \\wsl.localhost\Ubuntu\home\ryan\repos\yoga-flashcards
 ```
 
-**[NOTE] Terminal Directory Issues:**
-- Always use explicit paths: `cd ~/repos/yoga-flashcards/frontend && npm run dev`
-- NPM often runs from wrong directory, causing "package.json not found"
+### Quick Start
 
-### Database & Backend Issues
+```bash
+# Start development environment
+docker-compose up --build
 
-- **CSRF/CORS**:
-  - Add `localhost:9000` in settings.
-  - Use dev middleware to disable CSRF for `/api/` paths.
-- **Auth endpoints**:
-  - Implement login/logout/auth-status early.
-  - Ensure session cookies are sent with Axios requests.
-- **ESLint Errors**:
-  - Create minimal `.eslintrc.js` if needed.
-  - Don't forget Quasar config lint options.
-- **Django Logging**:
-  - Console handler only in container.
-- **Container Startup**:
-  - Add wait-for-db logic in scripts (30s for MySQL).
-  - Health check DB before running migrations.
-- **Static/Index.html**:
-  - Ensure `src/index.template.html` and root `index.html` exist in Quasar.
-- **Volumes**:
-  - Mount static/media folders in Docker.ework, Pinia, SASS
-- **Infra:** Docker compose (dev), Kubernetes (staging and prod via Helm)
-- **Auth:** Django session-based login with user roles
+# Or use the start script
+./start-dev.sh
+```
+
+**URLs:**
+- Frontend: http://localhost:9000
+- Backend API: http://localhost:8000
+- Django Admin: http://localhost:8000/admin
+
+**Test Accounts:**
+| Email | Password | Role |
+|-------|----------|------|
+| admin@example.com | admin123 | Admin |
+| curator1@example.com | curator1 | Curator |
+| user1@example.com | user1 | User |
+
+---
+
+## Technology Stack
+
+| Layer | Technology |
+|-------|------------|
+| Backend | Django 4.2 + Django REST Framework |
+| Frontend | Vue 3 + Quasar 2.16 + Pinia |
+| Database | MySQL 8.0 |
+| Dev Environment | Docker Compose |
+| Production | Kubernetes + Helm |
 
 ---
 
 ## Django Backend Best Practices
 
-- Use **thin views, fat models**; move logic to `services.py`.
-- Always use Django **migrations** (keep in VCS).
-- REST API with DRF **ModelViewSets** when practical.
-- Use **serializers** for validation, never raw request data.
-- Log to **STDOUT/STDERR** only in Docker; do not usea file handlers for logging.
-- Settings via **django-environ** or env vars for 12-factor compliance.
-- CSRF/CORS:
-  - Include localhost ports in `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS`.
-  - Add middleware to disable CSRF for `/api/` routes in dev.
-- Define explicit **auth** endpoints:
-  - `/api/users/login/`, `/logout/`, `/auth-status/`.
-- Tests:
-  - Use `pytest` or Django `unittest`.
-  - Include CRUD, permissions, versioning, regressions.
-  - Use factories (e.g. `factory_boy`) for mock data.
-- Organize:
-  - Apps by domain.
-  - Separate `serializers.py`, `views.py`, `services.py`, `urls.py`, `tests.py`.
+### Architecture
+- Use **thin views, fat models** - move logic to `services.py`
+- Always use Django **migrations** (keep in VCS)
+- REST API with DRF **ModelViewSets** when practical
+- Use **serializers** for validation, never raw request data
+- Log to **STDOUT/STDERR** only in Docker
+
+### Key Patterns
+
+```python
+# Permission classes
+class IsCuratorOrAdmin(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.is_curator()
+
+# Versioning in serializer.update()
+def update(self, instance, validated_data):
+    return instance.create_new_version(**validated_data)
+
+# Daily card service
+card = DailyCardService.get_daily_card()
+```
+
+### Organization
+- Apps by domain: flashcards, users, core
+- Separate `serializers.py`, `views.py`, `services.py`, `urls.py`
+- Tests with pytest and Factory Boy
 
 ---
 
 ## Vue 3 + Quasar Frontend Best Practices
 
-- Scaffold with Quasar CLI; install **Pinia** early.
-- Use **SFCs** (Single File Components); break into logical, resuable, compseable, components.
-- Routing: Vue Router with auth-guard for all routes except login.
-- State: Pinia for reactive global state.
-- API:
-  - Central Axios wrapper with base URL from env.
-  - Handle errors, CSRF, retries.
-- Form handling:
-  - Use `v-model`.
-  - Include validation (Vuelidate or custom).
-- Styling:
-  - Scoped SASS/Quasar utilities.
-  - Variables in `/src/styles/variables.scss`.
-  - Effort to centralize all styles in a single file or directory.  Minimize component styling unless necessary for composability.
-- **ESLint**:
-  - Add `.eslintrc.js` at project start to avoid config errors.
-  - Can disable linting in `quasar.config.js` if needed.
+### Architecture
+- Scaffold with Quasar CLI; use **Pinia** for state
+- Use **SFCs** (Single File Components) with Composition API
+- Vue Router with auth guards for protected routes
+- Central Axios wrapper with base URL from env
+
+### Key Patterns
+
+```javascript
+// Store pattern (Pinia)
+export const useFlashcardsStore = defineStore('flashcards', () => {
+  const cards = ref([])
+  const loading = ref(false)
+
+  async function fetchCards(params) {
+    loading.value = true
+    const response = await api.get('/cards/', { params })
+    cards.value = response.data.results
+    loading.value = false
+  }
+
+  return { cards, loading, fetchCards }
+})
+
+// Route guard
+meta: { requiresCurator: true }
+```
+
+### ESLint
+- Add `.eslintrc.js` at project start
+- Can disable linting in `quasar.config.js` if needed
 
 ---
 
-## Docker / Dev Environment
+## Docker Configuration
 
-### Working Setup (Verified Working)
+### Working Setup
 
-- **Node.js**: Use **Node.js 24 LTS** (latest stable) in containers
-- **Quasar**: Always use **official Quasar quick start**: `npm create quasar`
+- **Node.js**: Use Node.js 24 LTS in containers
+- **Quasar**: Always use official Quasar quick start: `npm create quasar`
 - **Docker**: Use `node:24-alpine` base image for frontend
-- Use **docker-compose** for local dev.
-- Mount source for hot reload:
-  - Django: `runserver` with autoreload.
-  - Quasar: `quasar dev --host 0.0.0.0`.
-- Install MySQL client dependencies in container.
-- Include initial DB seed script:
-  - Superuser creation.
-  - ~5 example cards with minimal fields.
-
-### Quasar Setup - CRITICAL INSTRUCTIONS
-
-**[X] NEVER manually create Quasar projects or try to fix version conflicts**
-
-**[OK] ALWAYS use official Quasar CLI:**
-
-```bash
-# Remove any existing frontend directory first
-rm -rf frontend
-
-# Use official Quasar quick start (always works)
-npm create quasar
-
-# Choose these options:
-# - App with Quasar CLI, let's go!
-# - Project folder: yoga-flashcards (or desired name)
-# - Javascript (not TypeScript for this project)
-# - Quasar App CLI with Vite (recommended)
-# - Composition API with <script setup> (recommended)
-# - Sass with SCSS syntax
-# - Features: Linting (vite-plugin-checker + ESLint)
-# - Add Prettier: Yes
-# - Install dependencies: Yes, use npm
-
-# Then install additional dependencies:
-cd frontend
-npm install pinia axios
-```
-
-**[OK] This gives you the latest tested versions:**
-- Quasar v2.18.2+
-- @quasar/app-vite v2.3.0+
-- Vue 3.4.18+
-- Node.js 24+ support
-- Vite (fast, modern build tool)
 
 ### Frontend Dockerfile - CRITICAL
 
-**[X] Wrong order causes build failures:**
-```dockerfile
-# DON'T copy package.json first, then source later
-COPY package*.json ./
-RUN npm install  # FAILS: quasar prepare needs source code
-COPY . .
-```
-
-**[OK] Correct Dockerfile for Quasar:**
 ```dockerfile
 FROM node:24-alpine
-
 WORKDIR /app
 
 # Copy package files AND source code first
@@ -210,9 +159,15 @@ EXPOSE 9000
 CMD ["npm", "run", "dev"]
 ```
 
-### Docker Compose Configuration
+**WRONG order (will fail):**
+```dockerfile
+COPY package*.json ./
+RUN npm install  # FAILS: quasar prepare needs source
+COPY . .
+```
 
-**[OK] Working frontend service:**
+### Docker Compose
+
 ```yaml
 frontend:
   build: ./frontend
@@ -223,84 +178,64 @@ frontend:
   volumes:
     - ./frontend:/app
     - /app/node_modules
-  depends_on:
-    - backend
   command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 ```
 
 ---
 
-## Kubernetes / Helm Notes
+## Common Issues and Solutions
 
-- Define Helm charts:
-  - Backend Deployment/Service.
-  - Frontend Deployment/Service.
-  - Ingress, ConfigMaps, Secrets.
-- Ensure Django supports readiness probes (e.g. `/health/` endpoint).
-- Production server: Gunicorn behind NGINX.
+### Quasar/Node.js Issues
+**Problem**: Webpack inject.style-rules.js errors
+**Solution**: Use Node.js 24 and recreate with official CLI:
+```bash
+rm -rf frontend
+npm create quasar
+cd frontend
+npm install pinia axios
+```
 
----
+### CSRF/CORS Issues
+Ensure settings include:
+```python
+CORS_ALLOWED_ORIGINS = ["http://localhost:9000"]
+CORS_ALLOW_CREDENTIALS = True
+```
 
-## Hints to Avoid Past Gotchas
+### Database Connection
+Backend waits for MySQL in `start.sh` (up to 60 seconds).
 
-- **CSRF/CORS**:
-  - Add `localhost:9000` in settings.
-  - Use dev middleware to disable CSRF on `/api/` paths.
-- **Auth endpoints**:
-  - Implement login/logout/auth-status early.
-  - Ensure session cookies are sent with Axios requests.
-- **ESLint Errors**:
-  - Create minimal `.eslintrc.js` if needed.
-  - Don’t forget Quasar config lint options.
-- **Django Logging**:
-  - Console handler only in container.
-- **Container Startup**:
-  - Add wait-for-db logic in scripts (30s for MySQL).
-  - Health check DB before running migrations.
-- **Static/Index.html**:
-  - Ensure `src/index.template.html` and root `index.html` exist in Quasar.
-- **Volumes**:
-  - Mount static/media folders in Docker.
-  - Map DB data if using local volume.
-
----
-
-## Copilot Interaction Tips
-
-- Comment your intent before starting generation.
-- Isolate DRF serializers, models, or Vue components for focused prompts.
-- Review queries for Django ORM correctness.
-- Prefer small, incremental generations over giant multi-file dumps.
+### NPM Directory Issues
+Always use explicit paths:
+```bash
+cd ~/repos/yoga-flashcards/frontend && npm run dev
+```
 
 ---
 
 ## Style Conventions
 
-**Python/Django**
-- 4 spaces
-- `snake_case` variables and files
-- `CamelCase` classes
-- `UPPER_CASE` constants
+### Python/Django
+- 4 spaces indentation
+- `snake_case` for variables, functions, files
+- `CamelCase` for classes
+- `UPPER_CASE` for constants
 
-**Vue/JS**
-- `camelCase` variables/methods
-- `PascalCase` component names
-- `kebab-case` filenames
-- 2-space indentation
-- Scoped SASS in SFCs
-- **NO EMOJI or non-ASCII characters** in any code, comments, or documentation files
+### Vue/JavaScript
+- 2 spaces indentation
+- `camelCase` for variables/methods
+- `PascalCase` for component names
+- `kebab-case` for filenames
+- Scoped SCSS in SFCs
 
----
-
-## Additional Reminders
-
-- Don’t include frontend testing frameworks. **Django unit tests only**.
-- Emit frontend build to `/dist` for static serving.
-- Always configure environment variables for dev vs staging vs prod.
+### General
+- **NO emojis** in code, comments, or documentation
+- Keep code DRY but don't over-abstract
+- Prefer explicit over implicit
 
 ---
 
-## Example CSRF/CORS Config Snippet
+## CSRF/CORS Config Snippet
 
 ```python
 CORS_ALLOWED_ORIGINS = [
@@ -315,7 +250,7 @@ CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 
-# Dev-only middleware
+# Dev-only middleware to disable CSRF for API
 class DisableCSRFMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -323,5 +258,24 @@ class DisableCSRFMiddleware:
         if request.path.startswith('/api/'):
             setattr(request, '_dont_enforce_csrf_checks', True)
         return self.get_response(request)
-
 ```
+
+---
+
+## AI Interaction Tips
+
+- Comment your intent before starting generation
+- Isolate DRF serializers, models, or Vue components for focused prompts
+- Review queries for Django ORM correctness
+- Prefer small, incremental generations over giant multi-file dumps
+- Reference the documentation files for detailed specifications
+
+---
+
+## Additional Reminders
+
+- Don't include frontend testing frameworks. **Django unit tests only**.
+- Emit frontend build to `/dist` for static serving
+- Always configure environment variables for dev vs staging vs prod
+- Session-based auth (not JWT)
+- Versioning: every edit creates a new version, old versions preserved
