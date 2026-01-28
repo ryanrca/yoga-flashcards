@@ -165,6 +165,187 @@ class Command(BaseCommand):
             back_image=card_data.get('back_image') or None,
             created_by=admin_user,
             is_active=card_data.get('is_active', True),
+
+        created_tags = {}
+        for tag_info in tag_data:
+            tag, created = Tag.objects.get_or_create(
+                name=tag_info['name'],
+                defaults={'description': tag_info['description']}
+            )
+            created_tags[tag_info['name']] = tag
+            if created:
+                self.stdout.write(f'Created tag: {tag.name}')
+
+        # Initial flashcard data
+        flashcard_data = [
+            # The 8 Limbs of Yoga
+            {
+                'title': 'Yamas',
+                'phrase': 'यम',
+                'short_answer': 'Ethical restraints on "how we relate to others".',
+                'definition': 'Yamas are the social disciplines or restraints that guide our interactions with the world around us with specific practices: (Ahimsa, Satya, Asteya, Brahmacarya, and Aparigraha) that help us act with awareness rather than reacting out of habit or vice. Sometimes called the "Do nots".',
+                'tags': ['8 Limbs']
+                # ready
+            },
+            {
+                'title': 'Niyamas',
+                'phrase': 'नियम',
+                'short_answer': 'Personal observances or "how we relate to ourselves".',
+                'definition': 'These are internal practices meant to improve our own character and being. They consist of Sauca, Samtosa, Tapas, Svadhaya, and Isharapranidhana. These habits, behaviors, and observances outline guidance for healthy living, spiritual enlightenment, and existence with liberation and ease. These are the "To Do\'s".',
+                'tags': ['8 Limbs']
+                # ready
+            },
+            {
+                'title': 'Asana',
+                'phrase': 'आसन',
+                'short_answer': 'Physical postures; literally meaning "to sit" or "being seated".',
+                'definition': 'Originally referring to sitting with a master to receive knowledge, it has evolved into the physical practice of postures. The goal is to find a balance between Sthira (steadiness/effort) and Sukha (comfort/ease) so the body is alert but unstressed.',
+                'tags': ['8 Limbs']
+            },
+            {
+                'title': 'Pranayama',
+                'phrase': 'प्राणायाम',
+                'short_answer': 'Breath control and the regulation of life force.',
+                'definition': 'This practice involves joining the breath with movement to integrate the body and mind. It includes techniques like Ujjayi (calming) or Kapalabhati (energizing) to help the mind become slower, deeper, and more focused.',
+                'tags': ['8 Limbs']
+            },
+            {
+                'title': 'Pratyahara',
+                'phrase': 'प्रत्याहार',
+                'short_answer': 'Withdrawal of the senses; not chasing the "shiny object".',
+                'definition': 'It is the practice of filtering out external distractions to focus inward. For example, when a siren goes off during savasana, you use Pratyahara to stay present in your practice rather than following the noise.',
+                'tags': ['8 Limbs']
+            },
+            {
+                'title': 'Dharana',
+                'phrase': 'धारणा',
+                'short_answer': 'Concentration; holding the mind in one direction.',
+                'definition': 'We create the conditions to focus the mind\'s attention on a single object, like the breath, a candle, or a mandala. This prevents the "monkey mind" from jumping in many different directions.',
+                'tags': ['8 Limbs']
+            },
+            {
+                'title': 'Dhyana',
+                'phrase': 'ध्यान',
+                'short_answer': 'Meditation; a continuous flow of concentration.',
+                'definition': 'In this state, the mind moves in one direction like a quiet river. You perceive an object and focus only on it, forming a deep communication where nothing else is happening.',
+                'tags': ['8 Limbs']
+            },
+            {
+                'title': 'Samadhi',
+                'phrase': 'समाधि',
+                'short_answer': 'Union; becoming one with the object of meditation.',
+                'definition': 'This is the experience of realizing non-dualistic existence, seeing things clearly without the Maya (illusion). It is pure flow where you are no longer a separate physical creature but are united with the divine or the fabric of the universe.',
+                'tags': ['8 Limbs']
+            },
+
+            # The 5 Yamas
+            {
+                'title': 'Ahimsa',
+                'phrase': 'अहिंसा',
+                'short_answer': 'Non-violence; do no harm.',
+                'definition': 'This is the practice of justice and non-violence toward all beings. In yoga class, it means finding a balance with Satya—for example, not pushing yourself or a student so hard that it causes injury, but also not avoiding the truth of where growth is needed.',
+                'tags': ['Yamas']
+            },
+            {
+                'title': 'Satya',
+                'phrase': 'सत्य',
+                'short_answer': 'Truthfulness.',
+                'definition': 'This involves being honest with ourselves and others. As a teacher, it means providing "radical candor" or a "+1 nudge" to help students see their flaws and grow, provided the feedback comes from a sincere, caring place.',
+                'tags': ['Yamas']
+            },
+            {
+                'title': 'Asteya',
+                'phrase': 'अस्तेय',
+                'short_answer': 'Non-stealing.',
+                'definition': 'Beyond just not taking physical objects, it involves not stealing others\' time or energy. It is a reminder to avoid vices and distractions, focusing instead on what we have earned.',
+                'tags': ['Yamas']
+            },
+            {
+                'title': 'Brahmacarya',
+                'phrase': 'ब्रह्मचर्य',
+                'short_answer': 'Responsible behavior; moderation of the senses.',
+                'definition': 'Often interpreted as respect for family life and not overdoing sexual pleasure, it is a subtle call to move toward the truth through responsible, disciplined behavior.',
+                'tags': ['Yamas']
+            },
+            {
+                'title': 'Aparigraha',
+                'phrase': 'अपरिग्रह',
+                'short_answer': 'Non-greed or non-attachment; only taking what is necessary.',
+                'definition': 'This means not taking advantage of a situation and only taking what you have earned. It is the practice of non-coveting, which helps us stay away from addiction and ego-centrism.',
+                'tags': ['Yamas']
+            },
+
+            # The 5 Niyamas
+            {
+                'title': 'Sauca',
+                'phrase': 'शौच',
+                'short_answer': 'Purity, cleanliness, and clarity of body and mind.',
+                'definition': 'Purity of mind, speach and body. Keeping physical cleanliness through asanas, pranayama, and proper eating, and maintaining cleanliness in our physical environment. Purity of speech comes from being truthful and using words that are not hurtful, or distressing to others or self. Purity of thoughts through reflection, meditation, and calmness. It is about getting rid of "rubbish" in the mind and body through healthy habits.',
+                'tags': ['Niyamas']
+                # Ready
+            },
+            {
+                'title': 'Santosha',
+                'phrase': 'संतोष',
+                'short_answer': 'Contentment; being okay with what is.',
+                'definition': 'To be content with what we already have and to accept outcomes even when they don\'t meet our expectations. It is the appreciation of our current situtation rather than focusing on how we wish it to be.',
+                'tags': ['Niyamas']
+                # Ready
+            },
+            {
+                'title': 'Tapas',
+                'phrase': 'तपस्',
+                'short_answer': 'The passion, motivation and discipline that drives spiritual or physical pratice.',
+                'definition': 'The activity of "heating" the body through asana and pranayama to cleanse it. Includes, the discipline and actions toward spiritual rituals and healthy habits, to sustain a healthy lifestyle and burn away impurities physically and spiritually.',
+                'tags': ['Niyamas']
+                # Ready
+            },
+            {
+                'title': 'Svadhyaya',
+                'phrase': 'स्वाध्याय',
+                'short_answer': 'The pratice of self-study, self examination, and spirtual inquiry.',
+                'definition': 'The study of ancient texts and the examination of one\'s own inner dialogue. It is an inquiry into who is "living in you" and identifying the labels we carry that are not our true identity. It is the endless pursuit of learning about ourselves and spiritual frameworks.',
+                'tags': ['Niyamas']
+                # Ready
+            },
+            {
+                'title': 'Isvara-pranidhana',
+                'phrase': 'ईश्वरप्रणिधान',
+                'short_answer': 'Devotion to the "absolute Brahma", who is free from all hinderences and karma. Devotion to A higher power.',
+                'definition': 'Some interpertitation mean to "lay all your actions at the feet of God," by offering the "fruits of your devotion" to something larger than yourself. It is the realization and acceptance of the part of ourselves that does not change, and surrendering to the divine part of us that is uneffected by our samskara.',
+                'tags': ['Niyamas']
+                # needs a second pass
+            },
+            {
+                'title': 'Yoga',
+                'phrase': '',
+                'short_answer': 'To "yoke" or "union" - to become one with our core essence.',
+                'definition': 'Yoga is a vast group of physical, mental, spiritual practices and philosophy originating in ancient India, aimed at controlling body and mind in order to attain liberation (moksha), health and connection with the universe. Yoga means to unify with all possible states of awareness, whether ordinary or extraordinary.',
+                'tags': ['8 Limbs']
+                # Ready
+            },
+
+        ]
+
+        created_count = 0
+        for card_data in flashcard_data:
+            flashcard = Flashcard.objects.create(
+                title=card_data['title'],
+                phrase=card_data['phrase'],
+                short_answer=card_data['short_answer'],
+                definition=card_data['definition'],
+                created_by=admin_user
+            )
+
+            # Add tags
+            for tag_name in card_data['tags']:
+                flashcard.tags.add(created_tags[tag_name])
+
+            created_count += 1
+            self.stdout.write(f'Created flashcard: {flashcard.title}')
+
+        self.stdout.write(
+            self.style.SUCCESS(f'Initial data setup completed. Created {created_count} flashcards.')
         )
 
         for tag_name in card_data.get('tags', []):
