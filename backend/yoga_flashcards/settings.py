@@ -30,7 +30,9 @@ SECRET_KEY = env('DJANGO_SECRET_KEY', default='dev-secret-key-change-in-producti
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = ['*']
+# Set DJANGO_ALLOWED_HOSTS in production, e.g. "flashcards.example.net".
+# The wildcard default keeps local Docker and the k8s probes working unchanged.
+ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['*'])
 
 # Application definition
 
@@ -62,7 +64,6 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'yoga_flashcards.middleware.DisableCSRFMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -162,14 +163,31 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF Configuration
-CSRF_TRUSTED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
-    'http://localhost:9000',
-    'http://127.0.0.1:9000',
-])
+#
+# CSRF is enforced on every authenticated API request. DRF views are csrf_exempt,
+# so the check comes from SessionAuthentication.enforce_csrf() rather than from
+# CsrfViewMiddleware. Django therefore never sets the csrftoken cookie on its own
+# for /api/ paths -- GET /api/users/csrf/ exists to hand one out, and the frontend
+# primes it before its first unsafe request.
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=None) or env.list(
+    'CORS_ALLOWED_ORIGINS',
+    default=['http://localhost:9000', 'http://127.0.0.1:9000'],
+)
 
-CSRF_COOKIE_SECURE = False
+# Must stay False: the frontend reads the cookie from JavaScript to build the
+# X-CSRFToken header.
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Set both to 1 in production, where everything is served over HTTPS.
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=False)
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=False)
+
+# 'Lax' is right whenever the frontend and the API share a registrable domain
+# (localhost:9000 / localhost:8000 in dev, app.example.com / api.example.com in
+# production). Only a genuinely cross-site deployment needs 'None', which also
+# requires the Secure flags above.
+CSRF_COOKIE_SAMESITE = env('CSRF_COOKIE_SAMESITE', default='Lax')
+SESSION_COOKIE_SAMESITE = env('SESSION_COOKIE_SAMESITE', default='Lax')
 
 # Logging Configuration
 LOGGING = {

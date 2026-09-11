@@ -1,30 +1,60 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 
+const baseURL = process.env.API_BASE_URL || 'http://localhost:8000'
+
 // Be careful when using SSR for cross-request state pollution
 // due to creating a Singleton instance here;
 // If any client changes this (global) instance, it might be a
 // good idea to move this instance creation inside of the
 // "export default () => {}" function below (which runs individually
 // for each client)
-const api = axios.create({ 
-  baseURL: process.env.API_BASE_URL || 'http://localhost:8000',
+const api = axios.create({
+  baseURL,
   withCredentials: true // Important for session authentication
 })
 
+const UNSAFE_METHODS = ['post', 'put', 'patch', 'delete']
+
+function readCookie(name) {
+  return document.cookie
+    .split('; ')
+    .find((row) => row.startsWith(`${name}=`))
+    ?.split('=')[1]
+}
+
+// DRF views are csrf_exempt, so Django never sets the csrftoken cookie on its
+// own for /api/ paths. GET /api/users/csrf/ hands one out. Requests are shared
+// so a burst of writes only triggers one fetch.
+let csrfRequest = null
+
+async function ensureCsrfToken() {
+  const existing = readCookie('csrftoken')
+  if (existing) return existing
+
+  if (!csrfRequest) {
+    csrfRequest = axios
+      .get(`${baseURL}/api/users/csrf/`, { withCredentials: true })
+      .catch(() => null)
+      .finally(() => {
+        csrfRequest = null
+      })
+  }
+  await csrfRequest
+
+  return readCookie('csrftoken')
+}
+
 // Add request interceptor for CSRF token
 api.interceptors.request.use(
-  (config) => {
-    // Get CSRF token from cookie if available
-    const csrfToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('csrftoken='))
-      ?.split('=')[1]
-    
-    if (csrfToken) {
-      config.headers['X-CSRFToken'] = csrfToken
+  async (config) => {
+    if (UNSAFE_METHODS.includes((config.method || 'get').toLowerCase())) {
+      const csrfToken = await ensureCsrfToken()
+      if (csrfToken) {
+        config.headers['X-CSRFToken'] = csrfToken
+      }
     }
-    
+
     return config
   },
   (error) => {
@@ -59,4 +89,4 @@ export default boot(({ app }) => {
   //       so you can easily perform requests against your app's API
 })
 
-export { api }
+export { api, ensureCsrfToken }

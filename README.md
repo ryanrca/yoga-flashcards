@@ -120,12 +120,16 @@ The flashcard versioning system works as follows:
 - `GET /api/users/auth-status/` - Check authentication status
 - `GET|PUT /api/users/profile/` - Read or update your own profile (names, email, daily email preference)
 - `POST /api/users/change-password/` - Change your own password (current_password, new_password)
+- `DELETE /api/users/delete-account/` - Delete your own account (soft delete; signs you out)
+- `GET /api/users/csrf/` - Issue a CSRF token and set the `csrftoken` cookie (no auth required)
 
 Admin only:
 
 - `GET|POST /api/users/manage/` - List or create users
 - `PUT|PATCH|DELETE /api/users/manage/{id}/` - Update or delete a user
 - `POST /api/users/manage/{id}/toggle_active/` - Activate or deactivate a user
+- `POST /api/users/manage/{id}/restore/` - Restore a soft-deleted account
+- `GET /api/users/manage/?include_deleted=true` - Include soft-deleted accounts in the list
 - `GET /api/users/manage/stats/` - User counts for the admin dashboard
 
 **Note**: The system uses email addresses as the primary login identifier. Users log in with their email address and password.
@@ -186,7 +190,7 @@ If the tag does not yet exist, it will be created. If the tag already exists, it
 - **Flashcard of the day** Displays today's flashcard (all visitors)
 - **Real-time search** and filtering when logged in
 - **User favorites** *(planned, not implemented)* - The `/favorites` page and the star buttons are placeholders; there is no favorites API yet, though `UserProfile.favorite_cards` exists on the model. Card sharing (Web Share API / copy to clipboard) does work.
-- **Edit user** when logged in - name, email, password and the daily card email preference. Account deletion is not implemented.
+- **Edit user** when logged in - name, email, password and the daily card email preference, plus account deletion.
 - **Session-based authentication**
 
 ## Development
@@ -253,12 +257,18 @@ section is usable.
 - `DEBUG` - Enable debug mode (default: 0)
 - `DJANGO_SECRET_KEY` - Django secret key
 - `DATABASE_URL` - Database connection string
-- `CORS_ALLOWED_ORIGINS` - Allowed CORS origins
+- `CORS_ALLOWED_ORIGINS` - Allowed CORS origins (comma separated)
+- `CSRF_TRUSTED_ORIGINS` - Origins allowed to send unsafe requests. Falls back to
+  `CORS_ALLOWED_ORIGINS` when unset.
+- `DJANGO_ALLOWED_HOSTS` - Comma-separated hostnames. Defaults to `*`; **set this in
+  production**.
+- `CSRF_COOKIE_SECURE` / `SESSION_COOKIE_SECURE` - Set both to `1` in production (HTTPS).
+- `CSRF_COOKIE_SAMESITE` / `SESSION_COOKIE_SAMESITE` - Default `Lax`. Only a genuinely
+  cross-site deployment needs `None`, which also requires the Secure flags above.
 
 **Frontend:**
-- `API_BASE_URL` - Backend API base URL. **Not currently wired up:** `build.env` is commented
-  out in `quasar.config.js`, so the variable never reaches the client bundle and
-  `src/boot/axios.js` falls back to `http://localhost:8000`.
+- `API_BASE_URL` - Backend API base URL, injected via `build.env` in `quasar.config.js`.
+  Read at **build** time, not run time: a production image must be built with it set.
 
 ### Database
 
@@ -271,14 +281,22 @@ The application uses MySQL with proper UTF-8 support for international character
   `role` field; user management is admin-only on every action
 - **CORS configuration** - Properly configured for frontend
 
+- **CSRF protection** - Enforced on every authenticated API write. DRF views are
+  `csrf_exempt`, so the check comes from `SessionAuthentication.enforce_csrf()` rather than
+  `CsrfViewMiddleware`; Django therefore never sets the `csrftoken` cookie for `/api/` by
+  itself, and `GET /api/users/csrf/` exists to issue one. The frontend primes it
+  automatically before its first unsafe request. Requests from an origin outside
+  `CSRF_TRUSTED_ORIGINS` are rejected even with a valid token.
+- **Accounts are soft deleted** - Deleting a user disables the account and hides it, but
+  removes nothing. `Flashcard.created_by` uses `PROTECT`, so a user delete can never cascade
+  into their card library.
+
 Known gaps:
 
-- **CSRF protection is disabled for all `/api/` routes**, in production as well as
-  development. `DisableCSRFMiddleware` is not gated on `DEBUG`. Turning it on needs a
-  CSRF-bootstrap endpoint first, since DRF views are `csrf_exempt` and Django therefore
-  never sets the `csrftoken` cookie the frontend looks for.
 - **Card deletes are permanent.** `DELETE /api/cards/{id}/` removes the row; there is no
-  soft delete, despite the `is_active` flag existing on the model.
+  soft delete for cards, despite the `is_active` flag existing on the model.
+- **Login itself is not CSRF-protected.** DRF only enforces CSRF once a session
+  authenticates, and login is anonymous. This is standard DRF behaviour.
 
 ## Contributing
 
@@ -292,9 +310,7 @@ CODE:
 - Helm chart templates (see Production Deployment above)
 - Favorites API and wire up the `/favorites` page
 - Google / Facebook OAuth
-- Account deletion endpoint
 - Default card placeholder image
-- Re-enable CSRF for `/api/` in production
 - Soft delete for cards
 
 

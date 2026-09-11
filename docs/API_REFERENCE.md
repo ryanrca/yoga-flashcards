@@ -4,6 +4,10 @@
 
 **Authentication:** Session-based (Django sessions)
 
+**CSRF:** Required on every authenticated unsafe request (POST/PUT/PATCH/DELETE). Call
+`GET /api/users/csrf/` first, then send the cookie value as the `X-CSRFToken` header. See
+[Authentication Notes](#authentication-notes).
+
 **Content-Type:** `application/json` (except file uploads: `multipart/form-data`)
 
 ---
@@ -191,6 +195,45 @@ through `/users/manage/{id}/`.
 
 **Errors:**
 - `400` - Email already in use
+
+---
+
+### GET /users/csrf/
+
+Issue a CSRF token and set the `csrftoken` cookie.
+
+**Permission:** AllowAny
+
+**Response (200 OK):**
+```json
+{
+  "csrfToken": "JVfJZT2DW1TK0hmkqaEIcsuTLIILKbRx3rymYJesVvaOZf3tEysLSjXtT0hos8Nt"
+}
+```
+
+The cookie value and the body value differ -- Django masks the token per response, and
+either is accepted. `GET /users/auth-status/` also sets the cookie, so an app that calls it
+on boot usually has a token already.
+
+---
+
+### DELETE /users/delete-account/
+
+Delete the logged-in user's own account, and end the session.
+
+This is a **soft delete**. The user row, their profile and every flashcard they authored are
+left untouched. The account is disabled (`is_active=false`, `is_deleted=true`), can no
+longer log in, and disappears from user listings. Only an admin can still see it, via
+`GET /users/manage/?include_deleted=true`, `GET /users/manage/{id}/` or the Django admin.
+
+**Permission:** IsAuthenticated
+
+**Response (200 OK):**
+```json
+{
+  "message": "Account deleted"
+}
+```
 
 ---
 
@@ -599,6 +642,13 @@ Get today's daily card.
 
 ### GET /users/manage/
 
+Soft-deleted accounts are **excluded** unless `?include_deleted=true` is passed. Detail
+routes never filter, so `GET /users/manage/{id}/` always reaches a deleted account.
+
+**Query parameters:** `search`, `role`, `is_active`, `include_deleted`, `ordering`, `page`
+
+
+
 List all users with filtering.
 
 **Permission:** IsAdminOnly
@@ -687,13 +737,31 @@ Update user details.
 
 ---
 
-### DELETE /users/manage/{id}/
+### POST /users/manage/{id}/restore/
 
-Delete a user.
+Restore a soft-deleted account and re-enable it.
 
 **Permission:** IsAdminOnly
 
-**Response (204 No Content)**
+**Response (200 OK):** `{"message": "User restored", "user": {...}}`
+
+**Errors:**
+- `400` - User is not deleted
+
+---
+
+### DELETE /users/manage/{id}/
+
+Delete a user. This is a **soft delete** -- see `DELETE /users/delete-account/`. The row and
+everything the user authored are kept; the account is disabled and hidden from listings, and
+`POST /users/manage/{id}/restore/` reverses it.
+
+**Permission:** IsAdminOnly
+
+**Response (200 OK):** `{"message": "User deleted", "user": {...}}`
+
+**Errors:**
+- `400` - Cannot delete your own account here; use `DELETE /users/delete-account/`
 
 ---
 
@@ -784,8 +852,9 @@ All error responses follow this format:
 After successful login, the server sets:
 - `sessionid` - Session identifier
 
-It does **not** set `csrftoken`. DRF views are `csrf_exempt`, so Django never calls
-`get_token()` for `/api/` requests.
+It does **not** set `csrftoken` -- DRF views are `csrf_exempt`, so Django never calls
+`get_token()` on its own. Use `GET /users/csrf/` (or `GET /users/auth-status/`, which also
+sets it) to obtain one.
 
 ### Making Authenticated Requests
 
@@ -803,11 +872,17 @@ axios.defaults.withCredentials = true
 
 ### CSRF Token
 
-**CSRF is currently bypassed for every `/api/` path**, in all environments, by
-`DisableCSRFMiddleware` (`yoga_flashcards/middleware.py`). No CSRF token is required today.
+Every **authenticated** unsafe request (POST/PUT/PATCH/DELETE) needs a CSRF token.
+Anonymous requests -- login, register, and the public reads -- do not.
 
-The frontend already sends one when the cookie happens to be present, and should keep doing
-so, so that enabling CSRF later is a server-side change only: 
+DRF views are `csrf_exempt`, so `CsrfViewMiddleware` never runs for `/api/` and Django does
+not set the `csrftoken` cookie by itself. Fetch one first:
+
+```javascript
+await fetch('/api/users/csrf/', { credentials: 'include' })
+```
+
+Then send the cookie value on each unsafe request: 
 ```javascript
 const csrfToken = document.cookie
   .split('; ')

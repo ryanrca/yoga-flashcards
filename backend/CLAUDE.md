@@ -17,7 +17,9 @@ Settings:   yoga_flashcards/settings.py
 - **Serializers** for all validation (never use raw `request.data`)
 - **Self-service endpoints get their own narrow serializer** -- `ProfileUpdateSerializer`
   whitelists editable fields so a user cannot write `role` or `is_active` on themselves
-- **Session-based auth** (not JWT)
+- **Session-based auth** (not JWT), with CSRF enforced on authenticated writes
+- **Accounts are never hard deleted** -- `User.soft_delete()` disables the account and keeps
+  the row; `Flashcard.created_by` is `PROTECT` so a cascade cannot destroy a card library
 - **Apps by domain**: `flashcards`, `users`, `core`
 - **Custom user model**: `AUTH_USER_MODEL = 'users.User'`
 
@@ -46,8 +48,8 @@ Card edits never modify in place. The serializer's `update()` calls `instance.cr
 | `flashcards/services.py` | DailyCardService (card rotation with cycle tracking) |
 | `flashcards/permissions.py` | IsCuratorOrAdmin, IsAdminOnly |
 | `flashcards/views.py` | FlashcardViewSet, TagViewSet |
-| `users/models.py` | User (AbstractUser + role), UserProfile |
-| `users/views.py` | login, logout, register, auth_status, profile, change_password, user management |
+| `users/models.py` | User (AbstractUser + role + soft delete), UserProfile |
+| `users/views.py` | login, logout, register, auth_status, csrf, profile, change_password, delete_account, user management |
 | `yoga_flashcards/settings.py` | CORS, REST_FRAMEWORK, middleware config |
 
 ## Testing

@@ -46,7 +46,11 @@ export default defineConfig((/* ctx */) => {
 
       // publicPath: '/',
       // analyze: true,
-      // env: {},
+      // Without this, process.env.API_BASE_URL never reaches the client bundle
+      // and src/boot/axios.js silently falls back to its localhost default.
+      env: {
+        API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:8000',
+      },
       // rawDefine: {}
       // ignorePublicFolder: true,
       // minify: false,

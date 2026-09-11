@@ -10,8 +10,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 
-                 'daily_email_enabled', 'email_verified', 'date_joined', 'is_active', 'last_login']
-        read_only_fields = ['id', 'username', 'date_joined', 'last_login']
+                 'daily_email_enabled', 'email_verified', 'date_joined', 'is_active', 'last_login',
+                 'is_deleted', 'deleted_at']
+        read_only_fields = ['id', 'username', 'date_joined', 'last_login', 'is_deleted', 'deleted_at']
     
     def update(self, instance, validated_data):
         """Allow admins to update user role and active status."""
@@ -36,6 +37,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'password', 'password_confirm', 'first_name', 'last_name']
+
+    def validate_email(self, value):
+        # Includes soft-deleted accounts: the row still owns the address, and an
+        # admin can restore it. Registering over it would strand the old account.
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('An account with that email address already exists')
+        return value
 
     def validate(self, data):
         if data['password'] != data['password_confirm']:
@@ -75,14 +83,18 @@ class LoginSerializer(serializers.Serializer):
         password = data.get('password')
 
         if email and password:
-            # Use email to find user, then authenticate with username
-            try:
-                user_obj = User.objects.get(email=email)
+            # Use email to find the account, then authenticate with its username.
+            # Deleted accounts are excluded outright so they can never be logged
+            # back into. filter().first() rather than get(): email is not unique
+            # on the model, and a duplicate must not raise MultipleObjectsReturned.
+            user_obj = User.objects.filter(email=email, is_deleted=False).order_by('pk').first()
+            user = None
+            if user_obj:
                 user = authenticate(username=user_obj.username, password=password)
-            except User.DoesNotExist:
-                user = None
-                
+
             if not user:
+                # Same message whether the account is missing, deleted or the
+                # password is wrong, so login cannot be used to enumerate accounts.
                 raise serializers.ValidationError('Invalid credentials')
             if not user.is_active:
                 raise serializers.ValidationError('User account is disabled')
@@ -108,7 +120,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'email', 'daily_email_enabled']
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
+        if User.objects.filter(email__iexact=value).exclude(pk=self.instance.pk).exists():
             raise serializers.ValidationError('That email address is already in use')
         return value
 
@@ -155,8 +167,9 @@ class AdminUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 
-                 'is_active', 'daily_email_enabled', 'email_verified', 'date_joined', 'last_login', 'password']
-        read_only_fields = ['id', 'username', 'date_joined', 'last_login']
+                 'is_active', 'daily_email_enabled', 'email_verified', 'date_joined', 'last_login',
+                 'password', 'is_deleted', 'deleted_at']
+        read_only_fields = ['id', 'username', 'date_joined', 'last_login', 'is_deleted', 'deleted_at']
     
     def create(self, validated_data):
         """Create user with password, auto-generating username from email."""

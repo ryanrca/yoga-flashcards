@@ -82,7 +82,9 @@ This document provides the complete database schema specification for regenerati
 | first_name | CharField(150) | | '' | First name |
 | last_name | CharField(150) | | '' | Last name |
 | role | CharField(20) | choices | 'user' | user/curator/admin |
-| is_active | BooleanField | | True | Account active status |
+| is_active | BooleanField | | True | Account active status. Cleared by a soft delete; also toggled independently by admins. |
+| is_deleted | BooleanField | index | False | Soft delete flag. The row is always kept. |
+| deleted_at | DateTimeField | | NULL | When the account was soft deleted. |
 | is_staff | BooleanField | | False | Django admin access |
 | is_superuser | BooleanField | | False | Superuser status |
 | daily_email_enabled | BooleanField | | False | Daily email preference |
@@ -162,8 +164,8 @@ def create_user_profile(sender, instance, created, **kwargs):
 | version_group | UUIDField | | uuid4() | Groups all versions |
 | version_number | PositiveIntegerField | | 1 | Version sequence |
 | is_live | BooleanField | | True | Current active version |
-| is_active | BooleanField | | True | Intended as a soft delete flag, but `DELETE /api/cards/{id}/` currently hard-deletes the row. Only the seeder and queries read it. |
-| created_by | ForeignKey | null, SET_NULL | None | Creating user |
+| is_active | BooleanField | | True | Intended as a soft delete flag, but `DELETE /api/cards/{id}/` currently hard-deletes the row. Only the seeder and queries read it. Unrelated to `User.is_deleted`, which *is* honoured. |
+| created_by | ForeignKey | PROTECT, required | | Creating user. PROTECT so deleting a user can never cascade into their card library -- accounts are soft deleted instead. |
 | created_at | DateTimeField | auto_now_add | auto | Creation time |
 | updated_at | DateTimeField | auto_now | auto | Update time |
 
