@@ -311,7 +311,7 @@ class Command(BaseCommand):
             {
                 'title': 'Isvara-pranidhana',
                 'phrase': 'ईश्वरप्रणिधान',
-                'short_answer': 'Devotion to the "absolute Brahma", who is free from all hinderences and karma. Devotion to A higher power.',
+                'short_answer': 'Devotion to the "absolute Brahma", who is free from all hinderences and karma. Devotion to a higher power.',
                 'definition': 'Some interpertitation mean to "lay all your actions at the feet of God," by offering the "fruits of your devotion" to something larger than yourself. It is the realization and acceptance of the part of ourselves that does not change, and surrendering to the divine part of us that is uneffected by our samskara.',
                 'tags': ['Niyamas']
                 # needs a second pass
