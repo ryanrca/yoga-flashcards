@@ -15,6 +15,8 @@ Settings:   yoga_flashcards/settings.py
 - **Thin views, fat models** -- business logic in `services.py`, not views
 - **DRF ModelViewSets** for REST endpoints
 - **Serializers** for all validation (never use raw `request.data`)
+- **Self-service endpoints get their own narrow serializer** -- `ProfileUpdateSerializer`
+  whitelists editable fields so a user cannot write `role` or `is_active` on themselves
 - **Session-based auth** (not JWT)
 - **Apps by domain**: `flashcards`, `users`, `core`
 - **Custom user model**: `AUTH_USER_MODEL = 'users.User'`
@@ -32,6 +34,8 @@ Card edits never modify in place. The serializer's `update()` calls `instance.cr
 - `User.is_admin()` -- role='admin' or is_superuser
 - `User.is_curator()` -- role in ('curator', 'admin') or is_superuser
 - Permission classes: `IsCuratorOrAdmin`, `IsAdminOnly` in `flashcards/permissions.py`
+- Use `IsAdminOnly`, never DRF's `IsAdminUser` -- the latter checks `is_staff`, which is
+  unrelated to the `role` field and locks out a role='admin' user who is not staff
 
 ## Key Files
 
@@ -43,7 +47,7 @@ Card edits never modify in place. The serializer's `update()` calls `instance.cr
 | `flashcards/permissions.py` | IsCuratorOrAdmin, IsAdminOnly |
 | `flashcards/views.py` | FlashcardViewSet, TagViewSet |
 | `users/models.py` | User (AbstractUser + role), UserProfile |
-| `users/views.py` | login, logout, register, auth_status, profile, user management |
+| `users/views.py` | login, logout, register, auth_status, profile, change_password, user management |
 | `yoga_flashcards/settings.py` | CORS, REST_FRAMEWORK, middleware config |
 
 ## Testing
@@ -54,7 +58,7 @@ python -m pytest flashcards/                  # Single app
 python -m pytest -v --cov=flashcards --cov=users  # With coverage
 ```
 
-Test structure: `{app}/tests/test_models.py`, `test_views.py`, `test_serializers.py`, `test_services.py`, `factories.py`
+Test structure: `{app}/tests/test_models.py`, `test_views.py`, `test_services.py`, `factories.py`
 Uses pytest with `@pytest.mark.django_db` and Factory Boy.
 
 ## Management Commands

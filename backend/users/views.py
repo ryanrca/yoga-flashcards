@@ -1,11 +1,15 @@
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
 from rest_framework import status, viewsets, filters
 from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Q
-from .serializers import UserRegistrationSerializer, LoginSerializer, UserSerializer, AdminUserSerializer
+from .serializers import (
+    UserRegistrationSerializer, LoginSerializer, UserSerializer, AdminUserSerializer,
+    ChangePasswordSerializer, ProfileUpdateSerializer,
+)
 from .services import UserService
+from flashcards.permissions import IsAdminOnly
 from .models import User
 
 
@@ -68,32 +72,44 @@ def profile(request):
         return Response(serializer.data)
     
     elif request.method == 'PUT':
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = ProfileUpdateSerializer(
+            request.user, data=request.data, partial=True, context={'request': request}
+        )
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response(UserSerializer(request.user).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """Change the logged-in user's password."""
+    serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+    if serializer.is_valid():
+        user = serializer.save()
+        # Keep the current session valid after the password hash changes.
+        update_session_auth_hash(request, user)
+        return Response({'message': 'Password changed successfully'})
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing users (admin only).
     Provides CRUD operations for user management.
+
+    Every action is admin-only, including the extra `retrieve`, `stats` and
+    `toggle_active` actions. IsAdminOnly checks role == 'admin' or
+    is_superuser; DRF's IsAdminUser checks is_staff instead and would lock
+    out a role='admin' user who is not staff.
     """
     queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['email', 'username', 'first_name', 'last_name']
     ordering_fields = ['date_joined', 'email', 'last_login']
-    
-    def get_permissions(self):
-        """
-        Only admins can list, create, update, or delete users.
-        """
-        if self.action in ['list', 'create', 'update', 'partial_update', 'destroy']:
-            return [IsAuthenticated(), IsAdminUser()]
-        return super().get_permissions()
     
     def get_queryset(self):
         """Filter queryset based on query parameters."""

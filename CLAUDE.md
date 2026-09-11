@@ -15,15 +15,18 @@ Build:    docker-compose exec frontend npm run build
 
 | Email | Password | Role |
 |-------|----------|------|
-| admin@example.com | admin123 | Admin |
+| admin@example.com | admin123 | Admin (superuser) |
+| admin1@example.com | admin1 | Admin |
 | curator1@example.com | curator1 | Curator |
 | user1@example.com | user1 | User |
+
+Created by `seed_initial_data`, which `backend/start.sh` runs on container start.
 
 ## Architecture
 
 - **Backend**: Django REST Framework with session-based auth (not JWT)
 - **Frontend**: Vue 3 Composition API (`<script setup>`) + Quasar components + Pinia stores
-- **Versioning**: Every card edit creates a new version; old versions preserved via `version_group` UUID
+- **Versioning**: Every card edit creates a new version; old versions preserved via `version_group` UUID. `DELETE` is a hard delete, not a soft delete.
 - **Roles**: Admin > Curator > User. Curators can manage cards/tags. Admins can also manage users.
 - **Daily Card**: Public endpoint cycles through all cards before repeating (see `flashcards/services.py`)
 
@@ -52,7 +55,7 @@ Build:    docker-compose exec frontend npm run build
 
 - **Card updates return new IDs**: `PUT /api/cards/{id}/` creates a new version with a different `id`. Frontend must redirect to the new ID after update.
 - **Frontend Dockerfile order**: Must `COPY . .` BEFORE `RUN npm install` because Quasar's prepare script needs source files.
-- **CSRF disabled for API in dev**: `DisableCSRFMiddleware` in `yoga_flashcards/middleware.py` skips CSRF for `/api/` paths.
+- **CSRF disabled for ALL API requests**: `DisableCSRFMiddleware` in `yoga_flashcards/middleware.py` skips CSRF for every `/api/` path. Despite the docstring it is not gated on `DEBUG`, so it is off in production too. Gating it requires a CSRF-bootstrap endpoint first -- DRF views are `csrf_exempt`, so Django never sets the `csrftoken` cookie the frontend interceptor looks for.
 - **MySQL wait on startup**: `backend/start.sh` polls MySQL for up to 60 seconds before running migrations.
 
 ## Common Commands
@@ -76,15 +79,17 @@ docker-compose exec backend python manage.py import_cards /path/to.csv # Import 
 # Kubernetes
 docker build -t registry/yoga-backend:latest ./backend
 docker build -t registry/yoga-frontend:latest ./frontend
-helm install yoga-flashcards ./k8s/helm
+helm install yoga-flashcards ./k8s/helm            # NOTE: chart has no templates/ yet
 ```
 
 ## API Overview
 
-Public (no auth): `GET /api/dailycard/`, `GET /api/tags/`
-Authenticated: `GET /api/cards/`, `GET /api/cards/{id}/`, auth endpoints under `/api/users/`
+Public (no auth): `GET /api/health/`, `GET /api/dailycard/`, `GET /api/tags/`
+Authenticated: `GET /api/cards/`, `GET /api/cards/{id}/`, `GET|PUT /api/users/profile/`, `POST /api/users/change-password/`
 Curator+: CRUD on `/api/cards/`, `/api/tags/`, version history, revert
-Admin only: `/api/users/manage/` for user CRUD
+Admin only: `/api/users/manage/` for user CRUD, plus its `stats/` and `toggle_active/` actions
+
+Not implemented despite appearing in the UI: favorites, social (Google/Facebook) auth, account deletion.
 
 See `docs/API_REFERENCE.md` for full details.
 

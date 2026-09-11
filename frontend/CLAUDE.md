@@ -50,6 +50,11 @@ Unauthorized users redirect to home or login.
 - **Store error handling**: All store actions set `loading`/`error` refs. Components use `v-if="store.loading"` / `v-else-if="store.error"` pattern.
 - **Multipart uploads**: Card create/update uses `FormData` with `Content-Type: multipart/form-data` for image uploads.
 - **Tag selection**: Tag selects use `{ label, value }` objects mapped from the tags array.
+- **401 redirects use the hash**: routing is hash-based, so `boot/axios.js` redirects to
+  `#/login`, not `/login`.
+- **`API_BASE_URL` is not wired in**: `build.env` is commented out in `quasar.config.js`, so
+  the env var never reaches the bundle and `boot/axios.js` falls back to its hardcoded
+  default. Setting it in `docker-compose.yml` alone has no effect.
 
 ## Dockerfile Gotcha
 
@@ -63,6 +68,6 @@ RUN npm install
 ## Style
 
 - 2 spaces indentation
-- `camelCase` for variables/methods, `PascalCase` for components, `kebab-case` for filenames
+- `camelCase` for variables/methods, `PascalCase` for components and for `.vue` filenames
 - No emojis in code or comments
 - ESLint + Prettier configured (see `eslint.config.js`, `.prettierrc.json`)

@@ -18,7 +18,7 @@ class Command(BaseCommand):
             '-f', '--file',
             dest='file',
             default=str(default_path),
-            help='Path to flashcards JSON file (default: management/data/flashcards.json)'
+            help='Path to flashcards JSON file (default: management/commands/data/flashcards.json)'
         )
         parser.add_argument(
             '--pull',
@@ -51,6 +51,15 @@ class Command(BaseCommand):
 
         if not flashcards_data:
             raise CommandError('No flashcards found in the JSON file.')
+
+        # An export written by --pull contains every version of every card. Import
+        # creates one flat live row per entry, so without this filter a pull/push
+        # round trip would resurrect superseded versions as duplicate live cards.
+        # Entries with no is_live key (hand-written seed data) are kept.
+        skipped = [c for c in flashcards_data if c.get('is_live') is False]
+        if skipped:
+            flashcards_data = [c for c in flashcards_data if c.get('is_live') is not False]
+            self.stdout.write(f'Skipping {len(skipped)} superseded version(s) from the export')
 
         self.stdout.write('Clearing existing flashcards and tags...')
         Flashcard.objects.all().delete()

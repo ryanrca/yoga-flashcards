@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 from .models import User, UserProfile
 
 
@@ -14,10 +15,13 @@ class UserSerializer(serializers.ModelSerializer):
     
     def update(self, instance, validated_data):
         """Allow admins to update user role and active status."""
-        # Only allow role updates if user is admin
+        # Only allow role updates if the requesting user is an admin. Fails
+        # closed: with no request in context we cannot prove admin, so the
+        # role change is dropped rather than allowed through.
         if 'role' in validated_data:
             request = self.context.get('request')
-            if request and hasattr(request, 'user') and request.user.role != 'admin':
+            requester = getattr(request, 'user', None)
+            if not (requester and requester.is_authenticated and requester.is_admin()):
                 validated_data.pop('role')
         
         return super().update(instance, validated_data)
@@ -87,6 +91,49 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError('Must include email and password')
         
         return data
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for a user editing their own profile.
+
+    Deliberately narrow: `role` and `is_active` are not writable here. The
+    previous code reused UserSerializer, whose role guard reads
+    self.context['request'] -- the profile view passed no context, so the
+    guard never fired and any user could PUT {"role": "admin"} on themselves.
+    """
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'daily_email_enabled']
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError('That email address is already in use')
+        return value
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """Serializer for changing the logged-in user's password."""
+
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError('Current password is incorrect')
+        return value
+
+    def validate_new_password(self, value):
+        validate_password(value, self.context['request'].user)
+        return value
+
+    def save(self, **kwargs):
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+        return user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):

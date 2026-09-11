@@ -39,8 +39,10 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized - redirect to login
-      window.location.href = '/login'
+      // Handle unauthorized - redirect to login.
+      // Router runs in hash mode (quasar.config.js build.vueRouterMode),
+      // so the path has to go after the '#'.
+      window.location.href = '#/login'
     }
     return Promise.reject(error)
   }

@@ -59,8 +59,8 @@ class DailyCardService:
             # Return a random unused card
             return random.choice(unused_cards)
         else:
-            # All cards have been used, start a new cycle
-            new_cycle = current_cycle + 1
+            # Every card has been used in this cycle. _get_current_cycle() rolls the
+            # cycle number forward on the next call, so just pick from all cards.
             return random.choice(active_cards)
 
     @staticmethod

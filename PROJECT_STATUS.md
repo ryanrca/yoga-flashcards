@@ -11,9 +11,9 @@
   - DailyCard and CardUsageLog for daily card rotation
   - UserProfile for extended user data
 - **API Endpoints**: RESTful API with proper authentication and permissions
-- **Authentication**: Session-based authentication with proper CSRF/CORS setup
+- **Authentication**: Session-based authentication with CORS configured (CSRF is currently bypassed for `/api/` -- see Security below)
 - **Management Commands**: 
-  - `seed_initial_data`: Creates admin user and loads yoga flashcards
+  - `seed_initial_data`: Creates admin/test users and loads flashcards from JSON (`--pull` exports back out)
   - `import_cards`: Bulk import from CSV files
 - **Docker**: Complete containerization with MySQL database
 
@@ -27,30 +27,38 @@
   - Cards library with search and filtering
   - Admin panel with dashboard
   - User profile management
-- **Components**: Reusable flashcard component with flip animation
 - **Responsive Design**: Mobile-friendly Quasar components
+
+Note: there is no shared flashcard component. Card markup is duplicated inline across
+`pages/public/CardsPage.vue`, `DailyCardPage.vue`, `FavoritesPage.vue` and the admin pages.
+`src/components/` holds only `EssentialLink.vue`. Extracting one is worthwhile.
 
 ### Infrastructure
 - **Docker Compose**: Complete development environment
-- **Kubernetes**: Helm chart structure for production deployment
-- **Initial Data**: CSV file with 18 yoga flashcards (8 limbs, yamas, niyamas)
+- **Initial Data**: JSON seed with 19 flashcards (8 limbs, yamas, niyamas, plus a "Yoga"
+  overview card), loaded by `seed_initial_data`
+
+### Testing
+- **Backend**: 120 pytest tests across `core`, `flashcards` and `users`, using Factory Boy
+  and a SQLite test settings module (`yoga_flashcards/settings_test.py`)
+- **Frontend**: none, by design (see CLAUDE.md)
 
 ## [WIP] Areas for Future Development
 
 ### Frontend Features
-1. **Complete Admin Interface**:
-   - Full CRUD operations for cards
-   - Version history management
-   - User management (admin only)
-   - Tag management
+1. **Admin Interface** -- card CRUD, version history and revert, user management and tag
+   management are all implemented. Still outstanding:
    - Bulk operations
+   - CSV import from the dashboard (the button is a placeholder; use the management command)
 
 2. **Enhanced User Features**:
-   - Favorites system implementation
-   - Social sharing capabilities
+   - Favorites system -- the `/favorites` page and star buttons are placeholders with no
+     backing API, though `UserProfile.favorite_cards` exists on the model
+   - Account deletion endpoint (the profile page button has no backend route)
    - Advanced search with filters
    - Progress tracking
-   - Email notifications for daily cards
+   - Email notifications for daily cards (the `daily_email_enabled` preference saves, but
+     nothing sends mail)
 
 3. **UI/UX Improvements**:
    - Better card design with image placeholders
@@ -77,39 +85,47 @@
 
 ### DevOps & Production
 1. **Testing**:
-   - Backend unit tests with pytest
-   - Frontend component tests
    - Integration tests
    - End-to-end tests
 
-2. **Production Setup**:
+2. **Kubernetes**:
+   - `k8s/helm/` has `Chart.yaml` and `values.yaml` but **no `templates/` directory**, so
+     `helm install` creates no resources
+   - `values.yaml` declares a `mysql` subchart that `Chart.yaml` does not list under
+     `dependencies`, so it is never fetched
+
+3. **Production Setup**:
    - Environment-specific configurations
    - Security hardening
    - Performance optimization
    - Monitoring and logging
    - CI/CD pipeline
 
-3. **Content Management**:
-   - Admin interface for content creation
-   - Image upload and management
-   - Content versioning and approval workflow
+4. **Security**:
+   - `DisableCSRFMiddleware` strips CSRF from every `/api/` path in all environments, not
+     just development. Re-enabling it needs a CSRF-bootstrap endpoint, because DRF views are
+     `csrf_exempt` so Django never sets the `csrftoken` cookie the frontend reads.
+   - Card `DELETE` is permanent; there is no soft delete despite the `is_active` flag.
+
+5. **Content Management**:
+   - Approval workflow (creation, image upload and versioning are done)
 
 ## [TODO] Next Steps
 
 1. **Immediate**:
-   - Test the application with `./start-dev.sh`
-   - Fix any deployment issues
-   - Add comprehensive error handling
+   - Write the Helm chart templates so `helm install` actually deploys something
+   - Re-enable CSRF for `/api/` in production
 
 2. **Short Term**:
-   - Complete admin interface implementation
-   - Add comprehensive testing
-   - Implement email verification
+   - Favorites API, then wire up `/favorites` and the star buttons
+   - Extract a shared flashcard component
+   - Account deletion endpoint
+   - Implement email verification (the token is generated and printed, never mailed)
 
 3. **Medium Term**:
    - Add social authentication
-   - Implement favorites and sharing
-   - Create comprehensive content management
+   - Daily card email delivery
+   - Default placeholder image for cards with no photo
 
 4. **Long Term**:
    - Production deployment
@@ -133,7 +149,7 @@ Frontend (Vue 3 + Quasar)     Backend (Django + DRF)
                               └── CardUsageLog
 ```
 
-## 📋 File Structure
+## File Structure
 
 ```
 yoga-flashcards/
@@ -151,9 +167,10 @@ yoga-flashcards/
 │   │   ├── stores/          # Pinia state management
 │   │   └── router/          # Vue Router config
 │   └── package.json         # Node dependencies
-├── k8s/                     # Kubernetes deployment
+├── k8s/                     # Kubernetes deployment (chart incomplete)
+├── docs/                    # Functional spec, API reference, DB schema
 ├── docker-compose.yml       # Development environment
-├── initial_data.csv         # Yoga flashcards data
+├── initial_data.csv         # Legacy CSV, sample input for import_cards only
 └── start-dev.sh            # Development setup script
 ```
 

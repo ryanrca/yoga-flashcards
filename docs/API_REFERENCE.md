@@ -41,14 +41,20 @@ Create a new user account.
 **Response (201 Created):**
 ```json
 {
-  "id": 1,
-  "email": "user@example.com",
-  "username": "user",
-  "first_name": "John",
-  "last_name": "Doe",
-  "role": "user"
+  "message": "User created successfully. Please check your email to verify your account.",
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "username": "user",
+    "first_name": "John",
+    "last_name": "Doe",
+    "role": "user"
+  }
 }
 ```
+
+Note: `username` is generated from the email local part. No verification email is actually
+sent yet -- the token is printed to the server log.
 
 **Errors:**
 - `400` - Validation error (passwords don't match, email exists, etc.)
@@ -72,12 +78,15 @@ Authenticate user and create session.
 **Response (200 OK):**
 ```json
 {
-  "id": 1,
-  "email": "user@example.com",
-  "username": "user",
-  "first_name": "John",
-  "last_name": "Doe",
-  "role": "user"
+  "message": "Login successful",
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "username": "user",
+    "first_name": "John",
+    "last_name": "Doe",
+    "role": "user"
+  }
 }
 ```
 
@@ -85,7 +94,8 @@ Authenticate user and create session.
 - `400` - Invalid credentials
 - `400` - Account inactive
 
-**Note:** Sets `sessionid` and `csrftoken` cookies.
+**Note:** Sets the `sessionid` cookie. It does not set `csrftoken`: DRF views are
+`csrf_exempt` and `DisableCSRFMiddleware` bypasses CSRF for every `/api/` path.
 
 ---
 
@@ -164,16 +174,51 @@ Update current user's profile.
 
 **Permission:** IsAuthenticated
 
+**Writable fields:** `first_name`, `last_name`, `email`, `daily_email_enabled`.
+`role` and `is_active` are deliberately not writable here -- only an admin can change those,
+through `/users/manage/{id}/`.
+
 **Request Body:**
 ```json
 {
-  "bio": "Updated bio",
   "first_name": "Jane",
-  "last_name": "Smith"
+  "last_name": "Smith",
+  "daily_email_enabled": true
 }
 ```
 
-**Response (200 OK):** Updated profile object
+**Response (200 OK):** The full user object, as returned by `GET /users/profile/`
+
+**Errors:**
+- `400` - Email already in use
+
+---
+
+### POST /users/change-password/
+
+Change the logged-in user's own password. The session stays valid afterwards.
+
+**Permission:** IsAuthenticated
+
+**Request Body:**
+```json
+{
+  "current_password": "securepassword123",
+  "new_password": "evenbettersecret456"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+**Errors:**
+- `400` - Current password is incorrect
+- `400` - New password fails Django's password validators (minimum 8 characters, not
+  entirely numeric, not too common, not too similar to the username or email)
 
 ---
 
@@ -333,7 +378,9 @@ Update a card. **Creates a new version** rather than updating in place.
 
 ### DELETE /cards/{id}/
 
-Soft delete a card. Sets `is_active=false`.
+Permanently delete the card row. This is a hard delete -- it does **not** set
+`is_active=false`, and it removes only the addressed version, not the whole
+`version_group`.
 
 **Permission:** IsCuratorOrAdmin
 
@@ -736,7 +783,9 @@ All error responses follow this format:
 
 After successful login, the server sets:
 - `sessionid` - Session identifier
-- `csrftoken` - CSRF protection token
+
+It does **not** set `csrftoken`. DRF views are `csrf_exempt`, so Django never calls
+`get_token()` for `/api/` requests.
 
 ### Making Authenticated Requests
 
@@ -754,7 +803,11 @@ axios.defaults.withCredentials = true
 
 ### CSRF Token
 
-For non-GET requests, include the CSRF token:
+**CSRF is currently bypassed for every `/api/` path**, in all environments, by
+`DisableCSRFMiddleware` (`yoga_flashcards/middleware.py`). No CSRF token is required today.
+
+The frontend already sends one when the cookie happens to be present, and should keep doing
+so, so that enabling CSRF later is a server-side change only: 
 ```javascript
 const csrfToken = document.cookie
   .split('; ')

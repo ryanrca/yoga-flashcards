@@ -52,7 +52,7 @@
         </q-card>
       </div>
 
-      <div class="col-12 col-md-3">
+      <div v-if="authStore.isAdmin" class="col-12 col-md-3">
         <q-card>
           <q-card-section class="text-center">
             <q-icon name="people" size="3rem" color="orange" />
@@ -295,15 +295,17 @@ const loadDashboardData = async () => {
       dailyCard.value = dailyResult.data
     }
 
-    // Load user statistics from API
-    try {
-      const response = await authStore.fetchUserStats()
-      if (response && response.total !== undefined) {
-        stats.value.totalUsers = response.total
+    // Load user statistics from API (admin-only endpoint)
+    if (authStore.isAdmin) {
+      try {
+        const response = await authStore.fetchUserStats()
+        if (response && response.total !== undefined) {
+          stats.value.totalUsers = response.total
+        }
+      } catch (error) {
+        console.error('Error loading user stats:', error)
+        stats.value.totalUsers = 0
       }
-    } catch (error) {
-      console.error('Error loading user stats:', error)
-      stats.value.totalUsers = 0
     }
   } catch (error) {
     console.error('Error loading dashboard data:', error)
