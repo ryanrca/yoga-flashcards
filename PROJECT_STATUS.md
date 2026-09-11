@@ -5,13 +5,13 @@
 ### Backend (Django + DRF)
 - **Project Structure**: Complete Django project with proper app organization
 - **Models**: 
-  - Custom User model with roles (Admin, Curator, User)
+  - Custom User model with roles (Admin, Curator, User) and soft deletion
   - Flashcard model with versioning support
   - Tag model for categorization
   - DailyCard and CardUsageLog for daily card rotation
   - UserProfile for extended user data
 - **API Endpoints**: RESTful API with proper authentication and permissions
-- **Authentication**: Session-based authentication with CORS configured (CSRF is currently bypassed for `/api/` -- see Security below)
+- **Authentication**: Session-based authentication with CORS configured and CSRF enforced on authenticated writes
 - **Management Commands**: 
   - `seed_initial_data`: Creates admin/test users and loads flashcards from JSON (`--pull` exports back out)
   - `import_cards`: Bulk import from CSV files
@@ -39,7 +39,7 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
   overview card), loaded by `seed_initial_data`
 
 ### Testing
-- **Backend**: 120 pytest tests across `core`, `flashcards` and `users`, using Factory Boy
+- **Backend**: 147 pytest tests across `core`, `flashcards` and `users`, using Factory Boy
   and a SQLite test settings module (`yoga_flashcards/settings_test.py`)
 - **Frontend**: none, by design (see CLAUDE.md)
 
@@ -54,7 +54,6 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
 2. **Enhanced User Features**:
    - Favorites system -- the `/favorites` page and star buttons are placeholders with no
      backing API, though `UserProfile.favorite_cards` exists on the model
-   - Account deletion endpoint (the profile page button has no backend route)
    - Advanced search with filters
    - Progress tracking
    - Email notifications for daily cards (the `daily_email_enabled` preference saves, but
@@ -102,10 +101,10 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
    - CI/CD pipeline
 
 4. **Security**:
-   - `DisableCSRFMiddleware` strips CSRF from every `/api/` path in all environments, not
-     just development. Re-enabling it needs a CSRF-bootstrap endpoint, because DRF views are
-     `csrf_exempt` so Django never sets the `csrftoken` cookie the frontend reads.
-   - Card `DELETE` is permanent; there is no soft delete despite the `is_active` flag.
+   - Card `DELETE` is permanent; there is no soft delete for cards despite the `is_active`
+     flag. Accounts *are* soft deleted.
+   - Login itself is not CSRF-protected: DRF only enforces CSRF once a session
+     authenticates, and login is anonymous. Standard DRF behaviour.
 
 5. **Content Management**:
    - Approval workflow (creation, image upload and versioning are done)
@@ -114,12 +113,10 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
 
 1. **Immediate**:
    - Write the Helm chart templates so `helm install` actually deploys something
-   - Re-enable CSRF for `/api/` in production
 
 2. **Short Term**:
    - Favorites API, then wire up `/favorites` and the star buttons
    - Extract a shared flashcard component
-   - Account deletion endpoint
    - Implement email verification (the token is generated and printed, never mailed)
 
 3. **Medium Term**:

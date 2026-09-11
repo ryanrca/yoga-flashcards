@@ -15,7 +15,6 @@
 > - **Email delivery**: the `daily_email_enabled` preference saves, and a verification token
 >   is generated on registration, but nothing is ever mailed -- the token is printed to the
 >   server log.
-> - **Account deletion**: the profile page button has no backend route.
 > - **Default placeholder image** for cards without a photo.
 > - **Soft delete** for cards: `DELETE` is permanent.
 > - **Kubernetes / Helm**: the chart has no `templates/` directory.

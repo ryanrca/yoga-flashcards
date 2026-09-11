@@ -32,7 +32,10 @@ class Flashcard(models.Model):
     tags = models.ManyToManyField(Tag, blank=True, related_name='flashcards')
     
     # Metadata
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_cards')
+    # PROTECT, not CASCADE: deleting a user must never take their card library
+    # (and its version history) with it. Accounts are soft deleted instead --
+    # see User.soft_delete().
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='created_cards')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)

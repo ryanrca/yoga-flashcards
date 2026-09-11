@@ -52,9 +52,11 @@ Unauthorized users redirect to home or login.
 - **Tag selection**: Tag selects use `{ label, value }` objects mapped from the tags array.
 - **401 redirects use the hash**: routing is hash-based, so `boot/axios.js` redirects to
   `#/login`, not `/login`.
-- **`API_BASE_URL` is not wired in**: `build.env` is commented out in `quasar.config.js`, so
-  the env var never reaches the bundle and `boot/axios.js` falls back to its hardcoded
-  default. Setting it in `docker-compose.yml` alone has no effect.
+- **`API_BASE_URL`** is injected through `build.env` in `quasar.config.js`. It is read at
+  **build** time, not run time, so a production image has to be built with it set.
+- **CSRF priming**: `boot/axios.js` fetches `GET /api/users/csrf/` before the first unsafe
+  request when no `csrftoken` cookie exists, and shares that fetch across concurrent writes.
+  The request interceptor is async; do not replace it with a synchronous one.
 
 ## Dockerfile Gotcha
 

@@ -149,6 +149,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const restoreUser = async (userId) => {
+    try {
+      const response = await api.post(`/api/users/manage/${userId}/restore/`)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error restoring user:', err)
+      return { success: false, error: err.response?.data || 'Failed to restore user' }
+    }
+  }
+
   const toggleUserStatus = async (userId) => {
     try {
       const response = await api.post(`/api/users/manage/${userId}/toggle_active/`)
@@ -181,6 +191,7 @@ export const useAuthStore = defineStore('auth', () => {
     createUser,
     updateUser,
     deleteUser,
+    restoreUser,
     toggleUserStatus
   }
 })

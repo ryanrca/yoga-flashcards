@@ -155,7 +155,9 @@
         <q-card-section class="row items-center">
           <q-avatar icon="warning" color="negative" text-color="white" />
           <span class="q-ml-sm">
-            Are you sure you want to delete your account? This action cannot be undone.
+            Delete your account? You will be signed out immediately and will no longer be
+            able to log in. Nothing you created is removed, and an administrator can
+            restore the account for you.
           </span>
         </q-card-section>
 
@@ -311,24 +313,23 @@ const confirmDeleteAccount = () => {
 
 const deleteAccount = async () => {
   try {
-    // TODO: no backend endpoint yet - account deletion is unimplemented.
     await api.delete('/api/users/delete-account/')
-    
+
     $q.notify({
       type: 'positive',
-      message: 'Account deleted successfully'
+      message: 'Your account has been deleted'
     })
-    
-    // Logout and redirect
+
+    // The server already ended the session; clear local state and go home.
     await authStore.logout()
-    window.location.href = '/'
+    window.location.href = '#/'
   } catch {
     $q.notify({
       type: 'negative',
       message: 'Failed to delete account'
     })
   }
-  
+
   showDeleteDialog.value = false
 }
 

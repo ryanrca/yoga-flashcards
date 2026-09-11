@@ -48,6 +48,14 @@
               </div>
 
               <div class="col-12 col-md-2">
+                <q-toggle
+                  v-model="includeDeleted"
+                  label="Show deleted"
+                  @update:model-value="loadUsers"
+                />
+              </div>
+
+              <div class="col-12 col-md-2">
                 <q-btn
                   color="primary"
                   label="Clear"
@@ -104,7 +112,20 @@
 
           <template v-slot:body-cell-is_active="props">
             <q-td :props="props">
+              <q-chip
+                v-if="props.row.is_deleted"
+                dense
+                color="grey-7"
+                text-color="white"
+                icon="delete"
+                label="Deleted"
+              >
+                <q-tooltip v-if="props.row.deleted_at">
+                  Deleted {{ formatDate(props.row.deleted_at) }}
+                </q-tooltip>
+              </q-chip>
               <q-icon
+                v-else
                 :name="props.value ? 'check_circle' : 'cancel'"
                 :color="props.value ? 'green' : 'red'"
                 size="sm"
@@ -122,38 +143,52 @@
             <q-td :props="props">
               <div class="q-gutter-xs">
                 <q-btn
+                  v-if="props.row.is_deleted"
                   flat
                   round
-                  color="primary"
-                  icon="edit"
-                  @click="editUser(props.row)"
+                  color="green"
+                  icon="restore_from_trash"
+                  @click="restoreUser(props.row)"
                   size="sm"
                 >
-                  <q-tooltip>Edit User</q-tooltip>
+                  <q-tooltip>Restore User</q-tooltip>
                 </q-btn>
-                <q-btn
-                  flat
-                  round
-                  :color="props.row.is_active ? 'red' : 'green'"
-                  :icon="props.row.is_active ? 'block' : 'check_circle'"
-                  @click="toggleUserStatus(props.row)"
-                  size="sm"
-                >
-                  <q-tooltip>
-                    {{ props.row.is_active ? 'Deactivate' : 'Activate' }} User
-                  </q-tooltip>
-                </q-btn>
-                <q-btn
-                  v-if="props.row.id !== authStore.user?.id"
-                  flat
-                  round
-                  color="red"
-                  icon="delete"
-                  @click="confirmDelete(props.row)"
-                  size="sm"
-                >
-                  <q-tooltip>Delete User</q-tooltip>
-                </q-btn>
+
+                <template v-else>
+                  <q-btn
+                    flat
+                    round
+                    color="primary"
+                    icon="edit"
+                    @click="editUser(props.row)"
+                    size="sm"
+                  >
+                    <q-tooltip>Edit User</q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    flat
+                    round
+                    :color="props.row.is_active ? 'red' : 'green'"
+                    :icon="props.row.is_active ? 'block' : 'check_circle'"
+                    @click="toggleUserStatus(props.row)"
+                    size="sm"
+                  >
+                    <q-tooltip>
+                      {{ props.row.is_active ? 'Deactivate' : 'Activate' }} User
+                    </q-tooltip>
+                  </q-btn>
+                  <q-btn
+                    v-if="props.row.id !== authStore.user?.id"
+                    flat
+                    round
+                    color="red"
+                    icon="delete"
+                    @click="confirmDelete(props.row)"
+                    size="sm"
+                  >
+                    <q-tooltip>Delete User</q-tooltip>
+                  </q-btn>
+                </template>
               </div>
             </q-td>
           </template>
@@ -239,7 +274,9 @@
         <q-card-section class="row items-center">
           <q-avatar icon="warning" color="negative" text-color="white" />
           <span class="q-ml-sm">
-            Are you sure you want to delete user "{{ userToDelete?.email }}"?
+            Delete user "{{ userToDelete?.email }}"? The account is disabled and hidden
+            from this list, but nothing is removed - their cards and history are kept, and
+            you can restore the account from "Show deleted".
           </span>
         </q-card-section>
 
@@ -272,6 +309,7 @@ const loading = ref(false)
 // Search and filter
 const searchQuery = ref('')
 const roleFilter = ref(null)
+const includeDeleted = ref(false)
 let searchTimeout = null
 
 // Pagination
@@ -361,6 +399,11 @@ const loadUsers = async () => {
       params.role = roleFilter.value
     }
 
+    // Deleted accounts are hidden by default
+    if (includeDeleted.value) {
+      params.include_deleted = 'true'
+    }
+
     const result = await authStore.fetchUsers(params)
     
     if (result.success) {
@@ -408,6 +451,7 @@ const debouncedSearch = () => {
 const clearFilters = () => {
   searchQuery.value = ''
   roleFilter.value = null
+  includeDeleted.value = false
   loadUsers()
 }
 
@@ -563,6 +607,23 @@ const deleteUser = async () => {
   } finally {
     showDeleteDialog.value = false
     userToDelete.value = null
+  }
+}
+
+const restoreUser = async (user) => {
+  const result = await authStore.restoreUser(user.id)
+
+  if (result.success) {
+    $q.notify({
+      type: 'positive',
+      message: 'User restored successfully'
+    })
+    loadUsers()
+  } else {
+    $q.notify({
+      type: 'negative',
+      message: result.error?.error || 'Failed to restore user'
+    })
   }
 }
 

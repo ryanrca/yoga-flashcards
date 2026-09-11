@@ -104,3 +104,61 @@ class TestUserModel:
         """Test email_verified defaults to False."""
         user = UserFactory()
         assert user.email_verified is False
+
+
+@pytest.mark.django_db
+class TestSoftDelete:
+    """Tests for account soft deletion."""
+
+    def test_soft_delete_sets_flags(self):
+        user = UserFactory(role='user', is_active=True)
+        user.soft_delete()
+        user.refresh_from_db()
+        assert user.is_deleted is True
+        assert user.is_active is False
+        assert user.deleted_at is not None
+
+    def test_soft_delete_keeps_the_row(self):
+        user = UserFactory(role='user')
+        pk = user.pk
+        user.soft_delete()
+        assert User.objects.filter(pk=pk).exists()
+
+    def test_soft_delete_keeps_authored_cards(self):
+        """The whole point: a deleted curator's card library survives."""
+        from flashcards.models import Flashcard
+        from flashcards.tests.factories import FlashcardFactory
+
+        curator = UserFactory(role='curator')
+        card = FlashcardFactory(created_by=curator)
+        curator.soft_delete()
+        card.refresh_from_db()
+        assert Flashcard.objects.filter(pk=card.pk).exists()
+        assert card.created_by_id == curator.pk
+
+    def test_soft_delete_is_idempotent(self):
+        user = UserFactory(role='user')
+        user.soft_delete()
+        first = user.deleted_at
+        user.soft_delete()
+        user.refresh_from_db()
+        assert user.deleted_at == first
+
+    def test_restore_reenables_account(self):
+        user = UserFactory(role='user')
+        user.soft_delete()
+        user.restore()
+        user.refresh_from_db()
+        assert user.is_deleted is False
+        assert user.is_active is True
+        assert user.deleted_at is None
+
+    def test_hard_delete_is_blocked_while_cards_exist(self):
+        """PROTECT on created_by stops a cascade from wiping a card library."""
+        from django.db.models import ProtectedError
+        from flashcards.tests.factories import FlashcardFactory
+
+        curator = UserFactory(role='curator')
+        FlashcardFactory(created_by=curator)
+        with pytest.raises(ProtectedError):
+            curator.delete()
