@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "yoga-flashcards.backend.fullname" . }}
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.backend.port }}
+      targetPort: http
+  selector:
+    {{- include "yoga-flashcards.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+{{- if .Values.backend.media.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "yoga-flashcards.fullname" . }}-media
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+  annotations:
+    # Uploaded images should outlive a `helm uninstall`.
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.backend.media.storageClass }}
+  storageClassName: {{ .Values.backend.media.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.backend.media.size | quote }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "yoga-flashcards.backend.fullname" . }}
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  {{- if .Values.backend.media.enabled }}
+  strategy:
+    # The media PVC is ReadWriteOnce on node-local storage. Recreate avoids a
+    # rollout deadlock where the new pod waits for a volume the old one holds.
+    type: Recreate
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "yoga-flashcards.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      annotations:
+        # Roll the pods when non-secret config changes.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "yoga-flashcards.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        # Migrations run before the app starts. `migrate` is idempotent, so this
+        # is safe on every restart. It assumes a single writer -- raise
+        # backend.replicaCount only alongside a migration Job instead.
+        - name: migrate
+          image: {{ include "yoga-flashcards.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "Waiting for the database at $DB_HOST:$DB_PORT ..."
+              for i in $(seq 1 60); do
+                if mysqladmin ping -h "$DB_HOST" -P "$DB_PORT" --silent 2>/dev/null; then
+                  echo "Database is ready."
+                  break
+                fi
+                echo "  attempt $i/60"
+                sleep 2
+              done
+              python manage.py migrate --noinput
+          env:
+            {{- include "yoga-flashcards.backendEnv" . | nindent 12 }}
+          envFrom:
+            {{- include "yoga-flashcards.backendEnvFrom" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+      containers:
+        - name: backend
+          image: {{ include "yoga-flashcards.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - gunicorn
+            - yoga_flashcards.wsgi:application
+            - --bind
+            - 0.0.0.0:{{ .Values.backend.port }}
+            - --workers
+            - {{ .Values.backend.gunicorn.workers | quote }}
+            - --timeout
+            - {{ .Values.backend.gunicorn.timeout | quote }}
+            - --access-logfile
+            - "-"
+            - --error-logfile
+            - "-"
+          env:
+            {{- include "yoga-flashcards.backendEnv" . | nindent 12 }}
+          envFrom:
+            {{- include "yoga-flashcards.backendEnvFrom" . | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.port }}
+          # kubelet probes the pod IP directly, which is not in ALLOWED_HOSTS and
+          # would get Django's DisallowedHost 400. Sending an explicit Host
+          # header makes the probe look like a real request instead of forcing
+          # the pod IP into ALLOWED_HOSTS.
+          livenessProbe:
+            httpGet:
+              path: /api/health/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.host | quote }}
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/health/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.host | quote }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.backend.media.enabled }}
+          volumeMounts:
+            - name: media
+              mountPath: {{ .Values.backend.media.mountPath }}
+          {{- end }}
+      {{- if .Values.backend.media.enabled }}
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: {{ include "yoga-flashcards.fullname" . }}-media
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

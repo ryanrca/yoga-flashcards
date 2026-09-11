@@ -1,85 +1,150 @@
 # Default values for yoga-flashcards.
-# This is a YAML-formatted file.
-
-replicaCount: 1
-
-image:
-  repository: yoga-flashcards
-  pullPolicy: IfNotPresent
-  tag: "latest"
+#
+# Targets the shaolin-temple home lab: k3s v1.24, Traefik 2.6 with the legacy
+# traefik.containo.us CRDs, and a per-namespace cert-manager Issuer. See
+# templates/NOTES.txt and k8s/README.md.
 
 nameOverride: ""
 fullnameOverride: ""
 
-serviceAccount:
-  create: true
-  annotations: {}
-  name: ""
+# The single hostname serving both the SPA and the API. Keeping them on one
+# origin is deliberate: session and CSRF cookies stay same-site, so no
+# cross-origin cookie configuration is needed.
+host: flashcards.jetli.kicks-ass.net
 
-podAnnotations: {}
+image:
+  registry: repo.jetli.kicks-ass.net
+  pullPolicy: IfNotPresent
+  # Defaults to .Chart.AppVersion when empty.
+  tag: ""
+  backend:
+    repository: yoga-flashcards-backend
+  frontend:
+    repository: yoga-flashcards-frontend
 
-podSecurityContext: {}
+imagePullSecrets: []
 
-securityContext: {}
+backend:
+  replicaCount: 1
+  port: 8000
+  gunicorn:
+    workers: 3
+    timeout: 60
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 768Mi
+  # Uploaded card images. local-path is node-local and WaitForFirstConsumer, so
+  # this pins the backend to the node holding the volume -- fine on one node.
+  media:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    mountPath: /app/media
+  extraEnv: []
 
-service:
-  type: ClusterIP
-  port: 80
+frontend:
+  replicaCount: 1
+  port: 8080
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
 
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts:
-    - host: yoga-flashcards.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-
-resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
-  requests:
-    cpu: 250m
-    memory: 256Mi
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
-
-# Database configuration
-database:
-  host: yoga-flashcards-mysql
-  port: 3306
-  name: yoga_flashcards
-  user: yoga_user
-  password: yoga_password
-
-# Environment variables
-env:
-  DJANGO_DEBUG: "false"
-  DJANGO_SECRET_KEY: "your-secret-key-here"
-  DATABASE_URL: "mysql://yoga_user:yoga_password@yoga-flashcards-mysql:3306/yoga_flashcards"
-
-# MySQL subchart values
 mysql:
   enabled: true
-  auth:
-    rootPassword: rootpassword
-    database: yoga_flashcards
-    username: yoga_user
-    password: yoga_password
-  primary:
-    persistence:
-      enabled: true
-      size: 8Gi
+  # Pinned to 8.0.28 deliberately. MySQL 8.0.3x images moved to an Oracle Linux 9
+  # base whose glibc requires the x86-64-v2 CPU baseline, which the k8s-a node
+  # does not meet -- they die at startup with:
+  #   Fatal glibc error: CPU does not support x86-64-v2
+  image: mysql:8.0.28
+  port: 3306
+  database: yoga_flashcards
+  user: django_user
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  persistence:
+    size: 8Gi
+    storageClass: ""
+
+# Point at an external database instead by setting mysql.enabled=false and
+# supplying the full URL here (or through the existing secret).
+externalDatabaseUrl: ""
+
+django:
+  debug: false
+  # Leave empty to have the chart generate one on first install and keep it
+  # across upgrades. Set explicitly, or use auth.existingSecret, for anything
+  # you care about surviving a full uninstall.
+  secretKey: ""
+  # Extra hostnames the backend should answer to, beyond .host and the in-cluster
+  # service name used by the probes.
+  extraAllowedHosts: []
+
+auth:
+  # A Secret holding DJANGO_SECRET_KEY, MYSQL_PASSWORD and MYSQL_ROOT_PASSWORD.
+  # When empty the chart creates one and generates any password left blank.
+  existingSecret: ""
+  mysqlPassword: ""
+  mysqlRootPassword: ""
+
+# Loads the 19 starter flashcards after the first install only.
+#
+# Never runs on upgrade: seed_initial_data deletes every existing flashcard and
+# tag before importing, so running it against a live database would destroy
+# content. Re-run it deliberately with `kubectl create job --from=...`.
+seed:
+  enabled: true
+
+ingress:
+  enabled: true
+  # Traefik on this cluster predates IngressClass resources, so the class is
+  # selected with the legacy annotation rather than spec.ingressClassName.
+  className: traefik
+  entrypoints:
+    web: web
+    websecure: websecure
+  tls:
+    enabled: true
+    secretName: ""
+  # Creates a per-namespace Issuer, matching the pattern used by the other
+  # namespaces on this cluster. There is no ClusterIssuer here.
+  certManager:
+    enabled: true
+    createIssuer: true
+    issuerName: letsencrypt-issuer
+    email: ryan@trad-ventures.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+  # Paths sent to the backend; everything else goes to the SPA.
+  backendPaths:
+    - /api
+    - /admin
+    - /static
+    - /media
+
+# Traefik terminates TLS and forwards plain HTTP, so Django needs to trust
+# X-Forwarded-Proto to know the original request was HTTPS.
+proxy:
+  useXForwardedProto: true
+  useXForwardedHost: false
+
+# Requires HTTPS end to end; leave on unless serving over plain HTTP.
+secureCookies: true
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
