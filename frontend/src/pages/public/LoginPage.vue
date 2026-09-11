@@ -63,7 +63,7 @@
           <q-btn
             outline
             color="red"
-            icon="fab fa-google"
+            icon="login"
             label="Google"
             @click="handleGoogleLogin"
             disabled
@@ -71,7 +71,7 @@
           <q-btn
             outline
             color="blue"
-            icon="fab fa-facebook"
+            icon="group"
             label="Facebook"
             @click="handleFacebookLogin"
             disabled

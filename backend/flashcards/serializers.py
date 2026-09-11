@@ -88,7 +88,7 @@ class FlashcardVersionHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Flashcard
         fields = [
-            'id', 'title', 'phrase', 'definition', 'tags', 'created_by_username',
+            'id', 'title', 'phrase', 'definition', 'short_answer', 'tags', 'created_by_username',
             'created_at', 'updated_at', 'version_number', 'is_live', 'is_active'
         ]
 

@@ -163,6 +163,43 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     }
   }
 
+  const updateTag = async (id, tagData) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await api.put(`/api/tags/${id}/`, tagData)
+      const index = tags.value.findIndex(tag => tag.id === id)
+      if (index !== -1) {
+        tags.value[index] = response.data
+      }
+      return { success: true, data: response.data }
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to update tag'
+      console.error('Error updating tag:', err)
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const deleteTag = async (id) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      await api.delete(`/api/tags/${id}/`)
+      tags.value = tags.value.filter(tag => tag.id !== id)
+      return { success: true }
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to delete tag'
+      console.error('Error deleting tag:', err)
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
   const fetchCardVersions = async (id) => {
     loading.value = true
     error.value = null
@@ -216,6 +253,8 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     deleteCard,
     fetchTags,
     createTag,
+    updateTag,
+    deleteTag,
     fetchCardVersions,
     revertCardVersion
   }

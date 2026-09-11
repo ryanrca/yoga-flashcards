@@ -174,11 +174,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useFlashcardsStore } from 'src/stores/flashcards'
 
 const route = useRoute()
+const router = useRouter()
 const $q = useQuasar()
 const flashcardsStore = useFlashcardsStore()
 
@@ -225,23 +226,28 @@ const revertToVersion = (version) => {
 const confirmRevert = async () => {
   if (!versionToRevert.value) return
 
-  try {
-    // This would call the revert API endpoint
-    // const result = await axios.post(`/api/cards/${route.params.id}/revert_version/`, {
-    //   version_id: versionToRevert.value.id
-    // })
-    
+  const result = await flashcardsStore.revertCardVersion(
+    route.params.id,
+    versionToRevert.value.id
+  )
+
+  if (result.success) {
     $q.notify({
-      type: 'info',
-      message: 'Version revert feature coming soon!'
+      type: 'positive',
+      message: 'Reverted to the selected version'
     })
-    
-    // Reload card data
-    // loadCard()
-  } catch {
+
+    // Reverting creates a new version with a new id, so follow it.
+    const newCardId = result.data?.id
+    if (newCardId && newCardId !== parseInt(route.params.id)) {
+      router.push(`/admin/cards/${newCardId}`)
+    } else {
+      loadCard()
+    }
+  } else {
     $q.notify({
       type: 'negative',
-      message: 'Failed to revert to version'
+      message: result.error || 'Failed to revert to version'
     })
   }
 

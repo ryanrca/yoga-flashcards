@@ -234,3 +234,138 @@ class TestUserManagement:
         assert 'total' in response.data
         assert 'active' in response.data
         assert 'admins' in response.data
+
+
+@pytest.mark.django_db
+class TestProfileUpdateSecurity:
+    """Regression tests for self-service profile editing."""
+
+    def test_user_cannot_escalate_own_role(self, api_client):
+        """A user PUTting role=admin on their own profile is ignored."""
+        user = UserFactory(role='user')
+        api_client.force_authenticate(user=user)
+        response = api_client.put('/api/users/profile/', {'role': 'admin'}, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        user.refresh_from_db()
+        assert user.role == 'user'
+
+    def test_user_cannot_reactivate_self(self, api_client):
+        """is_active is not writable through the profile endpoint."""
+        user = UserFactory(role='user', is_active=True)
+        api_client.force_authenticate(user=user)
+        api_client.put('/api/users/profile/', {'is_active': False}, format='json')
+        user.refresh_from_db()
+        assert user.is_active is True
+
+    def test_user_can_update_own_names(self, api_client):
+        """Ordinary profile fields still save."""
+        user = UserFactory(role='user')
+        api_client.force_authenticate(user=user)
+        response = api_client.put(
+            '/api/users/profile/',
+            {'first_name': 'Ada', 'last_name': 'Lovelace'},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_200_OK
+        user.refresh_from_db()
+        assert user.first_name == 'Ada'
+        assert user.last_name == 'Lovelace'
+
+    def test_user_can_set_daily_email_preference(self, api_client):
+        """The email preference toggle persists."""
+        user = UserFactory(role='user', daily_email_enabled=False)
+        api_client.force_authenticate(user=user)
+        response = api_client.put(
+            '/api/users/profile/', {'daily_email_enabled': True}, format='json'
+        )
+        assert response.status_code == status.HTTP_200_OK
+        user.refresh_from_db()
+        assert user.daily_email_enabled is True
+
+
+@pytest.mark.django_db
+class TestChangePassword:
+    """Tests for the change-password endpoint."""
+
+    def test_change_password_success(self, api_client):
+        user = UserFactory(role='user')
+        user.set_password('oldpassword123')
+        user.save()
+        api_client.force_authenticate(user=user)
+        response = api_client.post(
+            '/api/users/change-password/',
+            {'current_password': 'oldpassword123', 'new_password': 'brandnewpass456'},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_200_OK
+        user.refresh_from_db()
+        assert user.check_password('brandnewpass456')
+
+    def test_change_password_wrong_current(self, api_client):
+        user = UserFactory(role='user')
+        user.set_password('oldpassword123')
+        user.save()
+        api_client.force_authenticate(user=user)
+        response = api_client.post(
+            '/api/users/change-password/',
+            {'current_password': 'wrongpassword', 'new_password': 'brandnewpass456'},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        user.refresh_from_db()
+        assert user.check_password('oldpassword123')
+
+    def test_change_password_requires_auth(self, api_client):
+        response = api_client.post(
+            '/api/users/change-password/',
+            {'current_password': 'x', 'new_password': 'brandnewpass456'},
+            format='json',
+        )
+        assert response.status_code in (
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+
+@pytest.mark.django_db
+class TestUserManagementPermissions:
+    """Every action on /api/users/manage/ is admin-only."""
+
+    def test_regular_user_cannot_toggle_other_users(self, api_client):
+        """toggle_active used to fall through to plain IsAuthenticated."""
+        victim = UserFactory(role='user', is_active=True)
+        attacker = UserFactory(role='user')
+        api_client.force_authenticate(user=attacker)
+        response = api_client.post(f'/api/users/manage/{victim.id}/toggle_active/')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        victim.refresh_from_db()
+        assert victim.is_active is True
+
+    def test_regular_user_cannot_read_other_users(self, api_client):
+        victim = UserFactory(role='user')
+        attacker = UserFactory(role='user')
+        api_client.force_authenticate(user=attacker)
+        response = api_client.get(f'/api/users/manage/{victim.id}/')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_curator_cannot_read_user_stats(self, api_client):
+        curator = UserFactory(role='curator')
+        api_client.force_authenticate(user=curator)
+        response = api_client.get('/api/users/manage/stats/')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_admin_without_is_staff_can_manage_users(self, api_client):
+        """IsAdminOnly is role-based; DRF's IsAdminUser would 403 here."""
+        admin = UserFactory(role='admin', is_staff=False, is_superuser=False)
+        api_client.force_authenticate(user=admin)
+        response = api_client.get('/api/users/manage/')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_admin_can_toggle_active(self, api_client):
+        admin = UserFactory(role='admin', is_staff=False, is_superuser=False)
+        victim = UserFactory(role='user', is_active=True)
+        api_client.force_authenticate(user=admin)
+        response = api_client.post(f'/api/users/manage/{victim.id}/toggle_active/')
+        assert response.status_code == status.HTTP_200_OK
+        victim.refresh_from_db()
+        assert victim.is_active is False

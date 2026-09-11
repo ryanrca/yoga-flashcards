@@ -251,14 +251,8 @@ const saveTag = async () => {
 
   let result
   if (editingTag.value) {
-    // Update existing tag (this would need an update API endpoint)
-    $q.notify({
-      type: 'info',
-      message: 'Tag editing feature coming soon!'
-    })
-    result = { success: false }
+    result = await flashcardsStore.updateTag(editingTag.value.id, tagForm.value)
   } else {
-    // Create new tag
     result = await flashcardsStore.createTag(tagForm.value)
   }
 
@@ -289,28 +283,24 @@ const deleteTag = async () => {
 
   deleting.value = true
 
-  // This would need a delete tag API endpoint
-  $q.notify({
-    type: 'info',
-    message: 'Tag deletion feature coming soon!'
-  })
+  const result = await flashcardsStore.deleteTag(tagToDelete.value.id)
 
-  // Simulate successful deletion
-  setTimeout(() => {
-    const index = tags.value.findIndex(t => t.id === tagToDelete.value.id)
-    if (index !== -1) {
-      tags.value.splice(index, 1)
-    }
-
+  if (result.success) {
     $q.notify({
       type: 'positive',
       message: 'Tag deleted successfully'
     })
-
+    loadTags()
     showDeleteDialog.value = false
     tagToDelete.value = null
-    deleting.value = false
-  }, 1000)
+  } else {
+    $q.notify({
+      type: 'negative',
+      message: result.error || 'Failed to delete tag'
+    })
+  }
+
+  deleting.value = false
 }
 
 const viewTagCards = (tag) => {

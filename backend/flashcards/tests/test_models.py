@@ -281,3 +281,34 @@ class TestCardUsageLogModel:
 
         assert log1.pk is not None
         assert log2.pk is not None
+
+
+@pytest.mark.django_db
+class TestVersionFieldPreservation:
+    """Regression tests for fields being dropped when a new version is made."""
+
+    def test_create_new_version_preserves_short_answer(self):
+        """short_answer carries onto the new version when not being changed."""
+        card = FlashcardFactory(short_answer='Non-violence; do no harm.')
+        new_version = card.create_new_version(
+            updated_by=card.created_by,
+            title='Ahimsa (revised)',
+        )
+        assert new_version.short_answer == 'Non-violence; do no harm.'
+
+    def test_create_new_version_updates_short_answer(self):
+        """An explicit short_answer still overrides the old value."""
+        card = FlashcardFactory(short_answer='Old summary')
+        new_version = card.create_new_version(
+            updated_by=card.created_by,
+            short_answer='New summary',
+        )
+        assert new_version.short_answer == 'New summary'
+
+    def test_revert_preserves_short_answer(self):
+        """Reverting copies short_answer from the target version."""
+        card = FlashcardFactory(short_answer='Original summary')
+        card.create_new_version(updated_by=card.created_by, short_answer='Changed summary')
+        reverted = card.revert_to_this_version(reverted_by=card.created_by)
+        assert reverted.short_answer == 'Original summary'
+        assert reverted.is_live is True

@@ -113,20 +113,8 @@
             
             <q-form @submit="updateEmailPreferences" class="q-gutter-md">
               <q-checkbox
-                v-model="emailPreferences.daily_card_email"
+                v-model="emailPreferences.daily_email_enabled"
                 label="Receive daily card via email"
-                color="primary"
-              />
-              
-              <q-checkbox
-                v-model="emailPreferences.weekly_summary"
-                label="Receive weekly summary"
-                color="primary"
-              />
-              
-              <q-checkbox
-                v-model="emailPreferences.new_cards_notification"
-                label="Notify me about new cards"
                 color="primary"
               />
 
@@ -184,7 +172,7 @@
 import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
-import axios from 'axios'
+import { api } from 'src/boot/axios'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
@@ -206,9 +194,7 @@ const passwordData = ref({
 
 // Email preferences
 const emailPreferences = ref({
-  daily_card_email: true,
-  weekly_summary: false,
-  new_cards_notification: true
+  daily_email_enabled: false
 })
 
 // Loading states
@@ -239,11 +225,8 @@ const loadProfileData = () => {
     }
   }
   
-  // Load email preferences (mock data for now)
   emailPreferences.value = {
-    daily_card_email: true,
-    weekly_summary: false,
-    new_cards_notification: true
+    daily_email_enabled: authStore.user?.daily_email_enabled ?? false
   }
 }
 
@@ -252,7 +235,7 @@ const updateProfile = async () => {
   error.value = ''
 
   try {
-    await axios.put('/api/profile/', profileData.value)
+    await api.put('/api/users/profile/', profileData.value)
     
     // Update the auth store with new data
     await authStore.checkAuthStatus()
@@ -278,7 +261,7 @@ const changePassword = async () => {
   passwordError.value = ''
 
   try {
-    await axios.post('/api/change-password/', {
+    await api.post('/api/users/change-password/', {
       current_password: passwordData.value.current_password,
       new_password: passwordData.value.new_password
     })
@@ -305,8 +288,9 @@ const updateEmailPreferences = async () => {
   preferencesLoading.value = true
 
   try {
-    await axios.put('/api/email-preferences/', emailPreferences.value)
-    
+    await api.put('/api/users/profile/', emailPreferences.value)
+    await authStore.checkAuthStatus()
+
     $q.notify({
       type: 'positive',
       message: 'Email preferences updated successfully!'
@@ -327,7 +311,8 @@ const confirmDeleteAccount = () => {
 
 const deleteAccount = async () => {
   try {
-    await axios.delete('/api/delete-account/')
+    // TODO: no backend endpoint yet - account deletion is unimplemented.
+    await api.delete('/api/users/delete-account/')
     
     $q.notify({
       type: 'positive',

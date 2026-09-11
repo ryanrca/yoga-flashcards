@@ -1,8 +1,26 @@
 # Yoga Flashcards - Functional Specification
 
 **Version:** 1.0
-**Last Updated:** 2025-01-25
-**Status:** Production
+**Last Updated:** 2026-09-10
+**Status:** Specification -- describes intended behaviour, not all of it is built yet
+
+> **Implementation status.** This document is the target spec. The following sections
+> describe behaviour that is **not implemented**; treat them as requirements, not as a
+> description of the running system:
+>
+> - **Favorites** (save/star a card, the `/favorites` page, the favourites list): the page
+>   and buttons are placeholders. `UserProfile.favorite_cards` exists on the model but no
+>   API endpoint reads or writes it.
+> - **Social authentication** (Google / Facebook): buttons are rendered disabled.
+> - **Email delivery**: the `daily_email_enabled` preference saves, and a verification token
+>   is generated on registration, but nothing is ever mailed -- the token is printed to the
+>   server log.
+> - **Account deletion**: the profile page button has no backend route.
+> - **Default placeholder image** for cards without a photo.
+> - **Soft delete** for cards: `DELETE` is permanent.
+> - **Kubernetes / Helm**: the chart has no `templates/` directory.
+>
+> See `PROJECT_STATUS.md` for the current state and `README.md` for what ships today.
 
 ---
 

@@ -162,7 +162,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 | version_group | UUIDField | | uuid4() | Groups all versions |
 | version_number | PositiveIntegerField | | 1 | Version sequence |
 | is_live | BooleanField | | True | Current active version |
-| is_active | BooleanField | | True | Soft delete flag |
+| is_active | BooleanField | | True | Intended as a soft delete flag, but `DELETE /api/cards/{id}/` currently hard-deletes the row. Only the seeder and queries read it. |
 | created_by | ForeignKey | null, SET_NULL | None | Creating user |
 | created_at | DateTimeField | auto_now_add | auto | Creation time |
 | updated_at | DateTimeField | auto_now | auto | Update time |
@@ -377,11 +377,9 @@ This MUST be set before running any migrations.
 
 | Name | Description |
 |------|-------------|
-| 8 Limbs | The eight limbs of yoga (Ashtanga) |
-| Yamas | Ethical restraints |
-| Niyamas | Observances |
-| Sanskrit | Sanskrit terminology |
-| Asana | Physical postures |
+| 8 Limbs | The eight limbs of yoga according to Patanjali |
+| Yamas | Ethical restraints - how we relate to others |
+| Niyamas | Personal observances - how we relate to ourselves |
 
 ### Initial Users
 
@@ -394,10 +392,12 @@ This MUST be set before running any migrations.
 
 ### Initial Flashcards
 
-See `backend/flashcards/management/commands/data/flashcards.json` for the complete seed data containing:
+See `backend/flashcards/management/commands/data/flashcards.json` for the complete seed data.
+19 cards in total:
 - 8 Limbs of Yoga
 - 5 Yamas
 - 5 Niyamas
+- 1 "Yoga" overview card
 
 ---
 
