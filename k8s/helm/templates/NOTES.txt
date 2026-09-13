@@ -1,0 +1,33 @@
+{{ .Chart.Name }} {{ .Chart.AppVersion }} deployed as {{ .Release.Name }} in {{ .Release.Namespace }}.
+
+  URL:  {{ include "yoga-flashcards.origin" . }}
+  Admin: {{ include "yoga-flashcards.origin" . }}/admin/
+
+Watch it come up:
+
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "yoga-flashcards.backend.fullname" . }}
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "yoga-flashcards.frontend.fullname" . }}
+{{- if and .Values.ingress.enabled .Values.ingress.tls.enabled }}
+
+The certificate normally issues in 10-20 seconds:
+
+  kubectl -n {{ .Release.Namespace }} get certificate {{ include "yoga-flashcards.tlsSecretName" . }}
+
+If it stays Pending, check DNS for {{ .Values.host }} first -- HTTP-01 needs the
+name to resolve to the cluster before it can succeed.
+{{- end }}
+{{- if .Values.seed.enabled }}
+
+Seed data was loaded by the post-install Job. Sign in with admin@example.com /
+admin123 and change the password immediately.
+
+The Job does NOT run on upgrade, because seed_initial_data deletes all existing
+flashcards and tags first.
+{{- end }}
+{{- if not .Values.auth.existingSecret }}
+
+Generated credentials live in the Secret {{ include "yoga-flashcards.secretName" . }}
+and are preserved across upgrades. Back it up -- `helm uninstall` removes it:
+
+  kubectl -n {{ .Release.Namespace }} get secret {{ include "yoga-flashcards.secretName" . }} -o yaml > secret-backup.yaml
+{{- end }}

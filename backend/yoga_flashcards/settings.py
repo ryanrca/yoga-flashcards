@@ -61,6 +61,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -134,8 +135,16 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Hashed + compressed filenames in production. Left off under DEBUG so the dev
+# server keeps serving straight from the app directories.
+if not DEBUG:
+    STORAGES = {
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+    }
+
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = env('MEDIA_ROOT', default=str(BASE_DIR / 'media'))
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -200,6 +209,15 @@ OPENROUTER_TIMEOUT = env.int('OPENROUTER_TIMEOUT', default=180)
 # Optional attribution shown on the OpenRouter dashboard.
 OPENROUTER_SITE_URL = env('OPENROUTER_SITE_URL', default='')
 OPENROUTER_SITE_NAME = env('OPENROUTER_SITE_NAME', default='Yoga Flashcards')
+# Proxy / TLS termination
+#
+# Traefik terminates TLS and forwards over plain HTTP, so Django has to trust
+# the forwarded-proto header to know the request was secure. Only enable this
+# when actually behind a proxy that sets it.
+if env.bool('USE_X_FORWARDED_PROTO', default=False):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+USE_X_FORWARDED_HOST = env.bool('USE_X_FORWARDED_HOST', default=False)
 
 # Logging Configuration
 LOGGING = {

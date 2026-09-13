@@ -39,6 +39,11 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
 
 ### Infrastructure
 - **Docker Compose**: Complete development environment
+- **Kubernetes**: Helm chart in `k8s/helm/` -- Deployments, MySQL StatefulSet, PVCs,
+  Traefik ingress with a Let's Encrypt certificate, and a post-install seed Job.
+  Deployed at https://flashcards.jetli.kicks-ass.net
+- **Production images**: gunicorn + WhiteNoise for the backend, nginx-served static
+  build for the SPA
 - **Initial Data**: JSON seed with 19 flashcards (8 limbs, yamas, niyamas, plus a "Yoga"
   overview card), loaded by `seed_initial_data`
 
@@ -99,11 +104,11 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
    - Integration tests
    - End-to-end tests
 
-2. **Kubernetes**:
-   - `k8s/helm/` has `Chart.yaml` and `values.yaml` but **no `templates/` directory**, so
-     `helm install` creates no resources
-   - `values.yaml` declares a `mysql` subchart that `Chart.yaml` does not list under
-     `dependencies`, so it is never fetched
+2. **Kubernetes** -- the chart is complete and deployed. Still outstanding:
+   - No CI/CD; images are built and pushed by hand
+   - Single replica throughout. More backend replicas need the migrations moved out
+     of the init container into a Job, and the media PVC moved to ReadWriteMany
+   - No backup schedule for the MySQL PVC
 
 3. **Production Setup**:
    - Environment-specific configurations
@@ -124,7 +129,11 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
 ## [TODO] Next Steps
 
 1. **Immediate**:
-   - Write the Helm chart templates so `helm install` actually deploys something
+   - Change the seeded admin@example.com password on the deployed instance
+   - Back up the generated `yoga-flashcards-secrets` Secret
+   - Fix the expired TLS cert on `repo.jetli.kicks-ass.net` (the registry ingress still
+     references `jetli-sept-2021-3year`, so pushes fall back to the insecure-registry
+     path over HTTP)
 
 2. **Short Term**:
    - Favorites API, then wire up `/favorites` and the star buttons
