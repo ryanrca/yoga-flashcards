@@ -120,6 +120,8 @@
               <q-img
                 :src="acceptedImage.image_url"
                 style="max-width: 380px; border-radius: 8px;"
+                class="cursor-pointer"
+                @click="openImage(acceptedImage)"
               />
               <div class="q-mt-sm">
                 <q-btn
@@ -173,7 +175,7 @@
                   <q-btn
                     color="primary"
                     icon="auto_awesome"
-                    label="Queue generation"
+                    label="Add prompt to queue"
                     :loading="generating"
                     @click="queueGeneration"
                   />
@@ -210,6 +212,8 @@
                         v-if="image.image_url"
                         :src="image.image_url"
                         style="width: 56px; height: 56px; border-radius: 6px;"
+                        class="cursor-pointer"
+                        @click.stop="openImage(image)"
                       />
                       <q-avatar v-else :color="statusColor(image.status)" text-color="white" icon="image" />
                     </q-item-section>
@@ -253,7 +257,8 @@
                         v-if="image.image_url"
                         :src="image.image_url"
                         style="max-width: 380px; border-radius: 8px;"
-                        class="q-mb-md"
+                        class="q-mb-md cursor-pointer"
+                        @click="openImage(image)"
                       />
 
                       <div v-if="image.error" class="text-negative q-mb-sm">
@@ -270,8 +275,12 @@
                     </q-card-section>
 
                     <q-card-actions align="right">
-                      <q-btn flat dense label="Reuse prompt" @click="reusePrompt(image)" />
-                      <q-btn flat dense label="Regenerate" @click="regenerateFrom(image)" />
+                      <q-btn flat dense icon="edit_note" label="Edit this prompt" @click="reusePrompt(image)">
+                        <q-tooltip>Load this prompt into the editor above. Queues nothing.</q-tooltip>
+                      </q-btn>
+                      <q-btn flat dense icon="refresh" label="Regenerate with same prompt" @click="regenerateFrom(image)">
+                        <q-tooltip>Queue a new generation using this exact prompt.</q-tooltip>
+                      </q-btn>
                       <q-btn
                         v-if="image.status === 'succeeded' && !image.is_accepted"
                         flat
@@ -373,6 +382,45 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <!-- Full-size image viewer -->
+    <q-dialog v-model="showImageDialog">
+      <q-card style="max-width: 92vw; width: 900px;">
+        <q-card-section class="row items-center q-pb-sm">
+          <div class="col">
+            <div class="text-subtitle1">{{ dialogImage?.card_title || card?.title }}</div>
+            <div class="text-caption text-grey-7">
+              {{ dialogImage?.model }}
+              <span v-if="dialogImage"> &middot; {{ formatDate(dialogImage.created_at) }}</span>
+              <span v-if="dialogImage?.is_accepted"> &middot; accepted</span>
+            </div>
+          </div>
+          <q-btn flat round dense icon="close" @click="showImageDialog = false" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <q-img
+            v-if="dialogImage?.image_url"
+            :src="dialogImage.image_url"
+            fit="contain"
+            style="max-height: 72vh;"
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn
+            flat
+            dense
+            icon="open_in_new"
+            label="Open original"
+            type="a"
+            :href="dialogImage?.image_url"
+            target="_blank"
+          />
+          <q-btn flat dense label="Close" @click="showImageDialog = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -406,6 +454,16 @@ const generating = ref(false)
 const promptDraft = ref('')
 const lookAndFeelOverride = ref('')
 const modelDraft = ref('')
+
+// Full-size image viewer
+const showImageDialog = ref(false)
+const dialogImage = ref(null)
+
+const openImage = (image) => {
+  if (!image?.image_url) return
+  dialogImage.value = image
+  showImageDialog.value = true
+}
 
 const acceptedImage = computed(() => images.value.find((image) => image.is_accepted) || null)
 
