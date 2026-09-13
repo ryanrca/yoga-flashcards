@@ -17,3 +17,9 @@ data:
   USE_X_FORWARDED_PROTO: {{ ternary "1" "0" .Values.proxy.useXForwardedProto | quote }}
   USE_X_FORWARDED_HOST: {{ ternary "1" "0" .Values.proxy.useXForwardedHost | quote }}
   MEDIA_ROOT: {{ .Values.backend.media.mountPath | quote }}
+  # OpenRouter, non-secret settings only. The API key is in the Secret and is
+  # mounted into the image bot alone, not the web pods, which never call out.
+  OPENROUTER_BASE_URL: {{ .Values.openrouter.baseUrl | quote }}
+  OPENROUTER_TIMEOUT: {{ .Values.openrouter.timeout | quote }}
+  OPENROUTER_SITE_URL: {{ .Values.openrouter.siteUrl | default (include "yoga-flashcards.origin" .) | quote }}
+  OPENROUTER_SITE_NAME: {{ .Values.openrouter.siteName | quote }}

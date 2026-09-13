@@ -24,6 +24,22 @@ admin123 and change the password immediately.
 The Job does NOT run on upgrade, because seed_initial_data deletes all existing
 flashcards and tags first.
 {{- end }}
+{{- if .Values.imageBot.enabled }}
+{{- if eq (include "yoga-flashcards.openrouterConfigured" . | trim) "true" }}
+
+The card image bot runs on schedule {{ .Values.imageBot.schedule }}, up to
+{{ .Values.imageBot.limit }} generation(s) per run. Each one is billed by OpenRouter.
+
+  kubectl -n {{ .Release.Namespace }} get cronjob,jobs
+{{- else }}
+
+The card image bot was NOT scheduled: no OpenRouter API key is configured.
+Set one and upgrade to create the CronJob:
+
+  kubectl -n {{ .Release.Namespace }} patch secret {{ include "yoga-flashcards.secretName" . }} \
+    -p '{"stringData":{"OPENROUTER_API_KEY":"sk-or-..."}}'
+{{- end }}
+{{- end }}
 {{- if not .Values.auth.existingSecret }}
 
 Generated credentials live in the Secret {{ include "yoga-flashcards.secretName" . }}

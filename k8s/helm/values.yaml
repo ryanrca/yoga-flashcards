@@ -99,6 +99,49 @@ auth:
   mysqlPassword: ""
   mysqlRootPassword: ""
 
+# The card image bot.
+#
+# Runs `manage.py generate_card_images`, which queues an image for any card that
+# has never had one and then generates. Each run is bounded by `limit`, each
+# image row is bounded by the max_attempts setting in the app, and
+# concurrencyPolicy Forbid stops a slow run overlapping the next tick -- so the
+# schedule can be frequent without risking a pile-up.
+#
+# The CronJob is only created when an OpenRouter key is reachable (see
+# `openrouter` below). Without one it is skipped rather than scheduled to fail.
+imageBot:
+  enabled: true
+  schedule: "*/10 * * * *"
+  # Generations per run. Every one costs money, so this is the throttle.
+  limit: 3
+  concurrencyPolicy: Forbid
+  backoffLimit: 1
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 300
+  resources:
+    requests:
+      cpu: 50m
+      memory: 192Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+openrouter:
+  # Supply the key here, or set it once with:
+  #   kubectl -n NS patch secret RELEASE-secrets \
+  #     -p '{"stringData":{"OPENROUTER_API_KEY":"sk-or-..."}}'
+  # A key already in the Secret survives upgrades even when this stays blank.
+  apiKey: ""
+  # Or point at a Secret you manage yourself.
+  existingSecret: ""
+  existingSecretKey: OPENROUTER_API_KEY
+  baseUrl: https://openrouter.ai/api/v1
+  timeout: 180
+  # Attribution on the OpenRouter dashboard. Defaults to the app's own URL.
+  siteUrl: ""
+  siteName: Yoga Flashcards
+
 # Loads the 19 starter flashcards after the first install only.
 #
 # Never runs on upgrade: seed_initial_data deletes every existing flashcard and
