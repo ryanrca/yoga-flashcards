@@ -30,7 +30,7 @@ Created by `seed_initial_data`, which `backend/start.sh` runs on container start
 - **Accounts are soft deleted**: deleting a user sets `is_deleted`/`deleted_at` and clears `is_active`. The row, their profile and every card they authored are kept. `Flashcard.created_by` is `PROTECT`, so a hard delete cannot cascade.
 - **Roles**: Admin > Curator > User. Curators can manage cards/tags. Admins can also manage users.
 - **Daily Card**: Public endpoint cycles through all cards before repeating (see `flashcards/services.py`)
-- **AI card images**: A bot generates one front image per card through OpenRouter. Prompts and unaccepted images are admin-only; users see an image only once an admin accepts it. History is append-only -- regenerating adds a row, never edits one.
+- **AI card images**: A bot generates one front image per card through OpenRouter. Prompts and unaccepted images are visible to curators and admins only; users see an image only once it is accepted. History is append-only -- regenerating adds a row, never edits one. Each card can pin its own model, remembered against its `version_group`.
 
 ## Key Conventions
 
@@ -106,7 +106,7 @@ Public (no auth): `GET /api/health/`, `GET /api/dailycard/`, `GET /api/tags/`, `
 Authenticated: `GET /api/cards/`, `GET /api/cards/{id}/`, `GET|PUT /api/users/profile/`, `POST /api/users/change-password/`, `DELETE /api/users/delete-account/`
 Curator+: CRUD on `/api/cards/`, `/api/tags/`, version history, revert
 Admin only: `/api/users/manage/` for user CRUD, plus its `stats/`, `toggle_active/` and `restore/` actions. `?include_deleted=true` reveals soft-deleted accounts; they are hidden otherwise.
-Admin only (card images): `GET|POST /api/cards/{id}/images/`, `/api/card-images/{id}/` with `accept/`, `unaccept/`, `regenerate/`, and `GET|PUT /api/image-settings/`.
+Curator+ (card images): `GET|POST /api/cards/{id}/images/`, `GET|PUT /api/cards/{id}/image-model/`, `/api/card-images/{id}/` with `accept/`, `unaccept/`, `regenerate/`, and `GET|PUT /api/image-settings/`.
 
 Not implemented despite appearing in the UI: favorites, social (Google/Facebook) auth.
 

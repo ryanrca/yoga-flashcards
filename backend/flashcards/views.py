@@ -9,6 +9,7 @@ from .models import Flashcard, Tag, CardImage, ImageGenerationSettings
 from .serializers import (
     FlashcardSerializer, TagSerializer, FlashcardVersionHistorySerializer,
     CardImageSerializer, CardImageCreateSerializer, ImageGenerationSettingsSerializer,
+    CardImageModelSerializer,
 )
 from .permissions import IsCuratorOrAdmin, IsAdminOnly
 from .pagination import CardPagination
@@ -32,8 +33,8 @@ class FlashcardViewSet(viewsets.ModelViewSet):
         """
         if self.action in ['list', 'retrieve']:
             permission_classes = [IsAuthenticated]
-        elif self.action == 'images':
-            permission_classes = [IsAuthenticated, IsAdminOnly]
+        elif self.action in ['images', 'image_model']:
+            permission_classes = [IsCuratorOrAdmin]
         else:
             permission_classes = [IsCuratorOrAdmin]
         return [permission() for permission in permission_classes]
@@ -90,10 +91,10 @@ class FlashcardViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=True, methods=['get', 'post'], url_path='images',
-            permission_classes=[IsAuthenticated, IsAdminOnly])
+            permission_classes=[IsCuratorOrAdmin])
     def images(self, request, pk=None):
         """
-        Admin only: the card's full generation history, and queueing a new one.
+        Curator or admin: the card's generation history, and queueing a new one.
 
         GET also returns `preview`, the prompt a new generation would use right
         now, so the admin screen can prefill the editable prompt box without a
@@ -137,6 +138,37 @@ class FlashcardViewSet(viewsets.ModelViewSet):
             CardImageSerializer(image, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=True, methods=['get', 'put'], url_path='image-model')
+    def image_model(self, request, pk=None):
+        """
+        Read or set the image model for this card.
+
+        Stored against the card's version_group, so the choice survives edits to
+        the card text. A blank model returns the card to the global default.
+        """
+        card = self.get_object()
+
+        if request.method == 'GET':
+            config = ImageGenerationSettings.load()
+            model = CardImageService.effective_model(card)
+            return Response({
+                'model': model,
+                'model_source': 'card' if model != config.model else 'global',
+                'global_model': config.model,
+            })
+
+        serializer = CardImageModelSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        CardImageService.set_model(card, serializer.validated_data['model'], user=request.user)
+
+        config = ImageGenerationSettings.load()
+        model = CardImageService.effective_model(card)
+        return Response({
+            'model': model,
+            'model_source': 'card' if model != config.model else 'global',
+            'global_model': config.model,
+        })
 
     @action(detail=True, methods=['post'])
     def revert_version(self, request, pk=None):
@@ -182,14 +214,14 @@ class TagViewSet(viewsets.ModelViewSet):
 
 class CardImageViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Admin-only access to generated images and their prompts.
+    Curator and admin access to generated images and their prompts.
 
     Read-only by design: history is append-only, so there is no update or
     destroy. Accepting, withdrawing and regenerating are explicit actions.
     """
 
     serializer_class = CardImageSerializer
-    permission_classes = [IsAuthenticated, IsAdminOnly]
+    permission_classes = [IsCuratorOrAdmin]
     pagination_class = CardPagination
 
     def get_queryset(self):
@@ -237,11 +269,15 @@ class CardImageViewSet(viewsets.ReadOnlyModelViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        # The model deliberately falls back to the card's current choice rather
+        # than the one this row used. "Regenerate with same prompt" is how you
+        # compare a prompt you like across models: change the model, regenerate,
+        # and the same prompt is sent to the new one.
         image = CardImageService.queue(
             source.card,
             prompt=data.get('prompt', '') or source.prompt,
             look_and_feel_override=data.get('look_and_feel_override', '') or source.look_and_feel_override,
-            model=data.get('model', '') or source.model,
+            model=data.get('model', '') or CardImageService.effective_model(source.card),
             requested_by=request.user,
         )
         return Response(
@@ -251,9 +287,15 @@ class CardImageViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ImageGenerationSettingsView(APIView):
-    """Admin only: the global look and feel, default model and bot switches."""
+    """
+    Curator or admin: the global look and feel, default model and bot switches.
 
-    permission_classes = [IsAuthenticated, IsAdminOnly]
+    Curators are included because this is the deck's visual direction, which is
+    editorial work. Narrow it to IsAdminOnly if the master switch and attempt
+    cap should stay with admins.
+    """
+
+    permission_classes = [IsCuratorOrAdmin]
 
     def get(self, request):
         config = ImageGenerationSettings.load()

@@ -253,6 +253,26 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     }
   }
 
+  const fetchCardImageModel = async (cardId) => {
+    try {
+      const response = await api.get(`/api/cards/${cardId}/image-model/`)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error fetching card image model:', err)
+      return { success: false, error: 'Failed to load the model for this card' }
+    }
+  }
+
+  const setCardImageModel = async (cardId, model) => {
+    try {
+      const response = await api.put(`/api/cards/${cardId}/image-model/`, { model })
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error setting card image model:', err)
+      return { success: false, error: err.response?.data?.model?.[0] || 'Failed to set the model' }
+    }
+  }
+
   const fetchImageSettings = async () => {
     try {
       const response = await api.get('/api/image-settings/')
@@ -336,6 +356,8 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     acceptCardImage,
     unacceptCardImage,
     fetchImageSettings,
-    updateImageSettings
+    updateImageSettings,
+    fetchCardImageModel,
+    setCardImageModel
   }
 })

@@ -21,7 +21,7 @@ Logged in users can see all flashcards.
 - **Tagging system** - Organize cards with flexible tags
 - **Search and filtering** - Find cards across all text fields
 - **Version history** - View complete edit history for each card with ability to revert to any previous version
-- **AI card images** - A bot illustrates each card's front through OpenRouter, seeding the prompt from the card's own text. Prompts and unaccepted images are admin-only; an image reaches users only when an admin accepts it. Every prompt and image is kept.
+- **AI card images** - A bot illustrates each card's front through OpenRouter, seeding the prompt from the card's own text. Prompts and unaccepted images are visible to curators and admins only; an image reaches users only when one of them accepts it. Every prompt and image is kept, and each card can pin its own model.
 - **CSV import** - Bulk import cards from CSV files.  A script is provided to import new or update existing cards in bulk.
 - **Default photo** *(planned, not implemented)* - A single .jpg or vector placeholder for cards with no image. Cards without an image currently render a CSS placeholder block.
 - **Initial Data** - `backend/flashcards/management/commands/data/flashcards.json` seeds 19 cards:
@@ -115,9 +115,10 @@ The flashcard versioning system works as follows:
 
 ### Card Image Endpoints
 
-All admin only. Prompts are never returned to any other role.
+Curator or admin only. Prompts are never returned to any other role.
 
-- `GET /api/cards/{id}/images/` - Generation history for the card, plus `preview`: the prompt a new generation would use
+- `GET /api/cards/{id}/images/` - Generation history for the card, plus `preview`: the prompt and model a new generation would use
+- `GET|PUT /api/cards/{id}/image-model/` - Read or pin the model for this card. Blank returns it to the global default
 - `POST /api/cards/{id}/images/` - Queue a generation. Optional `prompt`, `look_and_feel_override`, `model`
 - `GET /api/card-images/` - All generations (`?version_group=`, `?status=`)
 - `POST /api/card-images/{id}/accept/` - Make this the image users see

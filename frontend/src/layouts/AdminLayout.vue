@@ -120,7 +120,7 @@
         </q-item>
 
         <q-item
-          v-if="authStore.isAdmin"
+          v-if="authStore.isCurator"
           clickable
           @click="$router.push('/admin/image-settings')"
           class="nav-item"
