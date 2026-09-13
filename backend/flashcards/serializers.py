@@ -1,7 +1,10 @@
 from django.core.files.storage import default_storage
 from rest_framework import serializers
 
-from .models import Flashcard, Tag, DailyCard, CardImage, ImageGenerationSettings
+from .models import (
+    Flashcard, Tag, DailyCard, CardImage, ImageGenerationSettings,
+    CardImagePreference,
+)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -200,3 +203,23 @@ class ImageGenerationSettingsSerializer(serializers.ModelSerializer):
         if not 1 <= value <= 10:
             raise serializers.ValidationError('max_attempts must be between 1 and 10.')
         return value
+
+
+class CardImageModelSerializer(serializers.Serializer):
+    """Input for choosing the model used for one card."""
+
+    model = serializers.CharField(
+        required=True, allow_blank=True, max_length=200,
+        help_text='OpenRouter model slug. Blank returns this card to the global default.',
+    )
+
+
+class CardImagePreferenceSerializer(serializers.ModelSerializer):
+    """The stored per-card model choice."""
+
+    updated_by_username = serializers.CharField(source='updated_by.username', read_only=True)
+
+    class Meta:
+        model = CardImagePreference
+        fields = ['version_group', 'model', 'updated_at', 'updated_by_username']
+        read_only_fields = fields

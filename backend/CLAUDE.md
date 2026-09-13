@@ -83,6 +83,12 @@ Uses pytest with `@pytest.mark.django_db` and Factory Boy.
 - Single-accepted is enforced in `CardImageService.accept()`, not by a partial UniqueConstraint:
   MySQL has no partial indexes, so the constraint would hold in tests (SQLite) and silently do
   nothing in production.
+- Per-card model lives in `CardImagePreference`, also keyed on `version_group`. Resolve it with
+  `CardImageService.effective_model(card)` -- never read `ImageGenerationSettings.model` directly
+  when generating, or per-card choices are ignored.
+- `regenerate` falls back to the card's *current* model, not the model the source row used. That
+  is deliberate: it is how one prompt gets compared across models.
+- Image endpoints are `IsCuratorOrAdmin`, not `IsAdminOnly`. User management stays admin-only.
 
 ## Style
 

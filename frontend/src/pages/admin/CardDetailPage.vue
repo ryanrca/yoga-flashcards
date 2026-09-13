@@ -94,7 +94,7 @@
           </q-card>
 
           <!-- AI generated images: admin only -->
-          <q-card v-if="authStore.isAdmin" class="q-mt-lg">
+          <q-card v-if="authStore.isCurator" class="q-mt-lg">
             <q-card-section class="row items-center">
               <div class="col">
                 <div class="text-h6">Card Image</div>
@@ -151,8 +151,15 @@
                 autogrow
                 label="Prompt"
                 hint="Seeded from this card's text. Edit freely and regenerate as often as you like."
-                class="q-mb-md"
+                class="q-mb-sm"
               />
+              <div class="text-caption q-mb-md" :class="promptIsLatest ? 'text-grey-7' : 'text-orange-9'">
+                <span v-if="promptIsLatest">This is the current prompt for the card.</span>
+                <span v-else>
+                  Edited, so it differs from the prompt seeded from the card text.
+                  <a href="#" class="text-primary" @click.prevent="resetPrompt">Reset to the latest</a>
+                </span>
+              </div>
 
               <q-input
                 v-model="lookAndFeelOverride"
@@ -168,10 +175,33 @@
 
               <div class="row q-col-gutter-md items-center">
                 <div class="col-12 col-sm-6">
-                  <q-input v-model="modelDraft" outlined dense label="Model" />
+                  <q-select
+                    v-model="modelDraft"
+                    :options="modelOptions"
+                    outlined
+                    dense
+                    use-input
+                    fill-input
+                    hide-selected
+                    new-value-mode="add-unique"
+                    input-debounce="0"
+                    label="Model for this card"
+                    :loading="savingModel"
+                    @update:model-value="onModelChange"
+                    @new-value="onNewModel"
+                  />
+                  <div class="text-caption text-grey-7 q-mt-xs">
+                    <span v-if="preview && preview.model_source === 'card'">
+                      Set for this card and remembered.
+                      <a href="#" class="text-primary" @click.prevent="useGlobalModel">Use the global default</a>
+                    </span>
+                    <span v-else-if="preview">
+                      Using the global default ({{ preview.global_model }}).
+                    </span>
+                  </div>
                 </div>
                 <div class="col-12 col-sm-6 text-right">
-                  <q-btn flat label="Reset prompt" :disable="generating" @click="resetPrompt" />
+                  <q-btn flat label="Reset to latest prompt" :disable="generating" @click="resetPrompt" />
                   <q-btn
                     color="primary"
                     icon="auto_awesome"
@@ -279,7 +309,10 @@
                         <q-tooltip>Load this prompt into the editor above. Queues nothing.</q-tooltip>
                       </q-btn>
                       <q-btn flat dense icon="refresh" label="Regenerate with same prompt" @click="regenerateFrom(image)">
-                        <q-tooltip>Queue a new generation using this exact prompt.</q-tooltip>
+                        <q-tooltip>
+                          Queue this exact prompt against the card's current model
+                          ({{ preview ? preview.model : 'default' }}).
+                        </q-tooltip>
                       </q-btn>
                       <q-btn
                         v-if="image.status === 'succeeded' && !image.is_accepted"
@@ -455,6 +488,56 @@ const promptDraft = ref('')
 const lookAndFeelOverride = ref('')
 const modelDraft = ref('')
 
+const modelOptions = ref([
+  'black-forest-labs/flux.2-pro',
+  'black-forest-labs/flux.2-max',
+  'black-forest-labs/flux.2-flex',
+  'google/gemini-2.5-flash-image'
+])
+const savingModel = ref(false)
+
+// True while the editor still holds the prompt as seeded from the card text.
+const promptIsLatest = computed(
+  () => !preview.value || promptDraft.value === preview.value.prompt
+)
+
+const onNewModel = (value, done) => {
+  const slug = (value || '').trim()
+  if (!slug) return
+  if (!modelOptions.value.includes(slug)) modelOptions.value.push(slug)
+  done(slug, 'add-unique')
+}
+
+const applyModelResult = (data) => {
+  modelDraft.value = data.model
+  if (preview.value) {
+    preview.value.model = data.model
+    preview.value.model_source = data.model_source
+    preview.value.global_model = data.global_model
+  }
+  if (data.model && !modelOptions.value.includes(data.model)) {
+    modelOptions.value.push(data.model)
+  }
+}
+
+// Persisted as soon as it changes, so "change the model, then regenerate" is
+// one action and the next generation is guaranteed to use the new choice.
+const onModelChange = async (value) => {
+  savingModel.value = true
+  const result = await flashcardsStore.setCardImageModel(route.params.id, value || '')
+  if (result.success) {
+    applyModelResult(result.data)
+    $q.notify({ type: 'positive', message: `This card will use ${result.data.model}` })
+  } else {
+    $q.notify({ type: 'negative', message: result.error })
+  }
+  savingModel.value = false
+}
+
+const useGlobalModel = async () => {
+  await onModelChange('')
+}
+
 // Full-size image viewer
 const showImageDialog = ref(false)
 const dialogImage = ref(null)
@@ -491,15 +574,19 @@ const loadCard = async () => {
 }
 
 const loadImages = async () => {
-  if (!authStore.isAdmin) return
+  if (!authStore.isCurator) return
   imagesLoading.value = true
   const result = await flashcardsStore.fetchCardImages(route.params.id, lookAndFeelOverride.value)
   if (result.success) {
     images.value = result.data.images
     preview.value = result.data.preview
-    // Only prefill an untouched box, so a draft in progress is never clobbered.
+    // Only prefill an untouched prompt box, so a draft in progress survives.
     if (!promptDraft.value) promptDraft.value = result.data.preview.prompt
-    if (!modelDraft.value) modelDraft.value = result.data.preview.model
+    // The model always mirrors what is stored, so what you see is what will run.
+    modelDraft.value = result.data.preview.model
+    if (result.data.preview.model && !modelOptions.value.includes(result.data.preview.model)) {
+      modelOptions.value.push(result.data.preview.model)
+    }
   } else {
     $q.notify({ type: 'negative', message: result.error })
   }
@@ -541,9 +628,14 @@ const queueGeneration = async () => {
 }
 
 const regenerateFrom = async (image) => {
-  const result = await flashcardsStore.regenerateCardImage(image.id)
+  const result = await flashcardsStore.regenerateCardImage(image.id, {
+    model: modelDraft.value || ''
+  })
   if (result.success) {
-    $q.notify({ type: 'positive', message: 'Queued a regeneration from that prompt.' })
+    $q.notify({
+      type: 'positive',
+      message: `Queued that prompt with ${result.data.model}.`
+    })
     await loadImages()
   } else {
     $q.notify({ type: 'negative', message: result.error })

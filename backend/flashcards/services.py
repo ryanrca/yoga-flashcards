@@ -9,7 +9,10 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.text import slugify
 
-from .models import Flashcard, DailyCard, CardUsageLog, CardImage, ImageGenerationSettings
+from .models import (
+    Flashcard, DailyCard, CardUsageLog, CardImage, ImageGenerationSettings,
+    CardImagePreference,
+)
 from .openrouter import OpenRouterClient, OpenRouterError
 
 logger = logging.getLogger(__name__)
@@ -144,17 +147,63 @@ class CardImageService:
             return seed
         return f'{seed}\n\nStyle: {look_and_feel}'
 
+    # ---------- per-card model ----------
+
+    @staticmethod
+    def _version_group_of(card_or_group):
+        return getattr(card_or_group, 'version_group', card_or_group)
+
+    @classmethod
+    def effective_model(cls, card_or_group):
+        """
+        The model a new generation for this card would use.
+
+        Per-card choice wins over the global default, so one card can be tried
+        against a different model without disturbing the rest of the deck.
+        """
+        version_group = cls._version_group_of(card_or_group)
+        chosen = (
+            CardImagePreference.objects
+            .filter(version_group=version_group)
+            .values_list('model', flat=True)
+            .first()
+        )
+        if chosen and chosen.strip():
+            return chosen.strip()
+        return ImageGenerationSettings.load().model
+
+    @classmethod
+    def set_model(cls, card, model, user=None):
+        """
+        Remember a model choice for this card family.
+
+        Blank clears the choice and returns the card to the global default.
+        """
+        preference, _ = CardImagePreference.objects.update_or_create(
+            version_group=cls._version_group_of(card),
+            defaults={'model': (model or '').strip(), 'updated_by': user},
+        )
+        return preference
+
     @classmethod
     def preview_prompt(cls, card, look_and_feel_override=''):
-        """The prompt a new generation would use. Drives the admin prompt box."""
+        """
+        The prompt and model a new generation would use right now.
+
+        `model_source` lets the UI say whether the model came from this card or
+        from the global default, so changing it is an informed decision.
+        """
         config = ImageGenerationSettings.load()
         look = (look_and_feel_override or '').strip() or config.look_and_feel
         seed = cls.build_prompt_seed(card)
+        model = cls.effective_model(card)
         return {
             'prompt_seed': seed,
             'look_and_feel': look,
             'prompt': cls.compose_prompt(seed, look),
-            'model': config.model,
+            'model': model,
+            'model_source': 'card' if model != config.model else 'global',
+            'global_model': config.model,
         }
 
     # ---------- queueing ----------
@@ -174,6 +223,16 @@ class CardImageService:
         seed = cls.build_prompt_seed(card)
         resolved_prompt = (prompt or '').strip() or cls.compose_prompt(seed, look)
 
+        # An explicit model is also remembered for this card, so choosing one and
+        # regenerating is a single action rather than two. The bot passes none,
+        # so automatic queueing never silently rewrites someone's choice.
+        explicit_model = (model or '').strip()
+        if explicit_model:
+            cls.set_model(card, explicit_model, user=requested_by)
+            resolved_model = explicit_model
+        else:
+            resolved_model = cls.effective_model(card)
+
         return CardImage.objects.create(
             version_group=card.version_group,
             card=card,
@@ -182,7 +241,7 @@ class CardImageService:
             prompt_seed=seed,
             look_and_feel=look,
             look_and_feel_override=(look_and_feel_override or '').strip(),
-            model=(model or '').strip() or config.model,
+            model=resolved_model,
             requested_by=requested_by,
             is_auto=is_auto,
         )

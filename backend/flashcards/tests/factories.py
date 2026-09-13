@@ -4,7 +4,9 @@ Factory Boy factories for the flashcards app.
 import uuid
 import factory
 from factory.django import DjangoModelFactory
-from flashcards.models import Flashcard, Tag, DailyCard, CardUsageLog, CardImage
+from flashcards.models import (
+    Flashcard, Tag, DailyCard, CardUsageLog, CardImage, CardImagePreference,
+)
 from users.tests.factories import UserFactory
 
 
@@ -78,3 +80,13 @@ class CardImageFactory(DjangoModelFactory):
     look_and_feel = 'Soft watercolour, warm earth tones.'
     look_and_feel_override = ''
     model = 'black-forest-labs/flux.2-pro'
+
+
+class CardImagePreferenceFactory(DjangoModelFactory):
+    """Factory for creating CardImagePreference instances."""
+
+    class Meta:
+        model = CardImagePreference
+
+    version_group = factory.LazyFunction(uuid.uuid4)
+    model = 'black-forest-labs/flux.2-max'

@@ -28,8 +28,8 @@
   - User authentication (login/register)
   - Cards library with search and filtering
   - Admin panel with dashboard
-  - Card image panel (prompt editing, generation history, accept/withdraw) and a global
-    image look-and-feel settings page
+  - Card image panel (prompt editing, per-card model, generation history, accept/withdraw,
+    full-size viewer) and a global image look-and-feel settings page, both open to curators
   - User profile management
 - **Responsive Design**: Mobile-friendly Quasar components
 
@@ -48,7 +48,7 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
   overview card), loaded by `seed_initial_data`
 
 ### Testing
-- **Backend**: 197 pytest tests across `core`, `flashcards` and `users`, using Factory Boy
+- **Backend**: 216 pytest tests across `core`, `flashcards` and `users`, using Factory Boy
   and a SQLite test settings module (`yoga_flashcards/settings_test.py`)
 - **Frontend**: none, by design (see CLAUDE.md)
 
@@ -68,13 +68,15 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
    - Email notifications for daily cards (the `daily_email_enabled` preference saves, but
      nothing sends mail)
 
-3. **AI card images** -- generation, prompt editing, history and acceptance are implemented.
-   Still outstanding:
-   - No scheduler: the bot runs by hand. Add a Kubernetes CronJob once the Helm chart lands
-     (PR #5), or a cron entry otherwise.
-   - No queue overview: an admin cannot see pending generations across all cards in one place.
-   - Not smoke-tested against the live OpenRouter API. The response parser accepts both
-     documented shapes but has only been exercised against fakes.
+3. **AI card images** -- generation, prompt editing, history, acceptance, per-card model
+   choice and curator access are implemented, deployed and verified against the live
+   OpenRouter API (FLUX.2 Pro answers on `POST /v1/images` with the `data[].b64_json`
+   shape). The bot runs as a Kubernetes CronJob every 10 minutes. Still outstanding:
+   - No queue overview: there is no single screen showing pending generations across all cards.
+   - No per-card look-and-feel memory. The model is remembered per card; a style override is
+     still per generation.
+   - The chat-completions branch of the response parser is unexercised in production. It is
+     covered by tests and harmless, but no model in use returns that shape.
 
 4. **UI/UX Improvements**:
    - Better card design with image placeholders

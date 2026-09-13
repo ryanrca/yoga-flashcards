@@ -327,35 +327,40 @@ class TestVisibility:
 
 @pytest.mark.django_db
 class TestImageApiPermissions:
-    """Everything image-related is admin-only, including for curators."""
+    """
+    Ordinary users cannot touch anything image-related.
+
+    Curators can, as of the per-card model work -- that side is covered by
+    TestCuratorCanDoImageWork.
+    """
 
     def _card_with_image(self):
         card = FlashcardFactory()
         return card, succeeded_image(card)
 
-    @pytest.mark.parametrize('role', ['user', 'curator'])
-    def test_non_admin_cannot_list_card_images(self, api_client, role):
+    @pytest.mark.parametrize('role', ['user'])
+    def test_plain_user_cannot_list_card_images(self, api_client, role):
         card, _ = self._card_with_image()
         api_client.force_authenticate(user=UserFactory(role=role))
         response = api_client.get(f'/api/cards/{card.id}/images/')
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @pytest.mark.parametrize('role', ['user', 'curator'])
-    def test_non_admin_cannot_queue_generation(self, api_client, role):
+    @pytest.mark.parametrize('role', ['user'])
+    def test_plain_user_cannot_queue_generation(self, api_client, role):
         card, _ = self._card_with_image()
         api_client.force_authenticate(user=UserFactory(role=role))
         response = api_client.post(f'/api/cards/{card.id}/images/', {}, format='json')
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @pytest.mark.parametrize('role', ['user', 'curator'])
-    def test_non_admin_cannot_accept(self, api_client, role):
+    @pytest.mark.parametrize('role', ['user'])
+    def test_plain_user_cannot_accept(self, api_client, role):
         _, image = self._card_with_image()
         api_client.force_authenticate(user=UserFactory(role=role))
         response = api_client.post(f'/api/card-images/{image.id}/accept/')
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @pytest.mark.parametrize('role', ['user', 'curator'])
-    def test_non_admin_cannot_read_settings(self, api_client, role):
+    @pytest.mark.parametrize('role', ['user'])
+    def test_plain_user_cannot_read_settings(self, api_client, role):
         api_client.force_authenticate(user=UserFactory(role=role))
         assert api_client.get('/api/image-settings/').status_code == status.HTTP_403_FORBIDDEN
 
@@ -493,3 +498,192 @@ class TestOpenRouterParsing:
         assert not client.is_configured
         with pytest.raises(OpenRouterError):
             client.generate_image('prompt', 'model')
+
+
+@pytest.mark.django_db
+class TestPerCardModel:
+    """A card can use its own model, and the choice is remembered."""
+
+    def test_defaults_to_the_global_model(self):
+        card = FlashcardFactory()
+        assert CardImageService.effective_model(card) == 'black-forest-labs/flux.2-pro'
+
+    def test_set_model_is_remembered(self):
+        card = FlashcardFactory()
+        CardImageService.set_model(card, 'black-forest-labs/flux.2-max')
+        assert CardImageService.effective_model(card) == 'black-forest-labs/flux.2-max'
+
+    def test_blank_returns_the_card_to_the_global_default(self):
+        card = FlashcardFactory()
+        CardImageService.set_model(card, 'black-forest-labs/flux.2-max')
+        CardImageService.set_model(card, '')
+        assert CardImageService.effective_model(card) == 'black-forest-labs/flux.2-pro'
+
+    def test_choice_is_per_card(self):
+        a, b = FlashcardFactory(), FlashcardFactory()
+        CardImageService.set_model(a, 'black-forest-labs/flux.2-max')
+        assert CardImageService.effective_model(a) == 'black-forest-labs/flux.2-max'
+        assert CardImageService.effective_model(b) == 'black-forest-labs/flux.2-pro'
+
+    def test_choice_survives_a_card_edit(self):
+        """Editing a card creates a new row; the choice follows the version group."""
+        card = FlashcardFactory()
+        CardImageService.set_model(card, 'black-forest-labs/flux.2-max')
+        edited = card.create_new_version(updated_by=card.created_by, title='Edited')
+        assert CardImageService.effective_model(edited) == 'black-forest-labs/flux.2-max'
+
+    def test_changing_the_global_default_does_not_disturb_a_card_choice(self):
+        card = FlashcardFactory()
+        CardImageService.set_model(card, 'black-forest-labs/flux.2-max')
+        config = ImageGenerationSettings.load()
+        config.model = 'google/gemini-2.5-flash-image'
+        config.save()
+        assert CardImageService.effective_model(card) == 'black-forest-labs/flux.2-max'
+
+    def test_queue_uses_the_card_model(self):
+        card = FlashcardFactory()
+        CardImageService.set_model(card, 'black-forest-labs/flux.2-max')
+        image = CardImageService.queue(card)
+        assert image.model == 'black-forest-labs/flux.2-max'
+
+    def test_queueing_with_an_explicit_model_remembers_it(self):
+        card = FlashcardFactory()
+        CardImageService.queue(card, model='black-forest-labs/flux.2-flex')
+        assert CardImageService.effective_model(card) == 'black-forest-labs/flux.2-flex'
+
+    def test_bot_auto_queue_does_not_overwrite_a_choice(self):
+        card = FlashcardFactory()
+        CardImageService.set_model(card, 'black-forest-labs/flux.2-max')
+        queued = CardImageService.queue_missing()
+        assert queued[0].model == 'black-forest-labs/flux.2-max'
+        assert CardImageService.effective_model(card) == 'black-forest-labs/flux.2-max'
+
+    def test_preview_reports_where_the_model_came_from(self):
+        card = FlashcardFactory()
+        assert CardImageService.preview_prompt(card)['model_source'] == 'global'
+        CardImageService.set_model(card, 'black-forest-labs/flux.2-max')
+        preview = CardImageService.preview_prompt(card)
+        assert preview['model_source'] == 'card'
+        assert preview['model'] == 'black-forest-labs/flux.2-max'
+        assert preview['global_model'] == 'black-forest-labs/flux.2-pro'
+
+
+@pytest.mark.django_db
+class TestRegenerateUsesCurrentModel:
+    """Comparing one prompt across models is the point of this flow."""
+
+    def test_regenerate_uses_the_cards_current_model_not_the_old_row(self, api_client):
+        card = FlashcardFactory()
+        old = succeeded_image(card, prompt='a prompt worth keeping', model='black-forest-labs/flux.2-pro')
+        CardImageService.set_model(card, 'black-forest-labs/flux.2-max')
+
+        api_client.force_authenticate(user=UserFactory(role='admin'))
+        response = api_client.post(f'/api/card-images/{old.id}/regenerate/', {}, format='json')
+
+        assert response.status_code == status.HTTP_201_CREATED
+        # Same prompt, newer model.
+        assert response.data['prompt'] == 'a prompt worth keeping'
+        assert response.data['model'] == 'black-forest-labs/flux.2-max'
+
+    def test_explicit_model_on_regenerate_still_wins(self, api_client):
+        card = FlashcardFactory()
+        old = succeeded_image(card, prompt='keep me')
+        api_client.force_authenticate(user=UserFactory(role='admin'))
+        response = api_client.post(
+            f'/api/card-images/{old.id}/regenerate/',
+            {'model': 'black-forest-labs/flux.2-flex'},
+            format='json',
+        )
+        assert response.data['model'] == 'black-forest-labs/flux.2-flex'
+        assert CardImageService.effective_model(card) == 'black-forest-labs/flux.2-flex'
+
+
+@pytest.mark.django_db
+class TestImageModelEndpoint:
+    def test_get_returns_the_effective_model(self, api_client):
+        card = FlashcardFactory()
+        api_client.force_authenticate(user=UserFactory(role='curator'))
+        response = api_client.get(f'/api/cards/{card.id}/image-model/')
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['model'] == 'black-forest-labs/flux.2-pro'
+        assert response.data['model_source'] == 'global'
+
+    def test_put_sets_and_persists(self, api_client):
+        card = FlashcardFactory()
+        api_client.force_authenticate(user=UserFactory(role='curator'))
+        response = api_client.put(
+            f'/api/cards/{card.id}/image-model/',
+            {'model': 'black-forest-labs/flux.2-max'},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['model_source'] == 'card'
+        assert CardImageService.effective_model(card) == 'black-forest-labs/flux.2-max'
+
+    def test_regular_user_is_refused(self, api_client):
+        card = FlashcardFactory()
+        api_client.force_authenticate(user=UserFactory(role='user'))
+        response = api_client.put(
+            f'/api/cards/{card.id}/image-model/', {'model': 'x'}, format='json'
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+class TestCuratorCanDoImageWork:
+    """Curators now do image work; plain users still cannot."""
+
+    def _card_with_image(self):
+        card = FlashcardFactory()
+        return card, succeeded_image(card)
+
+    def test_curator_can_list_card_images(self, api_client):
+        card, _ = self._card_with_image()
+        api_client.force_authenticate(user=UserFactory(role='curator'))
+        assert api_client.get(f'/api/cards/{card.id}/images/').status_code == status.HTTP_200_OK
+
+    def test_curator_can_queue_generation(self, api_client):
+        card, _ = self._card_with_image()
+        api_client.force_authenticate(user=UserFactory(role='curator'))
+        response = api_client.post(f'/api/cards/{card.id}/images/', {}, format='json')
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_curator_can_accept_and_withdraw(self, api_client):
+        _, image = self._card_with_image()
+        api_client.force_authenticate(user=UserFactory(role='curator'))
+        assert api_client.post(f'/api/card-images/{image.id}/accept/').status_code == status.HTTP_200_OK
+        assert api_client.post(f'/api/card-images/{image.id}/unaccept/').status_code == status.HTTP_200_OK
+
+    def test_curator_can_regenerate(self, api_client):
+        _, image = self._card_with_image()
+        api_client.force_authenticate(user=UserFactory(role='curator'))
+        response = api_client.post(f'/api/card-images/{image.id}/regenerate/', {}, format='json')
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_curator_can_read_and_write_settings(self, api_client):
+        api_client.force_authenticate(user=UserFactory(role='curator'))
+        assert api_client.get('/api/image-settings/').status_code == status.HTTP_200_OK
+        response = api_client.put(
+            '/api/image-settings/', {'look_and_feel': 'Charcoal on paper.'}, format='json'
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+    @pytest.mark.parametrize('path', ['images'])
+    def test_plain_user_still_refused(self, api_client, path):
+        card, _ = self._card_with_image()
+        api_client.force_authenticate(user=UserFactory(role='user'))
+        assert api_client.get(f'/api/cards/{card.id}/{path}/').status_code == status.HTTP_403_FORBIDDEN
+
+    def test_plain_user_cannot_accept_or_read_settings(self, api_client):
+        _, image = self._card_with_image()
+        api_client.force_authenticate(user=UserFactory(role='user'))
+        assert api_client.post(f'/api/card-images/{image.id}/accept/').status_code == status.HTTP_403_FORBIDDEN
+        assert api_client.get('/api/image-settings/').status_code == status.HTTP_403_FORBIDDEN
+
+    def test_prompts_still_never_reach_a_plain_user(self, api_client):
+        card = FlashcardFactory()
+        image = succeeded_image(card, prompt='still secret')
+        CardImageService.accept(image)
+        api_client.force_authenticate(user=UserFactory(role='user'))
+        body = str(api_client.get(f'/api/cards/{card.id}/').data)
+        assert 'still secret' not in body

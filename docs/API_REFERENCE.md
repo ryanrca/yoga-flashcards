@@ -608,18 +608,22 @@ Delete a tag.
 
 ---
 
-## Card Images (Admin)
+## Card Images (Curator or Admin)
 
-AI-generated card illustrations. **Every endpoint here is admin only** -- prompts and
-unaccepted images are never returned to curators or users.
+AI-generated card illustrations. **Every endpoint here requires curator or admin** --
+prompts and unaccepted images are never returned to ordinary users.
 
 ### GET /cards/{id}/images/
 
 Generation history for the card, plus the prompt a new generation would use.
 
-**Permission:** IsAdminOnly
+**Permission:** IsCuratorOrAdmin
 
 **Query parameters:** `look_and_feel_override` -- recompute `preview` with this style instead of the global one
+
+`preview.model` is the model this card would actually use: its own pinned model if it has
+one, otherwise the global default. `preview.model_source` is `"card"` or `"global"`, and
+`preview.global_model` is the global default for comparison.
 
 **Response (200 OK):**
 ```json
@@ -628,7 +632,9 @@ Generation history for the card, plus the prompt a new generation would use.
     "prompt_seed": "An illustration for a yoga study flashcard titled \"Ahimsa\"...",
     "look_and_feel": "Serene minimalist illustration, soft natural light...",
     "prompt": "An illustration for ...\n\nStyle: Serene minimalist illustration...",
-    "model": "black-forest-labs/flux.2-pro"
+    "model": "black-forest-labs/flux.2-max",
+    "model_source": "card",
+    "global_model": "black-forest-labs/flux.2-pro"
   },
   "images": [
     {
@@ -656,7 +662,7 @@ Generation history for the card, plus the prompt a new generation would use.
 Queue a generation. **Does not call OpenRouter** -- the bot picks the row up, so repeated
 clicks cannot start parallel provider calls for one card.
 
-**Permission:** IsAdminOnly
+**Permission:** IsCuratorOrAdmin
 
 **Request Body:** all fields optional
 ```json
@@ -668,7 +674,12 @@ clicks cannot start parallel provider calls for one card.
 ```
 
 Blank `prompt` composes one from the card text plus the effective look and feel. Blank
-`look_and_feel_override` uses the global setting. Blank `model` uses the global default.
+`look_and_feel_override` uses the global setting. Blank `model` uses the card's pinned
+model if it has one, otherwise the global default.
+
+Supplying a `model` also pins it to the card, so choosing a model and regenerating is a
+single action. The bot never does this -- automatic queueing passes no model, so it cannot
+overwrite a choice.
 
 **Response (201 Created):** the queued image row, `status: "queued"`
 
@@ -677,11 +688,48 @@ Blank `prompt` composes one from the card text plus the effective look and feel.
 
 ---
 
+### GET /cards/{id}/image-model/
+
+The model this card will use for its next generation.
+
+**Permission:** IsCuratorOrAdmin
+
+**Response (200 OK):**
+```json
+{
+  "model": "black-forest-labs/flux.2-max",
+  "model_source": "card",
+  "global_model": "black-forest-labs/flux.2-pro"
+}
+```
+
+---
+
+### PUT /cards/{id}/image-model/
+
+Pin a model to this card. The choice is stored against the card's `version_group`, so it
+survives edits to the card text, and it overrides the global default for this card only.
+
+**Permission:** IsCuratorOrAdmin
+
+**Request Body:**
+```json
+{
+  "model": "black-forest-labs/flux.2-max"
+}
+```
+
+A blank `model` clears the choice and returns the card to the global default.
+
+**Response (200 OK):** same shape as the GET above.
+
+---
+
 ### GET /card-images/
 
 Every generation, newest first. Paginated.
 
-**Permission:** IsAdminOnly
+**Permission:** IsCuratorOrAdmin
 
 **Query parameters:** `version_group`, `status` (`queued`, `generating`, `succeeded`, `failed`)
 
@@ -692,7 +740,7 @@ Every generation, newest first. Paginated.
 Make this the one image the rest of the users see. Any previously accepted image for the
 same card is withdrawn in the same transaction.
 
-**Permission:** IsAdminOnly
+**Permission:** IsCuratorOrAdmin
 
 **Errors:**
 - `400` - Only a successfully generated image can be accepted
@@ -703,17 +751,22 @@ same card is withdrawn in the same transaction.
 
 Withdraw the image from public view. The row and the file are kept.
 
-**Permission:** IsAdminOnly
+**Permission:** IsCuratorOrAdmin
 
 ---
 
 ### POST /card-images/{id}/regenerate/
 
-Queue a fresh generation seeded from this row's prompt, model and style override. Accepts
-the same optional body as `POST /cards/{id}/images/` to change any of them. The source row
-is left untouched, so the history shows every prompt that was tried.
+Queue a fresh generation seeded from this row's prompt and style override. Accepts the
+same optional body as `POST /cards/{id}/images/` to change any of them. The source row is
+left untouched, so the history shows every prompt that was tried.
 
-**Permission:** IsAdminOnly
+**The model is not inherited from the source row.** It falls back to the card's *current*
+model, which is what makes "regenerate with the same prompt" the way to compare one prompt
+across models: pin a new model, regenerate, and the same prompt goes to the new model. Pass
+`model` explicitly to override for this one generation.
+
+**Permission:** IsCuratorOrAdmin
 
 **Response (201 Created):** the new queued row
 
@@ -721,7 +774,7 @@ is left untouched, so the history shows every prompt that was tried.
 
 ### GET /image-settings/
 
-**Permission:** IsAdminOnly
+**Permission:** IsCuratorOrAdmin
 
 **Response (200 OK):**
 ```json
@@ -745,7 +798,7 @@ environment variable and is never stored or returned.
 
 Partial update of the above. `max_attempts` must be between 1 and 10.
 
-**Permission:** IsAdminOnly
+**Permission:** IsCuratorOrAdmin
 
 ---
 

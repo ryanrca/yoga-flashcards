@@ -319,3 +319,42 @@ class CardImage(models.Model):
         if self.look_and_feel_override.strip():
             return self.look_and_feel_override.strip()
         return ImageGenerationSettings.load().look_and_feel.strip()
+
+
+class CardImagePreference(models.Model):
+    """
+    Per-card image-generation preferences.
+
+    Currently just the model, so an admin or curator can try one card against a
+    different model without changing the global default.
+
+    Keyed on `version_group` for the same reason CardImage is: editing a card
+    creates a brand new Flashcard row, so an id-keyed preference would be lost
+    the moment someone fixed a typo.
+
+    A blank `model` means "fall back to the global default" rather than "no
+    model", so clearing the field is a meaningful action.
+    """
+
+    version_group = models.UUIDField(
+        unique=True,
+        db_index=True,
+        help_text="The card family these preferences apply to.",
+    )
+    model = models.CharField(
+        max_length=200,
+        blank=True,
+        default='',
+        help_text="OpenRouter model slug for this card. Blank uses the global default.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
+
+    class Meta:
+        verbose_name = 'Card image preference'
+        verbose_name_plural = 'Card image preferences'
+
+    def __str__(self):
+        return f"{self.version_group}: {self.model or '(global default)'}"

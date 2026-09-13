@@ -335,6 +335,26 @@ silently and the guarantee would hold in tests (SQLite) but not in production.
 
 ---
 
+### CardImagePreference Model
+
+`flashcards_cardimagepreference` -- per-card image settings, currently just the model.
+
+Keyed on `version_group` for the same reason `CardImage` is: editing a card creates a new
+Flashcard row, so an id-keyed preference would be lost on any typo fix.
+
+| Field | Type | Constraints | Default | Description |
+|-------|------|-------------|---------|-------------|
+| id | BigAutoField | PK | auto | |
+| version_group | UUIDField | unique, index | | The card family |
+| model | CharField(200) | blank | '' | Model slug for this card. Blank falls back to the global default. |
+| updated_at | DateTimeField | auto | auto | |
+| updated_by | ForeignKey(User) | SET_NULL, null | NULL | |
+
+Resolve the effective model with `CardImageService.effective_model(card)` rather than reading
+`ImageGenerationSettings.model`, or per-card choices are silently ignored.
+
+---
+
 ### ImageGenerationSettings Model
 
 `flashcards_imagegenerationsettings` -- singleton (pk is forced to 1) holding global

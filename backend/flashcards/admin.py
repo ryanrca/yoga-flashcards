@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Flashcard, Tag, DailyCard, CardUsageLog, CardImage, ImageGenerationSettings
+from .models import (
+    Flashcard, Tag, DailyCard, CardUsageLog, CardImage, ImageGenerationSettings,
+    CardImagePreference,
+)
 
 
 @admin.register(Tag)
@@ -119,3 +122,16 @@ class CardImageAdmin(admin.ModelAdmin):
             CardImageService.unaccept(image)
             count += 1
         self.message_user(request, f'{count} image(s) withdrawn.')
+
+
+@admin.register(CardImagePreference)
+class CardImagePreferenceAdmin(admin.ModelAdmin):
+    """Per-card model choices. Blank means the card uses the global default."""
+
+    list_display = ['version_group', 'model', 'updated_at', 'updated_by']
+    search_fields = ['version_group', 'model']
+    readonly_fields = ['version_group', 'updated_at', 'updated_by']
+
+    def save_model(self, request, obj, form, change):
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
