@@ -1,0 +1,86 @@
+{{- if and .Values.imageBot.enabled (eq (include "yoga-flashcards.openrouterConfigured" . | trim) "true") }}
+{{/*
+The card image bot.
+
+Deliberately a CronJob rather than a worker: generation is not latency
+sensitive, and a scheduled job that exits is far easier to reason about than a
+long-lived process holding an API key.
+
+Three layers keep it from running away:
+  - concurrencyPolicy Forbid -- a slow run is never overlapped by the next tick
+  - --limit -- caps generations per run
+  - max_attempts in the app -- caps provider calls per image row
+The bot also only auto-queues cards that have never had an image, so a failed
+or rejected image is never retried on its own.
+*/}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "yoga-flashcards.fullname" . }}-image-bot
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+    app.kubernetes.io/component: image-bot
+spec:
+  schedule: {{ .Values.imageBot.schedule | quote }}
+  concurrencyPolicy: {{ .Values.imageBot.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.imageBot.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.imageBot.failedJobsHistoryLimit }}
+  startingDeadlineSeconds: {{ .Values.imageBot.startingDeadlineSeconds }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.imageBot.backoffLimit }}
+      template:
+        metadata:
+          labels:
+            {{- include "yoga-flashcards.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: image-bot
+        spec:
+          restartPolicy: Never
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: image-bot
+              image: {{ include "yoga-flashcards.backendImage" . | quote }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - python
+                - manage.py
+                - generate_card_images
+                - --limit
+                - {{ .Values.imageBot.limit | quote }}
+              env:
+                {{- include "yoga-flashcards.backendEnv" . | nindent 16 }}
+                # The only pod that gets the key: the web pods never call OpenRouter.
+                - name: OPENROUTER_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "yoga-flashcards.openrouterSecretName" . }}
+                      key: {{ include "yoga-flashcards.openrouterSecretKey" . }}
+              envFrom:
+                {{- include "yoga-flashcards.backendEnvFrom" . | nindent 16 }}
+              resources:
+                {{- toYaml .Values.imageBot.resources | nindent 16 }}
+              {{- if .Values.backend.media.enabled }}
+              volumeMounts:
+                # Generated images have to land on the same volume the backend
+                # serves /media/ from, or they would 404.
+                - name: media
+                  mountPath: {{ .Values.backend.media.mountPath }}
+              {{- end }}
+          {{- if .Values.backend.media.enabled }}
+          volumes:
+            - name: media
+              persistentVolumeClaim:
+                claimName: {{ include "yoga-flashcards.fullname" . }}-media
+          {{- end }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

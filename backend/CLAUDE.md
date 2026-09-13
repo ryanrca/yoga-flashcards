@@ -18,6 +18,9 @@ Settings:   yoga_flashcards/settings.py
 - **Self-service endpoints get their own narrow serializer** -- `ProfileUpdateSerializer`
   whitelists editable fields so a user cannot write `role` or `is_active` on themselves
 - **Session-based auth** (not JWT), with CSRF enforced on authenticated writes
+- **AI images are queued, never generated inline** -- `CardImageService.queue()` writes a row and
+  `generate_card_images` drains it, so an HTTP request never waits on OpenRouter and repeated
+  clicks cannot start parallel provider calls
 - **Accounts are never hard deleted** -- `User.soft_delete()` disables the account and keeps
   the row; `Flashcard.created_by` is `PROTECT` so a cascade cannot destroy a card library
 - **Apps by domain**: `flashcards`, `users`, `core`
@@ -45,7 +48,8 @@ Card edits never modify in place. The serializer's `update()` calls `instance.cr
 |------|---------|
 | `flashcards/models.py` | Flashcard (versioned), Tag, DailyCard, CardUsageLog |
 | `flashcards/serializers.py` | Validation + version creation in `update()` |
-| `flashcards/services.py` | DailyCardService (card rotation with cycle tracking) |
+| `flashcards/services.py` | DailyCardService (card rotation), CardImageService (prompts, queue, accept) |
+| `flashcards/openrouter.py` | OpenRouter transport only; no DB access, faked wholesale in tests |
 | `flashcards/permissions.py` | IsCuratorOrAdmin, IsAdminOnly |
 | `flashcards/views.py` | FlashcardViewSet, TagViewSet |
 | `users/models.py` | User (AbstractUser + role + soft delete), UserProfile |
@@ -67,6 +71,18 @@ Uses pytest with `@pytest.mark.django_db` and Factory Boy.
 
 - `seed_initial_data` -- imports/exports flashcard JSON (`--pull` to export)
 - `import_cards` -- imports from CSV (`--dry-run` supported)
+- `generate_card_images` -- the image bot (`--dry-run`, `--limit`, `--card-id`, `--no-auto-queue`)
+
+## AI card images (invariants worth keeping)
+
+- Images key on `version_group`, not a Flashcard id: editing a card creates a new row, so an
+  id-keyed image would be orphaned by any typo fix.
+- The bot auto-queues only for card families with **zero** image rows. Failed and rejected
+  images are never retried on their own -- that is the "generate once" guarantee.
+- `max_attempts` caps provider calls per row; the counter increments at claim time.
+- Single-accepted is enforced in `CardImageService.accept()`, not by a partial UniqueConstraint:
+  MySQL has no partial indexes, so the constraint would hold in tests (SQLite) and silently do
+  nothing in production.
 
 ## Style
 

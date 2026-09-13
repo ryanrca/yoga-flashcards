@@ -139,3 +139,47 @@ alphanumeric precisely so it is safe to interpolate into a URL.
 - configMapRef:
     name: {{ include "yoga-flashcards.fullname" . }}-config
 {{- end }}
+
+{{/*
+Where the OpenRouter API key lives.
+
+Either the chart's own Secret (populated from .Values.openrouter.apiKey) or a
+Secret the operator manages themselves.
+*/}}
+{{- define "yoga-flashcards.openrouterSecretName" -}}
+{{- if .Values.openrouter.existingSecret -}}
+{{ .Values.openrouter.existingSecret }}
+{{- else -}}
+{{ include "yoga-flashcards.secretName" . }}
+{{- end -}}
+{{- end }}
+
+{{- define "yoga-flashcards.openrouterSecretKey" -}}
+{{- if .Values.openrouter.existingSecret -}}
+{{ .Values.openrouter.existingSecretKey }}
+{{- else -}}
+OPENROUTER_API_KEY
+{{- end -}}
+{{- end }}
+
+{{/*
+Emits "true" when an OpenRouter key is reachable: supplied in values, held in a
+user-managed Secret, or already stored in the chart's Secret from an earlier
+install. The CronJob is skipped otherwise -- scheduling a bot that can only fail
+every ten minutes is worse than not scheduling it.
+
+Callers must `trim` the result before comparing: a whitespace-only string is
+truthy in Go templates.
+*/}}
+{{- define "yoga-flashcards.openrouterConfigured" -}}
+{{- if .Values.openrouter.existingSecret -}}
+true
+{{- else if .Values.openrouter.apiKey -}}
+true
+{{- else -}}
+{{- $existing := lookup "v1" "Secret" .Release.Namespace (include "yoga-flashcards.secretName" .) -}}
+{{- if and $existing (index $existing.data "OPENROUTER_API_KEY") -}}
+true
+{{- end -}}
+{{- end -}}
+{{- end }}

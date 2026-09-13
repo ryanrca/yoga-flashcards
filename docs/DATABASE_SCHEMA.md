@@ -295,6 +295,65 @@ class Meta:
 
 ---
 
+### CardImage Model
+
+`flashcards_cardimage` -- one AI generation, with the prompt that produced it.
+
+Append-only: regenerating inserts a new row and never edits or deletes an old one, so every
+prompt and image ever tried stays inspectable.
+
+| Field | Type | Constraints | Default | Description |
+|-------|------|-------------|---------|-------------|
+| id | BigAutoField | PK | auto | |
+| version_group | UUIDField | index | | The card family. Keyed here rather than on a Flashcard id because editing a card creates a new row, which would orphan an id-keyed image. |
+| card | ForeignKey(Flashcard) | SET_NULL, null | NULL | The card version whose text seeded the prompt. Provenance only. |
+| status | CharField(12) | index | queued | queued, generating, succeeded, failed |
+| image | ImageField | null | NULL | `card_images/generated/` |
+| prompt | TextField | | | Full prompt sent, look and feel included |
+| prompt_seed | TextField | blank | '' | Card-derived portion, before style guidance |
+| look_and_feel | TextField | blank | '' | Style actually used, snapshotted at generation time |
+| look_and_feel_override | TextField | blank | '' | Per-image style. When set, replaces the global one. |
+| model | CharField(200) | | | OpenRouter model slug |
+| is_accepted | BooleanField | index | False | Only an accepted image is visible outside the admin area |
+| accepted_at | DateTimeField | null | NULL | |
+| accepted_by | ForeignKey(User) | SET_NULL, null | NULL | |
+| attempts | PositiveSmallIntegerField | | 0 | Incremented at claim time; capped by `max_attempts` |
+| error | TextField | blank | '' | Last provider error |
+| cost_usd | DecimalField(8,4) | null | NULL | Cost reported by OpenRouter |
+| provider_response_id | CharField(200) | blank | '' | |
+| requested_by | ForeignKey(User) | SET_NULL, null | NULL | Null when the bot queued it |
+| is_auto | BooleanField | | False | True when queued by the bot |
+| created_at / updated_at | DateTimeField | auto | auto | |
+| started_at / finished_at | DateTimeField | null | NULL | Generation window |
+
+**Indexes:** `(version_group, -created_at)`, `(version_group, is_accepted)`, `(status, created_at)`
+
+**Note on single-accepted:** there is deliberately no partial `UniqueConstraint` on
+`(version_group, is_accepted)`. MySQL has no partial indexes, so Django would skip it
+silently and the guarantee would hold in tests (SQLite) but not in production.
+`CardImageService.accept()` enforces it inside a transaction instead.
+
+---
+
+### ImageGenerationSettings Model
+
+`flashcards_imagegenerationsettings` -- singleton (pk is forced to 1) holding global
+image-generation configuration.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| look_and_feel | TextField | (a minimalist style) | Appended to every prompt; overridable per image |
+| model | CharField(200) | black-forest-labs/flux.2-pro | Default OpenRouter model |
+| enabled | BooleanField | True | Master switch; when off nothing generates |
+| auto_generate_new_cards | BooleanField | True | Queue an image the first time a card is seen |
+| max_attempts | PositiveSmallIntegerField | 3 | Hard cap on provider calls per image row |
+| updated_at | DateTimeField | auto | |
+| updated_by | ForeignKey(User) | NULL | |
+
+The OpenRouter API key is **not** stored here; it is read from `OPENROUTER_API_KEY`.
+
+---
+
 ## Junction Tables (Auto-generated)
 
 ### flashcards_flashcard_tags

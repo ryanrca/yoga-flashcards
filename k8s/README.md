@@ -98,6 +98,52 @@ These are not portable defaults -- they are what this cluster requires.
   Without it Django builds `http://` URLs and the CSRF origin check compares the
   wrong scheme.
 
+## Card image bot
+
+`manage.py generate_card_images` runs on a schedule as the
+`RELEASE-image-bot` CronJob: it queues an image for any card that has never had
+one, then generates up to `imageBot.limit` of them.
+
+**The CronJob is only created when an OpenRouter key is reachable.** Without one
+the chart skips it, rather than scheduling a job that fails every ten minutes.
+
+Set the key once, and upgrades keep it:
+
+```sh
+kubectl -n yoga-flashcards patch secret yoga-flashcards-secrets \
+  -p '{"stringData":{"OPENROUTER_API_KEY":"sk-or-..."}}'
+helm upgrade yoga-flashcards ./k8s/helm -n yoga-flashcards   # creates the CronJob
+```
+
+Or pass it at install time with `--set openrouter.apiKey=sk-or-...`, or point at
+a Secret you manage with `--set openrouter.existingSecret=my-secret`.
+
+Only the bot pod gets the key. The web pods never call OpenRouter -- the API
+queues work, it does not generate inline -- so they have no reason to hold it.
+
+```sh
+# Watch it
+kubectl -n yoga-flashcards get cronjob,jobs
+kubectl -n yoga-flashcards logs -l app.kubernetes.io/component=image-bot --tail=50
+
+# Run one now without waiting for the schedule
+kubectl -n yoga-flashcards create job --from=cronjob/yoga-flashcards-image-bot bot-manual
+
+# Pause it
+helm upgrade yoga-flashcards ./k8s/helm -n yoga-flashcards --set imageBot.enabled=false
+```
+
+**This spends money.** Every generation is billed by OpenRouter (roughly
+$0.03/MP on FLUX.2 Pro). `imageBot.limit` is the throttle, `concurrencyPolicy:
+Forbid` stops a slow run overlapping the next tick, and the app caps attempts
+per image. Start with a low limit and a wide schedule.
+
+The bot mounts the same media PVC as the backend so generated images land where
+`/media/` is served from. That volume is ReadWriteOnce on node-local storage,
+which is fine here because the cluster is a single node -- on a multi-node
+cluster the bot and the backend would need to be pinned together, or the volume
+moved to ReadWriteMany.
+
 ## Seed data
 
 The post-install Job loads the 19 starter flashcards and the test accounts. It

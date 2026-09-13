@@ -198,6 +198,17 @@ SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=False)
 CSRF_COOKIE_SAMESITE = env('CSRF_COOKIE_SAMESITE', default='Lax')
 SESSION_COOKIE_SAMESITE = env('SESSION_COOKIE_SAMESITE', default='Lax')
 
+# OpenRouter (AI card image generation)
+#
+# The key is read from the environment only; it is never stored in the database
+# or exposed through the API. With no key set, the bot refuses to run rather
+# than failing per-card.
+OPENROUTER_API_KEY = env('OPENROUTER_API_KEY', default='')
+OPENROUTER_BASE_URL = env('OPENROUTER_BASE_URL', default='https://openrouter.ai/api/v1')
+OPENROUTER_TIMEOUT = env.int('OPENROUTER_TIMEOUT', default=180)
+# Optional attribution shown on the OpenRouter dashboard.
+OPENROUTER_SITE_URL = env('OPENROUTER_SITE_URL', default='')
+OPENROUTER_SITE_NAME = env('OPENROUTER_SITE_NAME', default='Yoga Flashcards')
 # Proxy / TLS termination
 #
 # Traefik terminates TLS and forwards over plain HTTP, so Django has to trust

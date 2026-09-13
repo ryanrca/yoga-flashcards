@@ -36,8 +36,8 @@
           >
             <q-card class="card-hover cursor-pointer" @click="selectCard(favorite.card)">
               <q-img
-                v-if="favorite.card.front_image"
-                :src="favorite.card.front_image"
+                v-if="favorite.card.front_image || favorite.card.generated_image"
+                :src="favorite.card.front_image || favorite.card.generated_image"
                 height="200px"
                 class="card-image"
               >
@@ -127,9 +127,9 @@
         </q-card-section>
 
         <q-card-section v-if="selectedCard">
-          <div v-if="selectedCard.front_image" class="text-center q-mb-md">
+          <div v-if="selectedCard.front_image || selectedCard.generated_image" class="text-center q-mb-md">
             <q-img 
-              :src="selectedCard.front_image" 
+              :src="selectedCard.front_image || selectedCard.generated_image" 
               style="max-width: 100%; max-height: 300px; border-radius: 8px;"
             />
           </div>

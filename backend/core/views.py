@@ -19,7 +19,9 @@ def daily_card(request):
     card = DailyCardService.get_daily_card()
     if card:
         from flashcards.serializers import FlashcardSerializer
-        serializer = FlashcardSerializer(card)
+        # Context matters: without the request the accepted image URL would be
+        # returned relative rather than absolute.
+        serializer = FlashcardSerializer(card, context={'request': request})
         return Response(serializer.data)
     else:
         return Response({'message': 'No cards available'}, status=404)

@@ -119,6 +119,21 @@
           </q-item-section>
         </q-item>
 
+        <q-item
+          v-if="authStore.isAdmin"
+          clickable
+          @click="$router.push('/admin/image-settings')"
+          class="nav-item"
+        >
+          <q-item-section avatar>
+            <q-icon name="auto_awesome" size="md" color="primary" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Card Images</q-item-label>
+            <q-item-label caption style="color: #6B6B6B;">Look and feel</q-item-label>
+          </q-item-section>
+        </q-item>
+
         <div class="yoga-divider q-my-md"></div>
 
         <q-item clickable @click="$router.push('/admin/cards/new')" class="nav-item">

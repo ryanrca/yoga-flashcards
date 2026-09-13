@@ -200,6 +200,79 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     }
   }
 
+  // ---- AI card images (admin only) ----
+
+  const fetchCardImages = async (cardId, lookAndFeelOverride = '') => {
+    try {
+      const params = lookAndFeelOverride ? { look_and_feel_override: lookAndFeelOverride } : {}
+      const response = await api.get(`/api/cards/${cardId}/images/`, { params })
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error fetching card images:', err)
+      return { success: false, error: err.response?.data?.error || 'Failed to load images' }
+    }
+  }
+
+  const generateCardImage = async (cardId, payload = {}) => {
+    try {
+      const response = await api.post(`/api/cards/${cardId}/images/`, payload)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error queueing image generation:', err)
+      return { success: false, error: err.response?.data?.error || 'Failed to queue generation' }
+    }
+  }
+
+  const regenerateCardImage = async (imageId, payload = {}) => {
+    try {
+      const response = await api.post(`/api/card-images/${imageId}/regenerate/`, payload)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error regenerating image:', err)
+      return { success: false, error: err.response?.data?.error || 'Failed to regenerate' }
+    }
+  }
+
+  const acceptCardImage = async (imageId) => {
+    try {
+      const response = await api.post(`/api/card-images/${imageId}/accept/`)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error accepting image:', err)
+      return { success: false, error: err.response?.data?.error || 'Failed to accept image' }
+    }
+  }
+
+  const unacceptCardImage = async (imageId) => {
+    try {
+      const response = await api.post(`/api/card-images/${imageId}/unaccept/`)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error withdrawing image:', err)
+      return { success: false, error: err.response?.data?.error || 'Failed to withdraw image' }
+    }
+  }
+
+  const fetchImageSettings = async () => {
+    try {
+      const response = await api.get('/api/image-settings/')
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error fetching image settings:', err)
+      return { success: false, error: 'Failed to load image settings' }
+    }
+  }
+
+  const updateImageSettings = async (payload) => {
+    try {
+      const response = await api.put('/api/image-settings/', payload)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error saving image settings:', err)
+      return { success: false, error: err.response?.data || 'Failed to save image settings' }
+    }
+  }
+
   const fetchCardVersions = async (id) => {
     loading.value = true
     error.value = null
@@ -256,6 +329,13 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     updateTag,
     deleteTag,
     fetchCardVersions,
-    revertCardVersion
+    revertCardVersion,
+    fetchCardImages,
+    generateCardImage,
+    regenerateCardImage,
+    acceptCardImage,
+    unacceptCardImage,
+    fetchImageSettings,
+    updateImageSettings
   }
 })

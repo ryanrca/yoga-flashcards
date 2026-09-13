@@ -30,6 +30,7 @@ Created by `seed_initial_data`, which `backend/start.sh` runs on container start
 - **Accounts are soft deleted**: deleting a user sets `is_deleted`/`deleted_at` and clears `is_active`. The row, their profile and every card they authored are kept. `Flashcard.created_by` is `PROTECT`, so a hard delete cannot cascade.
 - **Roles**: Admin > Curator > User. Curators can manage cards/tags. Admins can also manage users.
 - **Daily Card**: Public endpoint cycles through all cards before repeating (see `flashcards/services.py`)
+- **AI card images**: A bot generates one front image per card through OpenRouter. Prompts and unaccepted images are admin-only; users see an image only once an admin accepts it. History is append-only -- regenerating adds a row, never edits one.
 
 ## Key Conventions
 
@@ -56,6 +57,7 @@ Created by `seed_initial_data`, which `backend/start.sh` runs on container start
 
 - **Card updates return new IDs**: `PUT /api/cards/{id}/` creates a new version with a different `id`. Frontend must redirect to the new ID after update.
 - **Frontend Dockerfile order**: Must `COPY . .` BEFORE `RUN npm install` because Quasar's prepare script needs source files.
+- **`FlashcardViewSet.get_permissions()` is overridden**, which makes `permission_classes` declared on an `@action` dead code. Any new action needing different permissions must be named inside `get_permissions()` -- that is how the admin-only `images` action is gated.
 - **CSRF is enforced on authenticated writes**: DRF views are `csrf_exempt`, so the check comes from `SessionAuthentication.enforce_csrf()`, not `CsrfViewMiddleware`. Django therefore never sets the `csrftoken` cookie for `/api/` on its own -- `GET /api/users/csrf/` hands one out, and `boot/axios.js` primes it before the first unsafe request. Anonymous requests (login, register, public reads) need no token.
 - **MySQL wait on startup**: `backend/start.sh` polls MySQL for up to 60 seconds before running migrations.
 
@@ -71,6 +73,11 @@ docker-compose logs -f backend               # View logs
 docker-compose exec backend python -m pytest              # All tests
 docker-compose exec backend python -m pytest flashcards/   # Single app
 docker-compose exec backend python -m pytest -v --cov      # With coverage
+
+# AI card images (bot)
+docker-compose exec backend python manage.py generate_card_images --dry-run  # show prompts, change nothing
+docker-compose exec backend python manage.py generate_card_images --limit 5  # queue + generate
+docker-compose exec backend python manage.py generate_card_images --card-id 7
 
 # Data management
 docker-compose exec backend python manage.py seed_initial_data         # Import seed data
@@ -99,6 +106,7 @@ Public (no auth): `GET /api/health/`, `GET /api/dailycard/`, `GET /api/tags/`, `
 Authenticated: `GET /api/cards/`, `GET /api/cards/{id}/`, `GET|PUT /api/users/profile/`, `POST /api/users/change-password/`, `DELETE /api/users/delete-account/`
 Curator+: CRUD on `/api/cards/`, `/api/tags/`, version history, revert
 Admin only: `/api/users/manage/` for user CRUD, plus its `stats/`, `toggle_active/` and `restore/` actions. `?include_deleted=true` reveals soft-deleted accounts; they are hidden otherwise.
+Admin only (card images): `GET|POST /api/cards/{id}/images/`, `/api/card-images/{id}/` with `accept/`, `unaccept/`, `regenerate/`, and `GET|PUT /api/image-settings/`.
 
 Not implemented despite appearing in the UI: favorites, social (Google/Facebook) auth.
 
@@ -110,7 +118,8 @@ See `docs/API_REFERENCE.md` for full details.
 |------|-------|
 | Models | `backend/flashcards/models.py`, `backend/users/models.py` |
 | API Views | `backend/flashcards/views.py`, `backend/users/views.py` |
-| Business Logic | `backend/flashcards/services.py` (DailyCardService) |
+| Business Logic | `backend/flashcards/services.py` (DailyCardService, CardImageService) |
+| AI images | `backend/flashcards/openrouter.py`, `management/commands/generate_card_images.py`, `frontend/src/pages/admin/ImageSettingsPage.vue` |
 | Permissions | `backend/flashcards/permissions.py` |
 | Serializers | `backend/flashcards/serializers.py` (handles version creation in `update()`) |
 | Stores | `frontend/src/stores/auth.js`, `frontend/src/stores/flashcards.js` |

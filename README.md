@@ -21,6 +21,7 @@ Logged in users can see all flashcards.
 - **Tagging system** - Organize cards with flexible tags
 - **Search and filtering** - Find cards across all text fields
 - **Version history** - View complete edit history for each card with ability to revert to any previous version
+- **AI card images** - A bot illustrates each card's front through OpenRouter, seeding the prompt from the card's own text. Prompts and unaccepted images are admin-only; an image reaches users only when an admin accepts it. Every prompt and image is kept.
 - **CSV import** - Bulk import cards from CSV files.  A script is provided to import new or update existing cards in bulk.
 - **Default photo** *(planned, not implemented)* - A single .jpg or vector placeholder for cards with no image. Cards without an image currently render a CSS placeholder block.
 - **Initial Data** - `backend/flashcards/management/commands/data/flashcards.json` seeds 19 cards:
@@ -112,6 +113,20 @@ The flashcard versioning system works as follows:
 - **Reverting**: Reverting to a previous version creates a new version (with the highest version number) that copies the content from the selected version and marks it as live
 - **Querying**: By default, only live versions are returned in list queries. Version history can be accessed via the `/api/cards/{id}/versions/` endpoint
 
+### Card Image Endpoints
+
+All admin only. Prompts are never returned to any other role.
+
+- `GET /api/cards/{id}/images/` - Generation history for the card, plus `preview`: the prompt a new generation would use
+- `POST /api/cards/{id}/images/` - Queue a generation. Optional `prompt`, `look_and_feel_override`, `model`
+- `GET /api/card-images/` - All generations (`?version_group=`, `?status=`)
+- `POST /api/card-images/{id}/accept/` - Make this the image users see
+- `POST /api/card-images/{id}/unaccept/` - Withdraw it from public view; the row is kept
+- `POST /api/card-images/{id}/regenerate/` - Queue a new generation from this row's prompt
+- `GET|PUT /api/image-settings/` - Global look and feel, default model and bot switches
+
+Cards expose a single public field, `generated_image`: the URL of the accepted image, or `null`.
+
 ### Authentication Endpoints
 
 - `POST /api/users/register/` - Signup (email, password, password_confirm)
@@ -150,6 +165,52 @@ Admin only:
 - Uses Django session-based authentication (no JWT tokens)
 - Sessions persist across browser sessions
 - Automatic logout on session expiry
+
+## AI Card Images
+
+A bot generates one front image per card through [OpenRouter](https://openrouter.ai).
+The default model is `black-forest-labs/flux.2-pro`; an admin can change it globally or
+per image.
+
+### How a prompt is built
+
+```
+<card title, Sanskrit phrase, short answer, definition, tags>
++ "Do not render any text, letters, words or numbers in the image."
+
+Style: <look and feel>
+```
+
+The look and feel is a single global field an admin edits once, and any individual image
+can override it. Admins can also replace the whole prompt for a given generation.
+
+### Rules the bot follows
+
+- **Generates each card's first image exactly once.** Auto-queueing only picks up card
+  families with no image rows at all, so a failed or rejected image is never retried on
+  its own. Regenerating is always a deliberate admin action.
+- **Bounded retries.** `max_attempts` (default 3) caps provider calls per image row.
+- **No parallel duplicates.** Rows are claimed with `SELECT ... FOR UPDATE SKIP LOCKED`,
+  so overlapping bot runs cannot send the same row twice.
+- **Append-only history.** Regenerating adds a row; nothing is edited or deleted.
+- **Images follow `version_group`,** not a card id, so editing a card keeps its images.
+
+### Running the bot
+
+```bash
+# Show the prompts that would be used; changes nothing, calls nothing
+docker-compose exec backend python manage.py generate_card_images --dry-run
+
+# Queue anything missing an image, then generate up to 5
+docker-compose exec backend python manage.py generate_card_images --limit 5
+
+# One specific card, even if it already has images
+docker-compose exec backend python manage.py generate_card_images --card-id 7
+```
+
+Schedule it however you like (cron, or a Kubernetes CronJob). Each run is bounded by
+`--limit`, so it is safe to run often. Generation costs money per image -- roughly
+$0.03/MP on FLUX.2 Pro -- and the cost OpenRouter reports is recorded on each row.
 
 ## CSV Import
 
@@ -270,6 +331,11 @@ cluster-specific choices, and day-to-day operations.
 - `CSRF_COOKIE_SECURE` / `SESSION_COOKIE_SECURE` - Set both to `1` in production (HTTPS).
 - `CSRF_COOKIE_SAMESITE` / `SESSION_COOKIE_SAMESITE` - Default `Lax`. Only a genuinely
   cross-site deployment needs `None`, which also requires the Secure flags above.
+- `OPENROUTER_API_KEY` - Required for image generation. Read from the environment only; never
+  stored in the database or returned by the API. Without it the bot refuses to run.
+- `OPENROUTER_BASE_URL` - Default `https://openrouter.ai/api/v1`
+- `OPENROUTER_TIMEOUT` - Seconds per generation request (default 180)
+- `OPENROUTER_SITE_URL` / `OPENROUTER_SITE_NAME` - Optional attribution on the OpenRouter dashboard
 
 **Frontend:**
 - `API_BASE_URL` - Backend API base URL, injected via `build.env` in `quasar.config.js`.
