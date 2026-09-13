@@ -28,6 +28,8 @@ services:
       - DJANGO_SECRET_KEY=dev-secret-key-change-in-production
       - CORS_ALLOWED_ORIGINS=http://localhost:9000,http://127.0.0.1:9000
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      # Set in a local .env or your shell; image generation is skipped without it.
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
     volumes:
       - ./backend:/app
       # Bind mount media so uploaded files live in the repo (for git commits)

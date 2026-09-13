@@ -9,12 +9,14 @@
   - Flashcard model with versioning support
   - Tag model for categorization
   - DailyCard and CardUsageLog for daily card rotation
+  - CardImage and ImageGenerationSettings for AI card illustration
   - UserProfile for extended user data
 - **API Endpoints**: RESTful API with proper authentication and permissions
 - **Authentication**: Session-based authentication with CORS configured and CSRF enforced on authenticated writes
 - **Management Commands**: 
   - `seed_initial_data`: Creates admin/test users and loads flashcards from JSON (`--pull` exports back out)
   - `import_cards`: Bulk import from CSV files
+  - `generate_card_images`: the image bot (queues missing cards, drains the queue, bounded per run)
 - **Docker**: Complete containerization with MySQL database
 
 ### Frontend (Vue 3 + Quasar)
@@ -26,6 +28,8 @@
   - User authentication (login/register)
   - Cards library with search and filtering
   - Admin panel with dashboard
+  - Card image panel (prompt editing, generation history, accept/withdraw) and a global
+    image look-and-feel settings page
   - User profile management
 - **Responsive Design**: Mobile-friendly Quasar components
 
@@ -39,7 +43,7 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
   overview card), loaded by `seed_initial_data`
 
 ### Testing
-- **Backend**: 147 pytest tests across `core`, `flashcards` and `users`, using Factory Boy
+- **Backend**: 197 pytest tests across `core`, `flashcards` and `users`, using Factory Boy
   and a SQLite test settings module (`yoga_flashcards/settings_test.py`)
 - **Frontend**: none, by design (see CLAUDE.md)
 
@@ -59,7 +63,15 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
    - Email notifications for daily cards (the `daily_email_enabled` preference saves, but
      nothing sends mail)
 
-3. **UI/UX Improvements**:
+3. **AI card images** -- generation, prompt editing, history and acceptance are implemented.
+   Still outstanding:
+   - No scheduler: the bot runs by hand. Add a Kubernetes CronJob once the Helm chart lands
+     (PR #5), or a cron entry otherwise.
+   - No queue overview: an admin cannot see pending generations across all cards in one place.
+   - Not smoke-tested against the live OpenRouter API. The response parser accepts both
+     documented shapes but has only been exercised against fakes.
+
+4. **UI/UX Improvements**:
    - Better card design with image placeholders
    - Animation improvements
    - Dark/light theme toggle

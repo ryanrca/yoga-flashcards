@@ -146,3 +146,176 @@ class CardUsageLog(models.Model):
 
     def __str__(self):
         return f"{self.card.title} used on {self.used_date} (cycle {self.cycle_number})"
+
+
+class ImageGenerationSettings(models.Model):
+    """
+    Singleton holding the global image-generation configuration.
+
+    There is exactly one row (pk=1). `load()` creates it on first access so the
+    admin screen never has to deal with a missing record.
+    """
+
+    DEFAULT_MODEL = 'black-forest-labs/flux.2-pro'
+    DEFAULT_LOOK_AND_FEEL = (
+        'Serene minimalist illustration, soft natural light, warm muted earth tones, '
+        'hand-painted texture, calm and contemplative mood, generous negative space.'
+    )
+
+    look_and_feel = models.TextField(
+        default=DEFAULT_LOOK_AND_FEEL,
+        blank=True,
+        help_text="Style guidance appended to every prompt. Overridable per image.",
+    )
+    model = models.CharField(
+        max_length=200,
+        default=DEFAULT_MODEL,
+        help_text="OpenRouter model slug used for new generations.",
+    )
+    enabled = models.BooleanField(
+        default=True,
+        help_text="Master switch. When off, the bot generates nothing.",
+    )
+    auto_generate_new_cards = models.BooleanField(
+        default=True,
+        help_text="Queue an image automatically the first time a card is seen.",
+    )
+    max_attempts = models.PositiveSmallIntegerField(
+        default=3,
+        help_text="Hard cap on generation attempts per image row, so a failing card cannot loop forever.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
+
+    class Meta:
+        verbose_name = 'Image generation settings'
+        verbose_name_plural = 'Image generation settings'
+
+    def __str__(self):
+        return f"Image generation settings ({self.model}, {'on' if self.enabled else 'off'})"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # The singleton is configuration, not data; deleting it would break the
+        # admin screen and the bot.
+        raise NotImplementedError('The image generation settings row cannot be deleted.')
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class CardImage(models.Model):
+    """
+    One AI image generation for a card, plus the prompt that produced it.
+
+    Rows are append-only history: regenerating creates a new row and never
+    edits or deletes an old one.
+
+    Attached to `version_group` rather than a Flashcard id because editing a
+    card creates a brand new Flashcard row (see Flashcard.create_new_version).
+    Keying on the id would orphan every image the moment a curator fixed a typo.
+    """
+
+    QUEUED = 'queued'
+    GENERATING = 'generating'
+    SUCCEEDED = 'succeeded'
+    FAILED = 'failed'
+    STATUS_CHOICES = [
+        (QUEUED, 'Queued'),
+        (GENERATING, 'Generating'),
+        (SUCCEEDED, 'Succeeded'),
+        (FAILED, 'Failed'),
+    ]
+
+    version_group = models.UUIDField(
+        db_index=True,
+        help_text="The card family this image belongs to; survives card edits.",
+    )
+    card = models.ForeignKey(
+        Flashcard,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='generated_images',
+        help_text="The card version whose text seeded the prompt. Kept for provenance only.",
+    )
+
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=QUEUED, db_index=True)
+    image = models.ImageField(upload_to='card_images/generated/', blank=True, null=True)
+
+    prompt = models.TextField(help_text="The full prompt sent to the model, look and feel included.")
+    prompt_seed = models.TextField(
+        blank=True,
+        help_text="The card-derived portion of the prompt, before style guidance.",
+    )
+    look_and_feel = models.TextField(
+        blank=True,
+        help_text="The style guidance actually used, snapshotted at generation time.",
+    )
+    look_and_feel_override = models.TextField(
+        blank=True,
+        help_text="Per-image style guidance. When set, it replaces the global look and feel.",
+    )
+    model = models.CharField(max_length=200)
+
+    is_accepted = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Only an accepted image is visible outside the admin area.",
+    )
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    accepted_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
+
+    attempts = models.PositiveSmallIntegerField(default=0)
+    error = models.TextField(blank=True)
+    cost_usd = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
+    provider_response_id = models.CharField(max_length=200, blank=True)
+
+    requested_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requested_card_images',
+        help_text="Null when the bot queued it automatically.",
+    )
+    is_auto = models.BooleanField(
+        default=False,
+        help_text="True when queued by the bot rather than by an admin.",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['version_group', '-created_at']),
+            models.Index(fields=['version_group', 'is_accepted']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+        # Deliberately no partial UniqueConstraint on (version_group, is_accepted):
+        # MySQL has no partial indexes, so Django would silently skip it and the
+        # guarantee would exist in tests (SQLite) but not in production.
+        # CardImageService.accept() enforces single-accepted inside a transaction.
+
+    def __str__(self):
+        return f"{self.version_group} {self.model} ({self.status})"
+
+    @property
+    def effective_look_and_feel(self):
+        """Per-image override wins over the global setting."""
+        if self.look_and_feel_override.strip():
+            return self.look_and_feel_override.strip()
+        return ImageGenerationSettings.load().look_and_feel.strip()

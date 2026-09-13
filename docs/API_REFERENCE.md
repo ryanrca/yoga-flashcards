@@ -2,6 +2,8 @@
 
 **Base URL:** `http://localhost:8000/api/`
 
+**Card images:** every card payload carries `generated_image`, the URL of the accepted AI image or `null`. Prompts and unaccepted images are only in the admin endpoints below.
+
 **Authentication:** Session-based (Django sessions)
 
 **CSRF:** Required on every authenticated unsafe request (POST/PUT/PATCH/DELETE). Call
@@ -603,6 +605,147 @@ Delete a tag.
 **Response (204 No Content)**
 
 **Note:** Deleting a tag removes it from all associated cards.
+
+---
+
+## Card Images (Admin)
+
+AI-generated card illustrations. **Every endpoint here is admin only** -- prompts and
+unaccepted images are never returned to curators or users.
+
+### GET /cards/{id}/images/
+
+Generation history for the card, plus the prompt a new generation would use.
+
+**Permission:** IsAdminOnly
+
+**Query parameters:** `look_and_feel_override` -- recompute `preview` with this style instead of the global one
+
+**Response (200 OK):**
+```json
+{
+  "preview": {
+    "prompt_seed": "An illustration for a yoga study flashcard titled \"Ahimsa\"...",
+    "look_and_feel": "Serene minimalist illustration, soft natural light...",
+    "prompt": "An illustration for ...\n\nStyle: Serene minimalist illustration...",
+    "model": "black-forest-labs/flux.2-pro"
+  },
+  "images": [
+    {
+      "id": 12,
+      "version_group": "510bdba4-eaf5-4599-bd51-a5706e68df20",
+      "status": "succeeded",
+      "image_url": "https://example.net/media/card_images/generated/ahimsa-4f2c1a9b.png",
+      "prompt": "...",
+      "look_and_feel_override": "",
+      "model": "black-forest-labs/flux.2-pro",
+      "is_accepted": true,
+      "attempts": 1,
+      "error": "",
+      "cost_usd": "0.0300",
+      "is_auto": false
+    }
+  ]
+}
+```
+
+---
+
+### POST /cards/{id}/images/
+
+Queue a generation. **Does not call OpenRouter** -- the bot picks the row up, so repeated
+clicks cannot start parallel provider calls for one card.
+
+**Permission:** IsAdminOnly
+
+**Request Body:** all fields optional
+```json
+{
+  "prompt": "A single lotus on still water at dawn.",
+  "look_and_feel_override": "Ink wash on rice paper.",
+  "model": "black-forest-labs/flux.2-max"
+}
+```
+
+Blank `prompt` composes one from the card text plus the effective look and feel. Blank
+`look_and_feel_override` uses the global setting. Blank `model` uses the global default.
+
+**Response (201 Created):** the queued image row, `status: "queued"`
+
+**Errors:**
+- `409` - Image generation is disabled in the global settings
+
+---
+
+### GET /card-images/
+
+Every generation, newest first. Paginated.
+
+**Permission:** IsAdminOnly
+
+**Query parameters:** `version_group`, `status` (`queued`, `generating`, `succeeded`, `failed`)
+
+---
+
+### POST /card-images/{id}/accept/
+
+Make this the one image the rest of the users see. Any previously accepted image for the
+same card is withdrawn in the same transaction.
+
+**Permission:** IsAdminOnly
+
+**Errors:**
+- `400` - Only a successfully generated image can be accepted
+
+---
+
+### POST /card-images/{id}/unaccept/
+
+Withdraw the image from public view. The row and the file are kept.
+
+**Permission:** IsAdminOnly
+
+---
+
+### POST /card-images/{id}/regenerate/
+
+Queue a fresh generation seeded from this row's prompt, model and style override. Accepts
+the same optional body as `POST /cards/{id}/images/` to change any of them. The source row
+is left untouched, so the history shows every prompt that was tried.
+
+**Permission:** IsAdminOnly
+
+**Response (201 Created):** the new queued row
+
+---
+
+### GET /image-settings/
+
+**Permission:** IsAdminOnly
+
+**Response (200 OK):**
+```json
+{
+  "look_and_feel": "Serene minimalist illustration, soft natural light...",
+  "model": "black-forest-labs/flux.2-pro",
+  "enabled": true,
+  "auto_generate_new_cards": true,
+  "max_attempts": 3,
+  "updated_at": "2026-09-12T04:10:00Z",
+  "updated_by_username": "admin"
+}
+```
+
+The OpenRouter API key is deliberately absent: it lives in the `OPENROUTER_API_KEY`
+environment variable and is never stored or returned.
+
+---
+
+### PUT /image-settings/
+
+Partial update of the above. `max_attempts` must be between 1 and 10.
+
+**Permission:** IsAdminOnly
 
 ---
 

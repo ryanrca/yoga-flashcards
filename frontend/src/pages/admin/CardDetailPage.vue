@@ -93,6 +93,210 @@
             </q-card-section>
           </q-card>
 
+          <!-- AI generated images: admin only -->
+          <q-card v-if="authStore.isAdmin" class="q-mt-lg">
+            <q-card-section class="row items-center">
+              <div class="col">
+                <div class="text-h6">Card Image</div>
+                <div class="text-caption text-grey-7">
+                  Prompts and unaccepted images are visible here only. Users see an
+                  image once it is accepted.
+                </div>
+              </div>
+              <div class="col-auto">
+                <q-btn flat dense icon="refresh" :loading="imagesLoading" @click="loadImages">
+                  <q-tooltip>Refresh</q-tooltip>
+                </q-btn>
+              </div>
+            </q-card-section>
+
+            <q-separator />
+
+            <q-card-section v-if="acceptedImage">
+              <div class="text-subtitle2 q-mb-sm">
+                Currently shown to users
+                <q-chip dense color="green" text-color="white" label="Accepted" class="q-ml-sm" />
+              </div>
+              <q-img
+                :src="acceptedImage.image_url"
+                style="max-width: 380px; border-radius: 8px;"
+              />
+              <div class="q-mt-sm">
+                <q-btn
+                  flat
+                  dense
+                  color="negative"
+                  icon="visibility_off"
+                  label="Withdraw from public view"
+                  @click="withdrawImage(acceptedImage)"
+                />
+              </div>
+            </q-card-section>
+            <q-card-section v-else class="text-grey-7">
+              No accepted image yet, so users see no illustration for this card.
+            </q-card-section>
+
+            <q-separator />
+
+            <!-- Generate -->
+            <q-card-section>
+              <div class="text-subtitle2 q-mb-sm">Generate a new image</div>
+
+              <q-input
+                v-model="promptDraft"
+                type="textarea"
+                outlined
+                autogrow
+                label="Prompt"
+                hint="Seeded from this card's text. Edit freely and regenerate as often as you like."
+                class="q-mb-md"
+              />
+
+              <q-input
+                v-model="lookAndFeelOverride"
+                type="textarea"
+                outlined
+                autogrow
+                dense
+                label="Look and feel override (optional)"
+                hint="Leave blank to use the global look and feel."
+                class="q-mb-md"
+                @blur="refreshPreview"
+              />
+
+              <div class="row q-col-gutter-md items-center">
+                <div class="col-12 col-sm-6">
+                  <q-input v-model="modelDraft" outlined dense label="Model" />
+                </div>
+                <div class="col-12 col-sm-6 text-right">
+                  <q-btn flat label="Reset prompt" :disable="generating" @click="resetPrompt" />
+                  <q-btn
+                    color="primary"
+                    icon="auto_awesome"
+                    label="Queue generation"
+                    :loading="generating"
+                    @click="queueGeneration"
+                  />
+                </div>
+              </div>
+              <div class="text-caption text-grey-7 q-mt-sm">
+                Queued work is picked up by the bot; it does not run inline.
+              </div>
+            </q-card-section>
+
+            <q-separator />
+
+            <!-- History -->
+            <q-card-section>
+              <div class="text-subtitle2 q-mb-sm">
+                History
+                <span class="text-caption text-grey-7">({{ images.length }})</span>
+              </div>
+
+              <div v-if="!images.length" class="text-grey-7">
+                Nothing generated yet for this card.
+              </div>
+
+              <q-list v-else bordered separator>
+                <q-expansion-item
+                  v-for="image in images"
+                  :key="image.id"
+                  :label="image.model"
+                  :caption="formatDate(image.created_at)"
+                >
+                  <template v-slot:header>
+                    <q-item-section avatar>
+                      <q-img
+                        v-if="image.image_url"
+                        :src="image.image_url"
+                        style="width: 56px; height: 56px; border-radius: 6px;"
+                      />
+                      <q-avatar v-else :color="statusColor(image.status)" text-color="white" icon="image" />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>
+                        {{ image.model }}
+                        <q-chip
+                          dense
+                          :color="statusColor(image.status)"
+                          text-color="white"
+                          :label="image.status"
+                          class="q-ml-sm"
+                        />
+                        <q-chip
+                          v-if="image.is_accepted"
+                          dense
+                          color="green"
+                          text-color="white"
+                          label="Accepted"
+                        />
+                        <q-chip
+                          v-if="image.is_auto"
+                          dense
+                          outline
+                          color="grey-7"
+                          label="Bot"
+                        />
+                      </q-item-label>
+                      <q-item-label caption>
+                        {{ formatDate(image.created_at) }}
+                        <span v-if="image.requested_by_username"> by {{ image.requested_by_username }}</span>
+                        <span v-if="image.attempts"> &middot; attempt {{ image.attempts }}</span>
+                        <span v-if="image.cost_usd"> &middot; ${{ image.cost_usd }}</span>
+                      </q-item-label>
+                    </q-item-section>
+                  </template>
+
+                  <q-card>
+                    <q-card-section>
+                      <q-img
+                        v-if="image.image_url"
+                        :src="image.image_url"
+                        style="max-width: 380px; border-radius: 8px;"
+                        class="q-mb-md"
+                      />
+
+                      <div v-if="image.error" class="text-negative q-mb-sm">
+                        <strong>Error:</strong> {{ image.error }}
+                      </div>
+
+                      <div class="text-caption text-grey-7">Prompt</div>
+                      <div class="text-body2 q-mb-sm" style="white-space: pre-wrap;">{{ image.prompt }}</div>
+
+                      <div v-if="image.look_and_feel_override" class="q-mb-sm">
+                        <div class="text-caption text-grey-7">Look and feel override</div>
+                        <div class="text-body2">{{ image.look_and_feel_override }}</div>
+                      </div>
+                    </q-card-section>
+
+                    <q-card-actions align="right">
+                      <q-btn flat dense label="Reuse prompt" @click="reusePrompt(image)" />
+                      <q-btn flat dense label="Regenerate" @click="regenerateFrom(image)" />
+                      <q-btn
+                        v-if="image.status === 'succeeded' && !image.is_accepted"
+                        flat
+                        dense
+                        color="positive"
+                        icon="check"
+                        label="Accept"
+                        @click="acceptImage(image)"
+                      />
+                      <q-btn
+                        v-if="image.is_accepted"
+                        flat
+                        dense
+                        color="negative"
+                        icon="visibility_off"
+                        label="Withdraw"
+                        @click="withdrawImage(image)"
+                      />
+                    </q-card-actions>
+                  </q-card>
+                </q-expansion-item>
+              </q-list>
+            </q-card-section>
+          </q-card>
+
           <!-- Version History -->
           <q-card v-if="card.versions && card.versions.length > 1" class="q-mt-lg">
             <q-card-section>
@@ -173,15 +377,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useFlashcardsStore } from 'src/stores/flashcards'
+import { useAuthStore } from 'src/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
 const flashcardsStore = useFlashcardsStore()
+const authStore = useAuthStore()
 
 // Reactive data
 const card = ref(null)
@@ -191,6 +397,24 @@ const error = ref('')
 // Revert dialog
 const showRevertDialog = ref(false)
 const versionToRevert = ref(null)
+
+// AI images (admin only)
+const images = ref([])
+const preview = ref(null)
+const imagesLoading = ref(false)
+const generating = ref(false)
+const promptDraft = ref('')
+const lookAndFeelOverride = ref('')
+const modelDraft = ref('')
+
+const acceptedImage = computed(() => images.value.find((image) => image.is_accepted) || null)
+
+const statusColor = (status) => ({
+  succeeded: 'green',
+  queued: 'blue-grey',
+  generating: 'orange',
+  failed: 'red'
+}[status] || 'grey')
 
 // Methods
 const loadCard = async () => {
@@ -206,6 +430,86 @@ const loadCard = async () => {
   }
 
   loading.value = false
+}
+
+const loadImages = async () => {
+  if (!authStore.isAdmin) return
+  imagesLoading.value = true
+  const result = await flashcardsStore.fetchCardImages(route.params.id, lookAndFeelOverride.value)
+  if (result.success) {
+    images.value = result.data.images
+    preview.value = result.data.preview
+    // Only prefill an untouched box, so a draft in progress is never clobbered.
+    if (!promptDraft.value) promptDraft.value = result.data.preview.prompt
+    if (!modelDraft.value) modelDraft.value = result.data.preview.model
+  } else {
+    $q.notify({ type: 'negative', message: result.error })
+  }
+  imagesLoading.value = false
+}
+
+const refreshPreview = async () => {
+  const result = await flashcardsStore.fetchCardImages(route.params.id, lookAndFeelOverride.value)
+  if (result.success) {
+    preview.value = result.data.preview
+    promptDraft.value = result.data.preview.prompt
+  }
+}
+
+const resetPrompt = () => {
+  if (preview.value) promptDraft.value = preview.value.prompt
+}
+
+const reusePrompt = (image) => {
+  promptDraft.value = image.prompt
+  lookAndFeelOverride.value = image.look_and_feel_override || ''
+  modelDraft.value = image.model
+}
+
+const queueGeneration = async () => {
+  generating.value = true
+  const result = await flashcardsStore.generateCardImage(route.params.id, {
+    prompt: promptDraft.value,
+    look_and_feel_override: lookAndFeelOverride.value,
+    model: modelDraft.value
+  })
+  if (result.success) {
+    $q.notify({ type: 'positive', message: 'Queued. The bot will generate it shortly.' })
+    await loadImages()
+  } else {
+    $q.notify({ type: 'negative', message: result.error })
+  }
+  generating.value = false
+}
+
+const regenerateFrom = async (image) => {
+  const result = await flashcardsStore.regenerateCardImage(image.id)
+  if (result.success) {
+    $q.notify({ type: 'positive', message: 'Queued a regeneration from that prompt.' })
+    await loadImages()
+  } else {
+    $q.notify({ type: 'negative', message: result.error })
+  }
+}
+
+const acceptImage = async (image) => {
+  const result = await flashcardsStore.acceptCardImage(image.id)
+  if (result.success) {
+    $q.notify({ type: 'positive', message: 'Accepted. Users can now see this image.' })
+    await loadImages()
+  } else {
+    $q.notify({ type: 'negative', message: result.error })
+  }
+}
+
+const withdrawImage = async (image) => {
+  const result = await flashcardsStore.unacceptCardImage(image.id)
+  if (result.success) {
+    $q.notify({ type: 'info', message: 'Withdrawn. Users no longer see an image for this card.' })
+    await loadImages()
+  } else {
+    $q.notify({ type: 'negative', message: result.error })
+  }
 }
 
 const formatDate = (dateString) => {
@@ -256,7 +560,8 @@ const confirmRevert = async () => {
 }
 
 // Lifecycle
-onMounted(() => {
-  loadCard()
+onMounted(async () => {
+  await loadCard()
+  await loadImages()
 })
 </script>

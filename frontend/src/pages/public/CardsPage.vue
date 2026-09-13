@@ -78,8 +78,8 @@
           >
             <q-card class="card-hover cursor-pointer card-fixed-height" @click="selectCard(card)">
               <q-img
-                v-if="card.front_image"
-                :src="card.front_image"
+                v-if="card.front_image || card.generated_image"
+                :src="card.front_image || card.generated_image"
                 height="200px"
                 class="card-image"
               >
@@ -171,8 +171,8 @@
         <q-card-section v-if="selectedCard" class="q-pt-none">
             <div v-if="selectedCard" class="hero-container" v-ripple>
               <q-img
-                v-if="selectedCard.front_image"
-                :src="selectedCard.front_image"
+                v-if="selectedCard.front_image || selectedCard.generated_image"
+                :src="selectedCard.front_image || selectedCard.generated_image"
                 class="hero-image"
                 :ratio="16/9"
                 fit="cover"

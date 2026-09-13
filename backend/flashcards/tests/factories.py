@@ -4,7 +4,7 @@ Factory Boy factories for the flashcards app.
 import uuid
 import factory
 from factory.django import DjangoModelFactory
-from flashcards.models import Flashcard, Tag, DailyCard, CardUsageLog
+from flashcards.models import Flashcard, Tag, DailyCard, CardUsageLog, CardImage
 from users.tests.factories import UserFactory
 
 
@@ -62,3 +62,19 @@ class CardUsageLogFactory(DjangoModelFactory):
     card = factory.SubFactory(FlashcardFactory)
     used_date = factory.Faker('date_object')
     cycle_number = 1
+
+
+class CardImageFactory(DjangoModelFactory):
+    """Factory for creating CardImage instances."""
+
+    class Meta:
+        model = CardImage
+
+    card = factory.SubFactory(FlashcardFactory)
+    version_group = factory.LazyAttribute(lambda o: o.card.version_group)
+    status = CardImage.QUEUED
+    prompt = factory.Faker('sentence')
+    prompt_seed = factory.Faker('sentence')
+    look_and_feel = 'Soft watercolour, warm earth tones.'
+    look_and_feel_override = ''
+    model = 'black-forest-labs/flux.2-pro'

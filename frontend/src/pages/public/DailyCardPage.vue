@@ -41,9 +41,9 @@
           <q-card-section v-else-if="dailyCard">
             <div class="text-center">
               <!-- Card Image -->
-              <div v-if="dailyCard.front_image" class="q-mb-md">
+              <div v-if="dailyCard.front_image || dailyCard.generated_image" class="q-mb-md">
                 <q-img
-                  :src="dailyCard.front_image"
+                  :src="dailyCard.front_image || dailyCard.generated_image"
                   style="max-width: 300px; max-height: 200px; border-radius: 8px;"
                   class="q-mx-auto"
                 />
