@@ -1,0 +1,16 @@
+{{- if and .Values.ingress.enabled .Values.ingress.tls.enabled }}
+{{/*
+Traefik 2.6 on this cluster still uses the pre-rename CRD group. traefik.io/v1alpha1
+does not resolve here.
+*/}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "yoga-flashcards.fullname" . }}-redirect-https
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+{{- end }}

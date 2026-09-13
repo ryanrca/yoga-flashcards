@@ -38,7 +38,7 @@ Logged in users can see all flashcards.
 - **Backend**: Django + Django REST Framework + MySQL
 - **Frontend**: Vue 3 + Quasar Framework + Pinia
 - **Development**: Docker Compose
-- **Production**: Kubernetes + Helm
+- **Production**: Kubernetes + Helm, behind Traefik with a Let's Encrypt certificate
 
 ## Quick Start
 
@@ -287,28 +287,33 @@ docker-compose exec backend python -m pytest
 
 1. Build and push Docker images:
 ```bash
-# Backend
-docker build -t your-registry/yoga-flashcards-backend:latest ./backend
-docker push your-registry/yoga-flashcards-backend:latest
+REG=your-registry
+TAG=1.0.0
 
-# Frontend
-docker build -t your-registry/yoga-flashcards-frontend:latest ./frontend
-docker push your-registry/yoga-flashcards-frontend:latest
+# Backend: gunicorn + WhiteNoise, with static files baked in at build time
+docker build -t $REG/yoga-flashcards-backend:$TAG ./backend
+docker push $REG/yoga-flashcards-backend:$TAG
+
+# Frontend: built SPA served by nginx. API_BASE_URL is compiled into the bundle,
+# so it has to be supplied here -- it cannot be changed at run time.
+docker build -f frontend/Dockerfile.prod \
+  --build-arg API_BASE_URL=https://flashcards.example.net \
+  -t $REG/yoga-flashcards-frontend:$TAG ./frontend
+docker push $REG/yoga-flashcards-frontend:$TAG
 ```
 
 2. Deploy with Helm:
 ```bash
-helm install yoga-flashcards ./k8s/helm \
-  --set image.repository=your-registry/yoga-flashcards \
-  --set env.DJANGO_SECRET_KEY=your-production-secret \
-  --set database.password=your-db-password
+helm upgrade --install yoga-flashcards ./k8s/helm \
+  --namespace yoga-flashcards --create-namespace --wait --timeout 8m
 ```
 
-**Status: incomplete.** `k8s/helm/` currently contains only `Chart.yaml` and `values.yaml`.
-There is no `templates/` directory, so `helm install` creates no resources. `values.yaml`
-also declares a `mysql` subchart that `Chart.yaml` does not list under `dependencies`, so it
-is never fetched. The chart needs Deployment, Service and Ingress templates before this
-section is usable.
+The chart brings up the backend, the SPA, MySQL, both PVCs, the Traefik ingress with a
+Let's Encrypt certificate, and a post-install Job that loads the starter flashcards.
+Secrets are generated on first install and preserved across upgrades.
+
+See **[k8s/README.md](k8s/README.md)** for the full deployment guide, the
+cluster-specific choices, and day-to-day operations.
 
 ## Configuration
 
@@ -373,7 +378,6 @@ Known gaps:
 
 ## TODO
 CODE:
-- Helm chart templates (see Production Deployment above)
 - Favorites API and wire up the `/favorites` page
 - Google / Facebook OAuth
 - Default card placeholder image

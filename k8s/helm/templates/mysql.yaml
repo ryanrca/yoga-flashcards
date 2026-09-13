@@ -1,0 +1,103 @@
+{{- if .Values.mysql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "yoga-flashcards.mysql.fullname" . }}
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+spec:
+  # Headless: the StatefulSet needs stable network identity and nothing
+  # load-balances across a single database replica.
+  clusterIP: None
+  ports:
+    - name: mysql
+      port: {{ .Values.mysql.port }}
+      targetPort: mysql
+  selector:
+    {{- include "yoga-flashcards.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "yoga-flashcards.mysql.fullname" . }}
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+spec:
+  serviceName: {{ include "yoga-flashcards.mysql.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "yoga-flashcards.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mysql
+  template:
+    metadata:
+      labels:
+        {{- include "yoga-flashcards.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mysql
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: mysql
+          image: {{ .Values.mysql.image | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            # utf8mb4 throughout: card content is Sanskrit in Devanagari.
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
+            # mysql_native_password keeps mysqlclient 2.2 happy against MySQL 8.
+            - --default-authentication-plugin=mysql_native_password
+          env:
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mysql.database | quote }}
+            - name: MYSQL_USER
+              value: {{ .Values.mysql.user | quote }}
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "yoga-flashcards.secretName" . }}
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "yoga-flashcards.secretName" . }}
+                  key: MYSQL_ROOT_PASSWORD
+          ports:
+            - name: mysql
+              containerPort: {{ .Values.mysql.port }}
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 -u root -p\"$MYSQL_ROOT_PASSWORD\""]
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 -u root -p\"$MYSQL_ROOT_PASSWORD\""]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.mysql.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.mysql.persistence.storageClass }}
+        storageClassName: {{ .Values.mysql.persistence.storageClass | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.mysql.persistence.size | quote }}
+{{- end }}
