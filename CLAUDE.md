@@ -77,11 +77,21 @@ docker-compose exec backend python manage.py seed_initial_data         # Import 
 docker-compose exec backend python manage.py seed_initial_data --pull  # Export to JSON
 docker-compose exec backend python manage.py import_cards /path/to.csv # Import CSV
 
-# Kubernetes
-docker build -t registry/yoga-backend:latest ./backend
-docker build -t registry/yoga-frontend:latest ./frontend
-helm install yoga-flashcards ./k8s/helm            # NOTE: chart has no templates/ yet
+# Kubernetes -- deployed at https://flashcards.jetli.kicks-ass.net (ns yoga-flashcards)
+# API_BASE_URL is compiled into the frontend bundle, so it must be set at build time.
+REG=repo.jetli.kicks-ass.net; TAG=1.0.0
+docker build -t $REG/yoga-flashcards-backend:$TAG ./backend
+docker build -f frontend/Dockerfile.prod \
+  --build-arg API_BASE_URL=https://flashcards.jetli.kicks-ass.net \
+  -t $REG/yoga-flashcards-frontend:$TAG ./frontend
+docker push $REG/yoga-flashcards-backend:$TAG && docker push $REG/yoga-flashcards-frontend:$TAG
+
+helm upgrade --install yoga-flashcards ./k8s/helm \
+  --namespace yoga-flashcards --create-namespace --wait --timeout 8m
 ```
+
+See `k8s/README.md` for the cluster-specific choices (Traefik 2.6 legacy CRDs,
+per-namespace Issuer, pinned MySQL 8.0.28, probe Host headers).
 
 ## API Overview
 
@@ -107,4 +117,5 @@ See `docs/API_REFERENCE.md` for full details.
 | Routes | `frontend/src/router/routes.js` (definitions), `frontend/src/router/index.js` (guards) |
 | HTTP Client | `frontend/src/boot/axios.js` (base URL, CSRF, credentials, 401 redirect) |
 | Config | `docker-compose.yml`, `backend/yoga_flashcards/settings.py`, `frontend/quasar.config.js` |
+| Deployment | `k8s/helm/` (chart), `k8s/README.md`, `backend/Dockerfile`, `frontend/Dockerfile.prod` |
 | Specs | `docs/FUNCTIONAL_SPEC.md`, `docs/API_REFERENCE.md`, `docs/DATABASE_SCHEMA.md` |

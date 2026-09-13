@@ -1,0 +1,55 @@
+{{- if .Values.seed.enabled }}
+{{/*
+post-install only, never post-upgrade.
+
+seed_initial_data deletes every flashcard and tag before importing, so running
+it against a populated database would destroy content. Re-run it deliberately:
+
+  kubectl -n NS create job --from=job/RELEASE-seed seed-rerun
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "yoga-flashcards.fullname" . }}-seed
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        {{- include "yoga-flashcards.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: seed
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: seed
+          image: {{ include "yoga-flashcards.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              for i in $(seq 1 60); do
+                mysqladmin ping -h "$DB_HOST" -P "$DB_PORT" --silent 2>/dev/null && break
+                echo "  waiting for database ($i/60)"
+                sleep 2
+              done
+              python manage.py migrate --noinput
+              python manage.py seed_initial_data
+          env:
+            {{- include "yoga-flashcards.backendEnv" . | nindent 12 }}
+          envFrom:
+            {{- include "yoga-flashcards.backendEnvFrom" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+{{- end }}

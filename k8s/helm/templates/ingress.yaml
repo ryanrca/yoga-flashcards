@@ -1,0 +1,89 @@
+{{- if .Values.ingress.enabled }}
+{{- $fullName := include "yoga-flashcards.fullname" . -}}
+{{- $backendSvc := include "yoga-flashcards.backend.fullname" . -}}
+{{- $frontendSvc := include "yoga-flashcards.frontend.fullname" . -}}
+{{- if .Values.ingress.tls.enabled }}
+{{/*
+Port 80: redirect everything to HTTPS.
+
+This catch-all does not block ACME. cert-manager's solver Ingress carries a
+longer Host(...) && PathPrefix(/.well-known/acme-challenge/...) rule, and
+Traefik prioritises routers by rule length, so the challenge still wins.
+*/}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-redirect
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+  annotations:
+    # No IngressClass resources exist on this cluster, so Traefik is selected
+    # with the legacy annotation rather than spec.ingressClassName.
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+    traefik.ingress.kubernetes.io/router.entrypoints: {{ .Values.ingress.entrypoints.web }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-{{ $fullName }}-redirect-https@kubernetescrd
+spec:
+  rules:
+    - host: {{ .Values.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $frontendSvc }}
+                port:
+                  number: {{ .Values.frontend.port }}
+---
+{{- end }}
+{{/*
+The SPA and the API share one hostname. Traefik sorts routers by rule length, so
+the PathPrefix(/api) rules beat the PathPrefix(/) catch-all without explicit
+priorities, and no path rewriting is needed -- Django already serves /api,
+/admin, /static and /media at those prefixes.
+*/}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "yoga-flashcards.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+    {{- if .Values.ingress.tls.enabled }}
+    traefik.ingress.kubernetes.io/router.entrypoints: {{ .Values.ingress.entrypoints.websecure }}
+    {{- if .Values.ingress.certManager.enabled }}
+    # Singular "issuer": this is a namespaced Issuer, not a ClusterIssuer.
+    cert-manager.io/issuer: {{ .Values.ingress.certManager.issuerName }}
+    {{- end }}
+    {{- else }}
+    traefik.ingress.kubernetes.io/router.entrypoints: {{ .Values.ingress.entrypoints.web }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.host | quote }}
+      secretName: {{ include "yoga-flashcards.tlsSecretName" . }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.host | quote }}
+      http:
+        paths:
+          {{- range .Values.ingress.backendPaths }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $backendSvc }}
+                port:
+                  number: {{ $.Values.backend.port }}
+          {{- end }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $frontendSvc }}
+                port:
+                  number: {{ .Values.frontend.port }}
+{{- end }}
