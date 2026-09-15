@@ -19,6 +19,11 @@ $taupe:    #8B7355;
 $sage:     #5F7A61;
 $terra:    #C1663F;
 $sand:     #F2EDE5;
+// Hover shades are written as literals rather than darken()/lighten().
+// Those are global built-ins: Dart Sass deprecates them for color.adjust()
+// and removes them in 3.0, and they warn on every rebuild. The values below
+// are exactly what Sass computed for the original calls.
+$taupe-dark: #786349;   // was darken($taupe, 6%)
 
 html { scroll-behavior: smooth; }
 
@@ -78,7 +83,7 @@ h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
   &.yoga-btn-primary {
     background: $taupe;
     color: #FFFFFF;
-    &:hover { background: darken($taupe, 6%); }
+    &:hover { background: $taupe-dark; }
   }
 
   &.yoga-btn-secondary {
