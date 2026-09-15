@@ -17,24 +17,37 @@ const VALID = new Set(THEMES.map((t) => t.id))
 
 const current = ref(DEFAULT_THEME)
 
+// The last ?theme= value seen, valid or not. Used so route changes only act on
+// an actual change to the query - otherwise every in-app navigation would
+// re-apply the URL theme and stomp a choice made in the picker.
+let lastUrlTheme = null
+
 function isValid (id) {
   return typeof id === 'string' && VALID.has(id)
+}
+
+// A silent no-op is the wrong failure mode here: ?theme=dark looks like it
+// should work, and without this you just get the previous theme with no clue why.
+function warnInvalid (raw) {
+  console.warn(
+    `[theme] "${raw}" is not a theme. Valid ids: ${THEMES.map((t) => t.id).join(', ')}`
+  )
 }
 
 // The router runs in hash mode, so a shared preview link can put the query
 // either before the hash (/?theme=dusk) or inside it (/#/?theme=dusk).
 // Accept both rather than making the person sharing the link think about it.
-function themeFromUrl () {
+function rawThemeFromUrl () {
   if (typeof window === 'undefined') return null
 
   const fromSearch = new URLSearchParams(window.location.search).get('theme')
-  if (isValid(fromSearch)) return fromSearch
+  if (fromSearch) return fromSearch
 
   const hash = window.location.hash || ''
   const q = hash.indexOf('?')
   if (q !== -1) {
     const fromHash = new URLSearchParams(hash.slice(q + 1)).get('theme')
-    if (isValid(fromHash)) return fromHash
+    if (fromHash) return fromHash
   }
 
   return null
@@ -79,9 +92,37 @@ export function applyTheme (id, { persist = true } = {}) {
 // A URL theme is not persisted - following a link should not silently change
 // what the recipient sees on their next visit.
 export function initTheme () {
-  const fromUrl = themeFromUrl()
-  if (fromUrl) return applyTheme(fromUrl, { persist: false })
+  const raw = rawThemeFromUrl()
+  lastUrlTheme = raw
+
+  if (raw) {
+    if (isValid(raw)) return applyTheme(raw, { persist: false })
+    warnInvalid(raw)
+  }
+
   return applyTheme(readStored() || DEFAULT_THEME, { persist: false })
+}
+
+// Called on every route change. In hash mode, editing ?theme= in the address
+// bar changes only the fragment, so the document never reloads and the boot
+// file never runs again - without this, a preview link only takes effect on a
+// full reload, which looks exactly like a caching bug.
+export function syncThemeFromRoute (queryValue) {
+  // Vue Router hands back an array if the key appears more than once.
+  const raw = Array.isArray(queryValue) ? queryValue[0] : queryValue
+  if (raw === undefined || raw === null || raw === '') return
+
+  // Only react to an actual change, so navigating around the app does not
+  // override a theme picked from the menu.
+  if (raw === lastUrlTheme) return
+  lastUrlTheme = raw
+
+  if (!isValid(raw)) {
+    warnInvalid(raw)
+    return
+  }
+
+  applyTheme(raw, { persist: false })
 }
 
 export function useTheme () {
