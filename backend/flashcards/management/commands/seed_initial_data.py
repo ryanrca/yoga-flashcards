@@ -1,10 +1,16 @@
 import json
 from pathlib import Path
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
+from django.core.files.storage import default_storage
+from django.db import transaction
 
-from flashcards.models import Flashcard, Tag
+from flashcards.models import (
+    Flashcard, Tag, CardImage, CardImagePreference, DailyCard, CardUsageLog,
+    ImageGenerationSettings,
+)
 
 User = get_user_model()
 
@@ -44,16 +50,40 @@ class Command(BaseCommand):
         parser.add_argument(
             '--dry-run',
             action='store_true',
-            help='Report what --merge would do without writing anything.'
+            help='Report what --merge or --scorched-earth would do without writing anything.'
+        )
+        parser.add_argument(
+            '--scorched-earth',
+            action='store_true',
+            help=(
+                'Erase every card, version, tag, generated image, per-card setting and '
+                'media file, then reseed from JSON as if the app were new. Requires --confirm.'
+            )
+        )
+        parser.add_argument(
+            '--confirm',
+            action='store_true',
+            help='Required to actually run --scorched-earth. Without it the command refuses.'
+        )
+        parser.add_argument(
+            '--reset-settings',
+            action='store_true',
+            help='With --scorched-earth, also reset the global look and feel and model to defaults.'
+        )
+        parser.add_argument(
+            '--no-queue-images',
+            action='store_true',
+            help='With --scorched-earth, do not queue image generation for the reseeded cards.'
         )
 
     def handle(self, *args, **options):
         file_path = Path(options['file']).resolve()
 
-        chosen = [m for m in ('pull', 'push', 'merge') if options[m]]
+        chosen = [m for m in ('pull', 'push', 'merge', 'scorched_earth') if options[m]]
         if len(chosen) > 1:
             raise CommandError(
-                'Choose only one mode: --pull (export), --push (replace) or --merge (add and update).'
+                'Choose only one mode: --pull (export), --push (replace), --merge (add and '
+                'update) or --scorched-earth (erase everything and reseed).'
             )
 
         mode = chosen[0] if chosen else 'push'
@@ -61,6 +91,14 @@ class Command(BaseCommand):
             self._export_to_json(file_path)
         elif mode == 'merge':
             self._merge_from_json(file_path, dry_run=options['dry_run'])
+        elif mode == 'scorched_earth':
+            self._scorched_earth(
+                file_path,
+                confirm=options['confirm'],
+                dry_run=options['dry_run'],
+                reset_settings=options['reset_settings'],
+                queue_images=not options['no_queue_images'],
+            )
         else:
             self._import_from_json(file_path)
 
@@ -307,6 +345,171 @@ class Command(BaseCommand):
             short_answer=card_data.get('short_answer', card.short_answer),
             tags=tags,
         )
+
+    # Scorched earth ----------------------------------------------------
+    #
+    # Card media lives in exactly two directories. `avatars/` belongs to
+    # UserProfile and is deliberately NOT in this list: wiping the deck must
+    # never touch people's profile pictures.
+    CARD_MEDIA_DIRS = ('card_images/generated', 'flashcard_images')
+
+    def _scorched_earth(self, file_path: Path, confirm=False, dry_run=False,
+                        reset_settings=False, queue_images=True):
+        """
+        Erase every trace of the current deck and reseed from JSON.
+
+        Removes cards and all their versions, tags, generated images and their
+        files, per-card model choices, the daily-card picks and the usage log
+        that drives rotation. Users, their avatars and their accounts are left
+        alone, and so is the global image configuration unless --reset-settings
+        is passed.
+
+        Afterwards every card is version 1 with no media, and each is queued for
+        a fresh image.
+        """
+        data = self._load_json(file_path)
+        flashcards_data = [c for c in data.get('flashcards', []) if c.get('is_live') is not False]
+        if not flashcards_data:
+            raise CommandError('No flashcards found in the JSON file. Refusing to erase.')
+
+        inventory = {
+            'flashcards (all versions)': Flashcard.objects.count(),
+            'tags': Tag.objects.count(),
+            'generated images': CardImage.objects.count(),
+            'per-card model choices': CardImagePreference.objects.count(),
+            'daily card picks': DailyCard.objects.count(),
+            'card usage log rows': CardUsageLog.objects.count(),
+        }
+        media_files = self._card_media_files()
+        # Some names come from database references to files that are already
+        # gone, so only count the ones actually present on disk.
+        present = [n for n in media_files if default_storage.exists(n)]
+
+        self.stdout.write(self.style.WARNING('Scorched earth. This will delete:'))
+        for label, count in inventory.items():
+            self.stdout.write(f'  {count:>5}  {label}')
+        self.stdout.write(f'  {len(present):>5}  media files on disk')
+        self.stdout.write(f'  and reseed {len(flashcards_data)} cards from {file_path.name}')
+        self.stdout.write('  preserved: user accounts, profile avatars'
+                          + ('' if reset_settings else ', global image settings'))
+
+        if dry_run:
+            self.stdout.write(self.style.WARNING('Dry run: nothing was deleted or written.'))
+            return
+
+        if not confirm:
+            raise CommandError(
+                'Refusing to erase without --confirm. Re-run with --scorched-earth --confirm, '
+                'or add --dry-run to see the plan.'
+            )
+
+        # Database first, in one transaction, so a failure leaves the deck intact.
+        # Files are removed afterwards: the filesystem is not transactional, and
+        # an orphaned file is a far smaller problem than a missing row.
+        with transaction.atomic():
+            CardImage.objects.all().delete()
+            CardImagePreference.objects.all().delete()
+            DailyCard.objects.all().delete()
+            CardUsageLog.objects.all().delete()
+            # Cascades clean the flashcard/tag and favourite-card join tables.
+            Flashcard.objects.all().delete()
+            Tag.objects.all().delete()
+            if reset_settings:
+                ImageGenerationSettings.objects.all().delete()
+        self.stdout.write(self.style.SUCCESS('Database cleared.'))
+
+        removed = self._delete_card_media(media_files)
+        self.stdout.write(self.style.SUCCESS(f'Removed {removed} media file(s).'))
+
+        admin_user = self._ensure_admin_user()
+        self._ensure_test_users()
+        tag_map = self._create_tags(data.get('tags', []))
+
+        # Image paths are stripped deliberately. A JSON produced by --pull carries
+        # whatever media the deck had at the time, and every one of those files has
+        # just been deleted -- honouring them would leave a "fresh" card pointing at
+        # something that no longer exists.
+        cards = [
+            self._create_flashcard(dict(card_data, front_image=None, back_image=None),
+                                   admin_user, tag_map)
+            for card_data in flashcards_data
+        ]
+        carried = sum(1 for c in flashcards_data if c.get('front_image') or c.get('back_image'))
+        if carried:
+            self.stdout.write(
+                f'Ignored stale image path(s) on {carried} card(s) in the JSON; '
+                'a scorched deck starts with no media.'
+            )
+        self.stdout.write(self.style.SUCCESS(f'Reseeded {len(cards)} cards at version 1 with no media.'))
+
+        queued = 0
+        if queue_images:
+            # Imported here to keep the module import graph shallow.
+            from flashcards.services import CardImageService
+
+            config = ImageGenerationSettings.load()
+            for card in cards:
+                CardImageService.queue(card, is_auto=True)
+                queued += 1
+            self.stdout.write(self.style.SUCCESS(f'Queued {queued} card(s) for image generation.'))
+            if not config.enabled:
+                self.stdout.write(self.style.WARNING(
+                    'Image generation is disabled in the global settings, so the bot will not '
+                    'process this queue until it is switched back on.'
+                ))
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Scorched earth complete. {len(cards)} cards, '
+            f'{len(tag_map)} tags, {queued} generation(s) queued.'
+        ))
+
+    def _card_media_files(self):
+        """
+        Every card media file currently on disk.
+
+        Union of what the database references and whatever else is sitting in
+        the two card media directories, so images orphaned by an earlier run get
+        cleared too. Strictly limited to those directories.
+        """
+        names = set()
+        for path in CardImage.objects.exclude(image='').values_list('image', flat=True):
+            if path:
+                names.add(path)
+        for field in ('front_image', 'back_image'):
+            for path in Flashcard.objects.exclude(**{field: ''}).values_list(field, flat=True):
+                if path:
+                    names.add(path)
+        for directory in self.CARD_MEDIA_DIRS:
+            try:
+                _, files = default_storage.listdir(directory)
+            except (FileNotFoundError, NotADirectoryError, OSError):
+                continue
+            for name in files:
+                names.add(f'{directory}/{name}')
+        return sorted(names)
+
+    def _delete_card_media(self, names):
+        """Delete the given media files, refusing anything outside the card directories."""
+        media_root = Path(settings.MEDIA_ROOT).resolve()
+        removed = 0
+        for name in names:
+            if not any(name.startswith(f'{d}/') for d in self.CARD_MEDIA_DIRS):
+                self.stdout.write(self.style.WARNING(f'  skipped (outside card media): {name}'))
+                continue
+            # Belt and braces: never follow a path out of MEDIA_ROOT.
+            try:
+                resolved = (media_root / name).resolve()
+                resolved.relative_to(media_root)
+            except ValueError:
+                self.stdout.write(self.style.WARNING(f'  skipped (escapes MEDIA_ROOT): {name}'))
+                continue
+            try:
+                if default_storage.exists(name):
+                    default_storage.delete(name)
+                    removed += 1
+            except OSError as exc:
+                self.stdout.write(self.style.WARNING(f'  could not delete {name}: {exc}'))
+        return removed
 
     # Export (backup) ---------------------------------------------------
     def _export_to_json(self, file_path: Path):

@@ -42,7 +42,7 @@
       "title": "Niyamas",
       "phrase": "नियम",
       "short_answer": "Personal observances or \"how we relate to ourselves\".",
-      "definition": "These are internal practices meant to improve our own character and being. They consist of Sauca, Samtosa, Tapas, Svadhaya, and Isharapranidhana. These habits, behaviors, and observances outline guidance for healthy living, spiritual enlightenment, and existence with liberation and ease. These are the \"To Do's\".",
+      "definition": "These are internal practices meant to improve our own character and being. They consist of Sauca, Santosha, Tapas, Svadhyaya, and Isvara-pranidhana. These habits, behaviors, and observances outline guidance for healthy living, spiritual enlightenment, and existence with liberation and ease. These are the \"To Do's\".",
       "front_image": null,
       "back_image": null,
       "tags": [
@@ -186,7 +186,7 @@
       "title": "Sauca",
       "phrase": "शौच",
       "short_answer": "Purity, cleanliness, and clarity of body and mind.",
-      "definition": "Purity of mind, speach and body. Keeping physical cleanliness through asanas, pranayama, and proper eating, and maintaining cleanliness in our physical environment. Purity of speech comes from being truthful and using words that are not hurtful, or distressing to others or self. Purity of thoughts through reflection, meditation, and calmness. It is about getting rid of \"rubbish\" in the mind and body through healthy habits.",
+      "definition": "Purity of mind, speech and body. Keeping physical cleanliness through asanas, pranayama, and proper eating, and maintaining cleanliness in our physical environment. Purity of speech comes from being truthful and using words that are not hurtful, or distressing to others or self. Purity of thoughts through reflection, meditation, and calmness. It is about getting rid of \"rubbish\" in the mind and body through healthy habits.",
       "front_image": null,
       "back_image": null,
       "tags": [
@@ -198,7 +198,7 @@
       "title": "Santosha",
       "phrase": "संतोष",
       "short_answer": "Contentment; being okay with what is.",
-      "definition": "To be content with what we already have and to accept outcomes even when they don't meet our expectations. It is the appreciation of our current situtation rather than focusing on how we wish it to be.",
+      "definition": "To be content with what we already have and to accept outcomes even when they don't meet our expectations. It is the appreciation of our current situation rather than focusing on how we wish it to be.",
       "front_image": null,
       "back_image": null,
       "tags": [
@@ -209,8 +209,8 @@
     {
       "title": "Tapas",
       "phrase": "तपस्",
-      "short_answer": "The passion, motivation and discipline that drives spiritual or physical pratice.",
-      "definition": "The activity of \"heating\" the body through asana and pranayama to cleanse it. Includes, the discipline and actions toward spiritual rituals and healthy habits, to sustain a healthy lifestyle and burn away impurities physically and spiritually.",
+      "short_answer": "The passion, motivation and discipline that drives spiritual or physical practice.",
+      "definition": "The activity of \"heating\" the body through asana and pranayama to cleanse it. Includes the discipline and actions toward spiritual rituals and healthy habits, to sustain a healthy lifestyle and burn away impurities physically and spiritually.",
       "front_image": null,
       "back_image": null,
       "tags": [
@@ -221,7 +221,7 @@
     {
       "title": "Svadhyaya",
       "phrase": "स्वाध्याय",
-      "short_answer": "The pratice of self-study, self examination, and spirtual inquiry.",
+      "short_answer": "The practice of self-study, self-examination, and spiritual inquiry.",
       "definition": "The study of ancient texts and the examination of one's own inner dialogue. It is an inquiry into who is \"living in you\" and identifying the labels we carry that are not our true identity. It is the endless pursuit of learning about ourselves and spiritual frameworks.",
       "front_image": null,
       "back_image": null,
@@ -233,7 +233,7 @@
     {
       "title": "Isvara-pranidhana",
       "phrase": "ईश्वरप्रणिधान",
-      "short_answer": "Devotion to the \"absolute Brahma\", who is free from all hinderences and karma. Devotion to a higher power.",
+      "short_answer": "Devotion to the \"absolute Brahma\", who is free from all hindrances and karma. Devotion to a higher power.",
       "definition": "Some interpretations mean to \"lay all your actions at the feet of God\" by offering the \"fruits of your devotion\" to something larger than yourself. It is the realization and acceptance of the part of ourselves that does not change, and surrendering to the divine part of us that is unaffected by our samskara.",
       "front_image": "flashcard_images/shiva_trident_of_fire.jpg",
       "back_image": "flashcard_images/sutra_quantique.jpg",

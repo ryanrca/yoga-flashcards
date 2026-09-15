@@ -17,6 +17,9 @@
   - `seed_initial_data`: Creates admin/test users and loads flashcards from JSON (`--pull` exports back out)
   - `import_cards`: Bulk import from CSV files
   - `generate_card_images`: the image bot (queues missing cards, drains the queue, bounded per run)
+  - `seed_initial_data`: four modes -- `--merge` (additive, the everyday one), `--push`
+    (destructive replace), `--scorched-earth --confirm` (total reset including media
+    files), and `--pull` (export)
 - **Docker**: Complete containerization with MySQL database
 
 ### Frontend (Vue 3 + Quasar)
@@ -48,7 +51,7 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
   overview card), loaded by `seed_initial_data`
 
 ### Testing
-- **Backend**: 216 pytest tests across `core`, `flashcards` and `users`, using Factory Boy
+- **Backend**: 248 pytest tests across `core`, `flashcards` and `users`, using Factory Boy
   and a SQLite test settings module (`yoga_flashcards/settings_test.py`)
 - **Frontend**: none, by design (see CLAUDE.md)
 

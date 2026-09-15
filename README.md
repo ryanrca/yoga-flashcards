@@ -213,6 +213,49 @@ Schedule it however you like (cron, or a Kubernetes CronJob). Each run is bounde
 `--limit`, so it is safe to run often. Generation costs money per image -- roughly
 $0.03/MP on FLUX.2 Pro -- and the cost OpenRouter reports is recorded on each row.
 
+## Seeding and resetting the deck
+
+`seed_initial_data` reads `backend/flashcards/management/commands/data/flashcards.json`
+and has four modes. Three of them write to the database.
+
+```bash
+# Add new cards and update changed ones. Never deletes. Existing cards keep their
+# version_group, so generated images stay attached. This is the everyday mode.
+docker-compose exec backend python manage.py seed_initial_data --merge --dry-run
+docker-compose exec backend python manage.py seed_initial_data --merge
+
+# Start completely over: erase every card, version, tag, generated image and media
+# file, then reseed at version 1 and queue fresh images for everything.
+docker-compose exec backend python manage.py seed_initial_data --scorched-earth --dry-run
+docker-compose exec backend python manage.py seed_initial_data --scorched-earth --confirm
+
+# Export the current deck back to JSON
+docker-compose exec backend python manage.py seed_initial_data --pull
+```
+
+### Scorched earth
+
+Erases **cards and every version of them, tags, generated images (database rows and
+the files on disk), per-card model choices, the daily-card picks and the usage log**
+that drives rotation. Then it reseeds straight from the JSON: one version per card,
+no media, and every card queued for a new image.
+
+It **preserves** user accounts, their profile avatars, and the global look-and-feel
+settings. `avatars/` belongs to user profiles rather than to cards, so a deck wipe
+never touches it. Pass `--reset-settings` to also return the look and feel and model
+to their defaults.
+
+Safety: it refuses to run without `--confirm`, refuses an empty JSON file, and
+`--dry-run` prints a full inventory of what would be deleted without touching
+anything. Media deletion is restricted to the two card directories
+(`card_images/generated/` and `flashcard_images/`) and will not follow a path out of
+`MEDIA_ROOT`.
+
+**`--push` is the older default and is destructive in a subtler way:** it deletes and
+recreates every card, which gives them new `version_group` values and silently
+detaches their generated images. Prefer `--merge` for updates and `--scorched-earth`
+for a deliberate reset.
+
 ## CSV Import
 
 Import cards in bulk using the Django management command:

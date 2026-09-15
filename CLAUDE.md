@@ -82,6 +82,9 @@ docker-compose exec backend python manage.py generate_card_images --card-id 7
 # Data management
 docker-compose exec backend python manage.py seed_initial_data         # Import seed data
 docker-compose exec backend python manage.py seed_initial_data --pull  # Export to JSON
+docker-compose exec backend python manage.py seed_initial_data --merge # Add/update, never deletes
+docker-compose exec backend python manage.py seed_initial_data --scorched-earth --dry-run
+docker-compose exec backend python manage.py seed_initial_data --scorched-earth --confirm
 docker-compose exec backend python manage.py import_cards /path/to.csv # Import CSV
 
 # Kubernetes -- deployed at https://flashcards.jetli.kicks-ass.net (ns yoga-flashcards)
