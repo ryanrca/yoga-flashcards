@@ -27,27 +27,27 @@
 
           <q-btn-dropdown
             flat
+            no-caps
             :label="authStore.user?.email || 'User'"
             icon="account_circle"
-            size="lg"
-            style="font-weight: 500; letter-spacing: 0.3px;"
+            content-class="user-dropdown-menu"
           >
-            <q-list class="user-dropdown-menu">
+            <q-list>
               <q-item clickable v-close-popup @click="$router.push('/profile')">
                 <q-item-section avatar>
                   <q-icon name="person" color="primary" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label style="font-weight: 500;">Profile</q-item-label>
+                  <q-item-label>Profile</q-item-label>
                 </q-item-section>
               </q-item>
-              <q-separator style="background: rgba(139, 115, 85, 0.2);" />
+              <q-separator class="menu-separator" />
               <q-item clickable v-close-popup @click="handleLogout">
                 <q-item-section avatar>
                   <q-icon name="logout" color="primary" />
                 </q-item-section>
                 <q-item-section>
-                  <q-item-label style="font-weight: 500;">Logout</q-item-label>
+                  <q-item-label>Logout</q-item-label>
                 </q-item-section>
               </q-item>
             </q-list>
@@ -65,10 +65,10 @@
       <q-list padding>
         <div class="q-pa-md text-center">
           <q-icon name="self_improvement" size="xl" color="primary" />
-          <div class="text-h5 q-mt-md" style="font-family: 'Playfair Display', serif; font-weight: 600; color: #3D3D3D;">
+          <div class="text-h5 q-mt-md drawer-title">
             Admin
           </div>
-          <div class="text-subtitle2" style="color: #8B7355; letter-spacing: 1px; font-weight: 500;">
+          <div class="text-subtitle2 drawer-subtitle">
             Content Management
           </div>
           <div class="yoga-divider q-my-md"></div>
@@ -79,8 +79,8 @@
             <q-icon name="dashboard" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Dashboard</q-item-label>
-            <q-item-label caption style="color: #6B6B6B;">Overview</q-item-label>
+            <q-item-label class="nav-label">Dashboard</q-item-label>
+            <q-item-label caption class="nav-caption">Overview</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -89,8 +89,8 @@
             <q-icon name="auto_stories" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Cards</q-item-label>
-            <q-item-label caption style="color: #6B6B6B;">Manage content</q-item-label>
+            <q-item-label class="nav-label">Cards</q-item-label>
+            <q-item-label caption class="nav-caption">Manage content</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -99,8 +99,8 @@
             <q-icon name="local_offer" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Tags</q-item-label>
-            <q-item-label caption style="color: #6B6B6B;">Organize cards</q-item-label>
+            <q-item-label class="nav-label">Tags</q-item-label>
+            <q-item-label caption class="nav-caption">Organize cards</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -114,8 +114,8 @@
             <q-icon name="people" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Users</q-item-label>
-            <q-item-label caption style="color: #6B6B6B;">Manage access</q-item-label>
+            <q-item-label class="nav-label">Users</q-item-label>
+            <q-item-label caption class="nav-caption">Manage access</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -129,8 +129,8 @@
             <q-icon name="auto_awesome" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Card Images</q-item-label>
-            <q-item-label caption style="color: #6B6B6B;">Look and feel</q-item-label>
+            <q-item-label class="nav-label">Card Images</q-item-label>
+            <q-item-label caption class="nav-caption">Look and feel</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -141,8 +141,8 @@
             <q-icon name="add_circle" size="md" color="positive" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">New Card</q-item-label>
-            <q-item-label caption style="color: #6B6B6B;">Create content</q-item-label>
+            <q-item-label class="nav-label">New Card</q-item-label>
+            <q-item-label caption class="nav-caption">Create content</q-item-label>
           </q-item-section>
         </q-item>
 
@@ -153,8 +153,8 @@
             <q-icon name="public" size="md" color="primary" />
           </q-item-section>
           <q-item-section>
-            <q-item-label style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;">Public Site</q-item-label>
-            <q-item-label caption style="color: #6B6B6B;">View frontend</q-item-label>
+            <q-item-label class="nav-label">Public Site</q-item-label>
+            <q-item-label caption class="nav-caption">View frontend</q-item-label>
           </q-item-section>
         </q-item>
       </q-list>
@@ -204,49 +204,62 @@ const handleLogout = async () => {
 </script>
 
 <style scoped lang="scss">
+// The theme tokens live on :root, so the admin area inherits whatever theme is
+// active. This block used to hardcode #FFFFFF surfaces and #3D3D3D ink, with a
+// further eight inline colours on the drawer labels - all of which rendered
+// white-on-white under Dusk and Neon once theming went in.
 .no-underline {
   text-decoration: none;
 }
 
 .admin-drawer {
-  background: #FFFFFF;
-  border-right: 1px solid rgba(139, 115, 85, 0.12);
-  color: #3D3D3D;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.drawer-title {
+  font-family: var(--font-head);
+  font-weight: 700;
+  letter-spacing: var(--head-spacing);
+  text-transform: var(--head-transform);
+  color: var(--ink);
+}
+
+.drawer-subtitle {
+  color: var(--brand);
+  letter-spacing: 1px;
+  font-weight: 500;
 }
 
 .nav-item {
-  border-radius: 6px;
+  border-radius: var(--radius-item);
   margin: 4px 8px;
-  transition: all 0.2s ease;
-  color: #3D3D3D;
+  transition: background-color var(--motion) ease, transform var(--motion) ease;
+  color: var(--ink);
 
   &:hover {
-    background: rgba(139, 115, 85, 0.08);
+    background: var(--surface-2);
     transform: translateX(4px);
   }
 }
 
-.user-dropdown-menu {
-  min-width: 200px;
-  background: #FFFFFF;
-  color: #3D3D3D;
-  border: 1px solid rgba(139, 115, 85, 0.15);
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(61, 61, 61, 0.12);
-
-  .q-item {
-    color: #3D3D3D;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: rgba(139, 115, 85, 0.08);
-    }
-  }
+.nav-label {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  color: var(--ink);
 }
 
+.nav-caption {
+  color: var(--ink-soft) !important;
+}
+
+// The user menu renders into a portal, so a scoped rule here could never reach
+// it. It is themed globally in app.scss and selected with content-class.
+
 .admin-footer {
-  background: #FFFFFF;
-  border-top: 1px solid rgba(139, 115, 85, 0.15);
-  color: #3D3D3D;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
 }
 </style>

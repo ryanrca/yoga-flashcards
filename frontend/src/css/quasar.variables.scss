@@ -1,32 +1,24 @@
 // Quasar SCSS (& Sass) Variables
 // --------------------------------------------------
-// To customize the look and feel of this app, you can override
-// the Sass/SCSS variables found in Quasar's source Sass/SCSS files.
+// These are compile-time values. Quasar uses them to seed the --q-* custom
+// properties it writes onto :root, and they are what the app looks like for
+// the instant before src/boot/theme.js sets the data-theme attribute.
+//
+// The live palette is NOT here - it is in src/css/app.scss, where each theme
+// overrides --q-primary and friends at runtime. Changing a value below only
+// moves the pre-boot flash colour; to change what a theme looks like, edit
+// that theme's block in app.scss.
+//
+// Seeded with Studio because that is the default theme.
 
-// Check documentation for full list of Quasar variables
+$primary:   #8B7355;   // taupe, straight from the favicon
+$secondary: #5F7A61;   // sage
+$accent:    #C1663F;   // terracotta
 
-// Your own variables (that are declared here) and Quasar's own
-// ones will be available out of the box in your .vue/.scss/.sass files
+$dark:      #2E2A26;   // warm near-black
+$dark-page: #23201D;
 
-// Vibrant psychedelic Hindu-inspired color palette
-// Bold, energetic, spiritual colors
-
-$primary: #FF6B35;      // Vibrant saffron orange - sacred Hindu color
-$secondary: #9B4DCA;    // Deep purple - spiritual consciousness
-$accent: #00D9FF;       // Electric cyan - third eye chakra
-
-$dark: #1A0B2E;         // Deep cosmic purple
-$dark-page: #0D0221;    // Deepest space purple
-
-$positive: #00F5A0;     // Neon green
-$negative: #FF006E;     // Hot pink
-$info: #00B4D8;         // Bright cyan
-$warning: #FFBE0B;      // Golden yellow
-
-// Psychedelic theme variables
-$hindu-gold: #FFD700;
-$hindu-red: #DC143C;
-$hindu-pink: #FF1493;
-$hindu-turquoise: #40E0D0;
-$hindu-violet: #8B00FF;
-$hindu-lotus: #FF69B4;
+$positive:  #5F7A61;
+$negative:  #B4472F;
+$info:      #6C8299;
+$warning:   #C08A2E;

@@ -414,59 +414,24 @@ onMounted(() => {
 })
 </script>
 
-<style>
-/* Global style for admin dropdown menus */
-.admin-dropdown-menu {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  ) !important;
-  color: white !important;
-  border: 1px solid rgba(255, 107, 53, 0.3) !important;
-}
+<!--
+  The .admin-dropdown-menu rules that used to live here were UNSCOPED and
+  marked !important, so they leaked app-wide and would have overridden any
+  theme. The same block was copied into four admin pages. It is now themed
+  once in app.scss alongside the other popups, keyed off the same
+  .admin-dropdown-menu class these pages still pass as content-class.
 
-.admin-dropdown-menu .q-item {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
+  The .q-table__bottom overrides forcing white-on-black pagination went with
+  them: they existed to claw pagination text back from the psychedelic theme,
+  and app.scss now colours it with --ink-soft for whichever theme is active.
+-->
 
-.admin-dropdown-menu .q-item:hover {
-  background: linear-gradient(90deg,
-    rgba(255, 107, 53, 0.2) 0%,
-    rgba(155, 77, 202, 0.2) 100%
-  ) !important;
-}
-
-.admin-dropdown-menu .q-item__label {
-  color: white !important;
-}
-
-.admin-dropdown-menu .q-checkbox__inner {
-  color: white !important;
-}
-
+<style scoped>
 /* Definition column truncation */
 .definition-cell {
   max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* Style for table pagination dropdown (Records per page) */
-.q-table__bottom .q-select__dialog {
-  background: white !important;
-  color: black !important;
-}
-
-.q-table__bottom .q-item {
-  color: black !important;
-}
-
-.q-table__bottom .q-item:hover {
-  background: rgba(155, 77, 202, 0.1) !important;
-}
-
-.q-table__bottom .q-item__label {
-  color: black !important;
 }
 </style>

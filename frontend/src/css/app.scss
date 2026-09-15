@@ -1,142 +1,747 @@
-// Psychedelic Hindu-Inspired Yoga Flashcards
-// Vibrant, colorful, spiritual design
+// Yoga Flashcards - runtime theme layer
+// ---------------------------------------------------------------------------
+// Four themes live in this one stylesheet and are selected at runtime by a
+// `data-theme` attribute on <html>. Everything a theme is allowed to change is
+// expressed as a CSS custom property; the structural rules further down read
+// those properties and never hardcode a colour, radius or duration.
+//
+// That split is what makes switching possible without a rebuild. Sass
+// variables ($primary) are resolved at compile time and baked into the output,
+// so they cannot change in the browser. Custom properties are resolved live.
+//
+// Quasar's own brand colours are custom properties too - quasar.css defines
+// --q-primary and friends on :root and consumes them via var() in 68 places -
+// so overriding them inside a theme block retints Quasar's own components with
+// no JavaScript at all. The only thing the JS does is set the attribute.
+//
+// Why one file rather than partials: `@use` has to come before every other
+// rule, including the Google Fonts `@import url()` below, and CSS silently
+// drops an @import that is not first. Legacy `@import` of partials would keep
+// the order but Dart Sass now emits DEPRECATION WARNING [import] for it. A
+// single file avoids both. There is no Sass logic here to split up anyway.
+//
+// Playfair Display is in the import because PublicLayout asks for it and it was
+// never actually being loaded - the header had been falling back to a generic
+// serif.
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Bebas+Neue&family=Poppins:wght@300;400;500;600;700;900&family=Cinzel+Decorative:wght@400;700;900&display=swap');
 
-// Import Google Fonts - bold and modern
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@300;400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&display=swap');
+// ===========================================================================
+// THE VOCABULARY
+// ===========================================================================
+// Every theme sets this same list. Adding a theme means adding one block; it
+// never means touching the structural rules. Keep the list in sync across all
+// four - a missing property silently falls back to whatever :root holds, which
+// is Studio, and that reads as a bug rather than a default.
+//
+//   --page-bg      full background shorthand for <body> (may be a gradient)
+//   --surface      card / panel background (may be a gradient)
+//   --surface-2    hover + secondary surface
+//   --ink          primary text
+//   --ink-soft     secondary text
+//   --line         hairlines and borders
+//   --brand        the one accent colour
+//   --brand-hover  precomputed hover shade of --brand
+//   --brand-contrast  text that sits on top of --brand
+//   --accent-soft  tinted block background (callouts, chips)
+//   --radius-*     shape
+//   --motion       transition duration
+//   --shadow-card / --shadow-card-hover
+//   --font-body / --font-head and the heading treatment
+//   --scroll-*     scrollbar
+// ===========================================================================
 
-// Base typography
-body {
-  font-family: 'Poppins', sans-serif;
-  background:
+// ---- Studio: light editorial. Also the :root default. ---------------------
+// Hover shades are literals, not darken()/lighten(): those are global builtins
+// that Dart Sass deprecates for color.adjust() and removes in 3.0, and they
+// warn on every rebuild. These are the values Sass computed for them.
+:root,
+:root[data-theme='studio'] {
+  --page-bg: #FAF9F6;
+  --surface: #FFFFFF;
+  --surface-2: #F2EDE5;
+  --ink: #2E2A26;
+  --ink-soft: #6B6259;
+  --line: rgba(139, 115, 85, 0.18);
+
+  --brand: #8B7355;
+  --brand-hover: #786349;      // was darken(#8B7355, 6%)
+  --brand-contrast: #FFFFFF;
+  --accent-soft: #F2EDE5;
+
+  --q-primary: #8B7355;
+  --q-secondary: #5F7A61;
+  --q-accent: #C1663F;
+  --q-dark: #2E2A26;
+  --q-positive: #5F7A61;
+  --q-negative: #B4472F;
+  --q-info: #6C8299;
+  --q-warning: #C08A2E;
+
+  --radius-card: 6px;
+  --radius-btn: 4px;
+  --radius-field: 4px;
+  --radius-item: 4px;
+  --radius-chip: 3px;
+  --radius-focus: 2px;
+
+  --motion: 160ms;
+  --card-border: 1px solid var(--line);
+  --shadow-card: 0 1px 2px rgba(46, 42, 38, 0.04);
+  --shadow-card-hover: 0 6px 20px rgba(46, 42, 38, 0.07);
+  --card-lift: none;
+
+  --font-body: 'Poppins', sans-serif;
+  --font-head: 'Cinzel Decorative', Georgia, serif;
+  --head-transform: none;
+  --head-spacing: 0.01em;
+  --head-leading: 1.2;
+  --body-size: 16px;
+  --body-leading: 1.65;
+
+  --btn-transform: none;
+  --btn-weight: 500;
+  --btn-spacing: 0.01em;
+  --btn-pad: 0.45rem 1.1rem;
+
+  --scroll-track: #F2EDE5;
+  --scroll-thumb: rgba(139, 115, 85, 0.45);
+  --scroll-thumb-hover: rgba(139, 115, 85, 0.7);
+  --scroll-size: 10px;
+}
+
+// ---- Dusk: dark, luminous, deliberately still -----------------------------
+// The night-sky mood of the original, calm enough to read a paragraph in.
+// One warm accent, a single static gradient, and no keyframes anywhere.
+:root[data-theme='dusk'] {
+  --page-bg: linear-gradient(170deg, #1B1F2A 0%, #14161C 55%, #0F1116 100%);
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-2: rgba(255, 255, 255, 0.07);
+  --ink: #F2F0EC;
+  --ink-soft: rgba(242, 240, 236, 0.66);
+  --line: rgba(255, 255, 255, 0.10);
+
+  --brand: #E8A94B;
+  --brand-hover: #EBB666;      // was lighten(#E8A94B, 6%)
+  --brand-contrast: #1A1508;
+  --accent-soft: rgba(232, 169, 75, 0.10);
+
+  --q-primary: #E8A94B;
+  --q-secondary: #7FA07F;
+  --q-accent: #D98E5F;
+  --q-dark: #14161C;
+  --q-positive: #7FA07F;
+  --q-negative: #D96A5A;
+  --q-info: #7E9BB8;
+  --q-warning: #E8A94B;
+
+  --radius-card: 10px;
+  --radius-btn: 6px;
+  --radius-field: 6px;
+  --radius-item: 6px;
+  --radius-chip: 4px;
+  --radius-focus: 3px;
+
+  --motion: 180ms;
+  --card-border: 1px solid var(--line);
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --card-lift: translateY(-2px);
+
+  --font-body: 'Poppins', sans-serif;
+  --font-head: 'Cinzel Decorative', Georgia, serif;
+  --head-transform: none;
+  --head-spacing: 0.02em;
+  --head-leading: 1.25;
+  --body-size: 16px;
+  --body-leading: 1.7;
+
+  --btn-transform: none;
+  --btn-weight: 500;
+  --btn-spacing: 0.01em;
+  --btn-pad: 0.45rem 1.1rem;
+
+  --scroll-track: rgba(255, 255, 255, 0.03);
+  --scroll-thumb: rgba(255, 255, 255, 0.16);
+  --scroll-thumb-hover: rgba(232, 169, 75, 0.45);
+  --scroll-size: 10px;
+}
+
+// ---- Clay: warm, organic, tactile -----------------------------------------
+// A printed studio workbook. Warm sand ground, generous rounding, colour
+// blocking in terracotta and sage. Pill buttons are the signature.
+:root[data-theme='clay'] {
+  --page-bg: #F2EAE0;
+  --surface: #FFFDF9;
+  --surface-2: rgba(193, 102, 63, 0.08);
+  --ink: #3A322B;
+  --ink-soft: #7A6E63;
+  --line: rgba(58, 50, 43, 0.12);
+
+  --brand: #C1663F;
+  --brand-hover: #AA5A37;      // was darken(#C1663F, 6%)
+  --brand-contrast: #FFF8F3;
+  --accent-soft: rgba(95, 122, 97, 0.12);
+
+  --q-primary: #C1663F;
+  --q-secondary: #5F7A61;
+  --q-accent: #D4A373;
+  --q-dark: #3A322B;
+  --q-positive: #5F7A61;
+  --q-negative: #B4472F;
+  --q-info: #7E8F9B;
+  --q-warning: #D99A3D;
+
+  --radius-card: 20px;
+  --radius-btn: 999px;
+  --radius-field: 14px;
+  --radius-item: 14px;
+  --radius-chip: 999px;
+  --radius-focus: 8px;
+
+  --motion: 200ms;
+  --card-border: none;
+  --shadow-card: 0 2px 4px rgba(58, 50, 43, 0.05), 0 12px 28px rgba(58, 50, 43, 0.06);
+  --shadow-card-hover: 0 4px 8px rgba(58, 50, 43, 0.06), 0 18px 40px rgba(58, 50, 43, 0.10);
+  --card-lift: translateY(-3px);
+
+  --font-body: 'Poppins', sans-serif;
+  --font-head: 'Cinzel Decorative', Georgia, serif;
+  --head-transform: none;
+  --head-spacing: 0;
+  --head-leading: 1.18;
+  --body-size: 16.5px;
+  --body-leading: 1.7;
+
+  --btn-transform: none;
+  --btn-weight: 600;
+  --btn-spacing: 0.01em;
+  --btn-pad: 0.55rem 1.5rem;
+
+  --scroll-track: #EDE3D5;      // was darken(#F2EAE0, 3%)
+  --scroll-thumb: rgba(193, 102, 63, 0.35);
+  --scroll-thumb-hover: rgba(193, 102, 63, 0.6);
+  --scroll-size: 11px;
+}
+
+// ---- Neon: the original psychedelic design, preserved ---------------------
+// Ported from the pre-theme main branch so nothing is lost. The motion that
+// defined it lives in the [data-theme='neon'] block near the bottom.
+:root[data-theme='neon'] {
+  --page-bg:
     radial-gradient(circle at 20% 50%, rgba(255, 107, 53, 0.3) 0%, transparent 50%),
     radial-gradient(circle at 80% 80%, rgba(155, 77, 202, 0.3) 0%, transparent 50%),
     radial-gradient(circle at 40% 20%, rgba(0, 217, 255, 0.2) 0%, transparent 50%),
     linear-gradient(135deg, #1A0B2E 0%, #4A148C 50%, #311B92 100%);
+  --surface: linear-gradient(135deg, rgba(26, 11, 46, 0.95) 0%, rgba(74, 20, 140, 0.9) 100%);
+  --surface-2: rgba(255, 107, 53, 0.2);
+  --ink: #FFFFFF;
+  --ink-soft: rgba(255, 255, 255, 0.75);
+  --line: rgba(255, 107, 53, 0.3);
+
+  --brand: #FF6B35;
+  --brand-hover: #FF1493;
+  --brand-contrast: #FFFFFF;
+  --accent-soft: rgba(155, 77, 202, 0.16);
+
+  --q-primary: #FF6B35;
+  --q-secondary: #9B4DCA;
+  --q-accent: #00D9FF;
+  --q-dark: #1A0B2E;
+  --q-positive: #00F5A0;
+  --q-negative: #FF006E;
+  --q-info: #00B4D8;
+  --q-warning: #FFBE0B;
+
+  --radius-card: 24px;
+  --radius-btn: 16px;
+  --radius-field: 16px;
+  --radius-item: 16px;
+  --radius-chip: 12px;
+  --radius-focus: 8px;
+
+  --motion: 300ms;
+  --card-border: 2px solid transparent;
+  --shadow-card:
+    0 0 40px rgba(255, 107, 53, 0.3),
+    0 0 80px rgba(155, 77, 202, 0.2),
+    inset 0 0 60px rgba(255, 215, 0, 0.05);
+  --shadow-card-hover:
+    0 0 60px rgba(255, 107, 53, 0.5),
+    0 0 120px rgba(155, 77, 202, 0.3),
+    inset 0 0 80px rgba(255, 215, 0, 0.1);
+  --card-lift: translateY(-8px) scale(1.02);
+
+  --font-body: 'Poppins', sans-serif;
+  --font-head: 'Cinzel Decorative', serif;
+  --head-transform: uppercase;
+  --head-spacing: 2px;
+  --head-leading: 1.3;
+  --body-size: 16px;
+  --body-leading: 1.6;
+
+  --btn-transform: uppercase;
+  --btn-weight: 700;
+  --btn-spacing: 1.5px;
+  --btn-pad: 0.45rem 1.1rem;
+
+  --scroll-track: rgba(26, 11, 46, 0.8);
+  --scroll-thumb: linear-gradient(180deg, #FF6B35 0%, #9B4DCA 50%, #00D9FF 100%);
+  --scroll-thumb-hover: linear-gradient(180deg, #00D9FF 0%, #9B4DCA 50%, #FF6B35 100%);
+  --scroll-size: 12px;
+}
+
+// ===========================================================================
+// STRUCTURE - reads the vocabulary above, hardcodes nothing
+// ===========================================================================
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--page-bg);
   background-attachment: fixed;
-  color: #FFFFFF;
-  letter-spacing: 0.3px;
-  overflow-x: hidden;
+  color: var(--ink);
+  font-size: var(--body-size);
+  line-height: var(--body-leading);
+  -webkit-font-smoothing: antialiased;
 }
 
-// Animated gradient background
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+h1, h2, h3, h4, h5, h6,
+.text-h1, .text-h2, .text-h3, .text-h4, .text-h5, .text-h6 {
+  font-family: var(--font-head);
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: var(--head-spacing);
+  text-transform: var(--head-transform);
+  line-height: var(--head-leading);
+  position: relative;
+  z-index: 1;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background:
-    linear-gradient(45deg,
+h1, .text-h1 { font-size: clamp(2.5rem, 5.8vw, 4rem); }
+h2, .text-h2 { font-size: clamp(2rem, 4.4vw, 2.9rem); }
+h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
+
+.text-italic { font-family: 'Playfair Display', Georgia, serif; font-style: italic; }
+
+// Quasar's grey helpers are hardcoded greys that go unreadable on the dark
+// themes. Route them through the theme instead of overriding per theme.
+.text-grey-6, .text-grey-7, .text-grey-8 { color: var(--ink-soft) !important; }
+
+.yoga-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+// ---- Surfaces -------------------------------------------------------------
+.q-card {
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  transition: box-shadow var(--motion) ease, transform var(--motion) ease,
+              border-color var(--motion) ease;
+
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: var(--card-lift);
+  }
+}
+
+.q-card__section { padding: 1.5rem; }
+
+// ---- Buttons --------------------------------------------------------------
+.q-btn {
+  border-radius: var(--radius-btn);
+  text-transform: var(--btn-transform);
+  font-weight: var(--btn-weight);
+  letter-spacing: var(--btn-spacing);
+  box-shadow: none;
+  transition: background-color var(--motion) ease, color var(--motion) ease,
+              border-color var(--motion) ease, transform var(--motion) ease;
+
+  &.yoga-btn-primary {
+    background: var(--brand);
+    color: var(--brand-contrast);
+    &:hover { background: var(--brand-hover); }
+  }
+
+  &.yoga-btn-secondary {
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    &:hover { background: var(--surface-2); border-color: var(--brand); }
+  }
+}
+
+// ---- Fields ---------------------------------------------------------------
+.q-field {
+  .q-field__control {
+    border-radius: var(--radius-field);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .q-field__native, .q-field__input { color: var(--ink); }
+  .q-field__label { color: var(--ink-soft); }
+  &.q-field--focused .q-field__control {
+    box-shadow: 0 0 0 2px var(--brand);
+  }
+}
+
+// ---- Chrome ---------------------------------------------------------------
+.q-header {
+  background: var(--surface);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+  .q-toolbar { color: var(--ink); min-height: 68px; }
+}
+
+.q-footer {
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+}
+
+.q-drawer {
+  background: var(--surface);
+  color: var(--ink);
+  border-right: 1px solid var(--line);
+}
+
+.q-item {
+  border-radius: var(--radius-item);
+  color: var(--ink);
+  transition: background-color var(--motion) ease;
+  &:hover { background: var(--surface-2); }
+  &.q-router-link--active {
+    background: var(--accent-soft);
+    box-shadow: inset 2px 0 0 var(--brand);
+  }
+}
+
+.q-tooltip {
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: var(--radius-chip);
+  font-size: 0.8125rem;
+}
+
+.q-chip {
+  border-radius: var(--radius-chip);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.q-badge { border-radius: var(--radius-chip); font-weight: 600; }
+
+.yoga-divider {
+  height: 1px;
+  background: var(--line);
+  border: none;
+  margin: 2rem 0;
+}
+
+.yoga-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  .q-spinner { color: var(--brand); }
+}
+
+// ---- Popups ---------------------------------------------------------------
+// Themed centrally so no page has to hardcode colours. CardsPage used to ship
+// its own unscoped <style> block for the tag filter, which leaked app-wide.
+.tag-filter-dropdown.q-menu,
+.admin-dropdown-menu.q-menu,
+.user-dropdown-menu {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card-hover);
+
+  .q-list { background: transparent; }
+  .q-item { color: var(--ink); &:hover { background: var(--surface-2); } }
+  .q-item__label, .q-item-section, .q-icon { color: var(--ink); }
+  .q-checkbox__inner { color: var(--brand); }
+}
+
+.q-table__bottom { color: var(--ink-soft); }
+
+// Callout for the daily card's short answer. Replaces a hardcoded purple that
+// was inlined in two templates.
+.answer-callout {
+  background: var(--accent-soft);
+  border-left: 2px solid var(--brand);
+  border-radius: 0 var(--radius-chip) var(--radius-chip) 0;
+  padding: 1rem 1.25rem;
+}
+
+// ---- Accessibility --------------------------------------------------------
+*:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-focus);
+}
+
+::-webkit-scrollbar { width: var(--scroll-size); height: var(--scroll-size); }
+::-webkit-scrollbar-track { background: var(--scroll-track); }
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: var(--radius-btn);
+  &:hover { background: var(--scroll-thumb-hover); }
+}
+
+// ===========================================================================
+// HOME HERO HELPERS
+// ===========================================================================
+// One set per home variant. Only one variant mounts at a time, so these can
+// live together without colliding.
+
+.studio-hero {
+  padding: clamp(3rem, 9vw, 6.5rem) 0 clamp(2rem, 5vw, 3.5rem);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 3rem;
+}
+
+.studio-feature {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-top: 2px solid var(--q-secondary);
+  padding-top: 1.25rem;
+  &:hover { box-shadow: none; transform: none; }
+}
+
+.dusk-hero {
+  padding: clamp(3.5rem, 10vw, 7rem) 0 clamp(2rem, 5vw, 3.5rem);
+  text-align: center;
+}
+
+.dusk-rule {
+  width: 56px;
+  height: 2px;
+  background: var(--brand);
+  margin: 2rem auto;
+  border: none;
+}
+
+.clay-hero {
+  background: linear-gradient(135deg, rgba(212, 163, 115, 0.22) 0%, rgba(95, 122, 97, 0.14) 100%);
+  border-radius: 28px;
+  padding: clamp(2.5rem, 7vw, 4.5rem) clamp(1.5rem, 5vw, 3.5rem);
+  margin-bottom: 3rem;
+}
+
+// Feature blocks as soft colour tiles rather than cards.
+.clay-tile {
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: none;
+  background: rgba(212, 163, 115, 0.16);
+  &:hover { transform: none; box-shadow: none; background: rgba(212, 163, 115, 0.24); }
+  &.tile-sage { background: rgba(95, 122, 97, 0.14); &:hover { background: rgba(95, 122, 97, 0.2); } }
+  &.tile-terra { background: rgba(193, 102, 63, 0.12); &:hover { background: rgba(193, 102, 63, 0.18); } }
+}
+
+.neon-hero {
+  padding: clamp(2.5rem, 8vw, 5rem) 0 clamp(2rem, 5vw, 3rem);
+  text-align: center;
+}
+
+// Shared hero type, themed rather than duplicated four times.
+.hero-eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--q-secondary);
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
+.hero-lede {
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  color: var(--ink-soft);
+  max-width: 36rem;
+  line-height: 1.7;
+}
+
+.hero-lede--center { margin-left: auto; margin-right: auto; }
+
+@media (max-width: 768px) {
+  .yoga-container { padding: 1.5rem 1rem; }
+  .q-card__section { padding: 1.15rem; }
+  .clay-hero { border-radius: 20px; }
+}
+
+// ===========================================================================
+// NEON ONLY - the motion that defines the original design
+// ===========================================================================
+// Kept isolated so the other three themes carry no keyframes at all. The
+// original ran five simultaneous animations; all five are preserved here.
+
+[data-theme='neon'] {
+  body { overflow-x: hidden; letter-spacing: 0.3px; }
+
+  // Gradient-filled headings.
+  h1, h2, h3, h4, h5, h6 {
+    background: linear-gradient(135deg, #FF6B35 0%, #FFD700 50%, #FF1493 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  // Drifting colour wash.
+  body::before {
+    content: '';
+    position: fixed;
+    // Explicit offsets rather than `inset`: the build targets safari14 and
+    // `inset` only shipped in Safari 14.1, and esbuild does not lower it.
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg,
       transparent 0%,
       rgba(255, 107, 53, 0.1) 25%,
       transparent 50%,
       rgba(155, 77, 202, 0.1) 75%,
-      transparent 100%
-    );
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-// Mandala pattern overlay
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image:
-    radial-gradient(circle at 50% 50%, transparent 40%, rgba(255, 215, 0, 0.03) 41%, transparent 42%),
-    repeating-conic-gradient(from 0deg at 50% 50%,
-      transparent 0deg,
-      rgba(255, 107, 53, 0.05) 10deg,
-      transparent 20deg,
-      rgba(155, 77, 202, 0.05) 30deg,
-      transparent 40deg,
-      rgba(0, 217, 255, 0.05) 50deg,
-      transparent 60deg
-    );
-  opacity: 0.6;
-  pointer-events: none;
-  z-index: 0;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Cinzel Decorative', serif;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  background: linear-gradient(135deg, #FF6B35 0%, #FFD700 50%, #FF1493 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  position: relative;
-  z-index: 1;
-}
-
-// Smooth scrolling
-html {
-  scroll-behavior: smooth;
-}
-
-// Global container styling
-.yoga-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-  position: relative;
-  z-index: 1;
-}
-
-// Psychedelic card styling
-.q-card {
-  border-radius: 24px;
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.95) 0%,
-    rgba(74, 20, 140, 0.9) 100%
-  );
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    0 0 40px rgba(255, 107, 53, 0.3),
-    0 0 80px rgba(155, 77, 202, 0.2),
-    inset 0 0 60px rgba(255, 215, 0, 0.05);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg,
-      #FF6B35, #9B4DCA, #00D9FF, #FFD700, #FF1493, #FF6B35
-    );
+      transparent 100%);
     background-size: 400% 400%;
-    border-radius: 24px;
-    z-index: -1;
-    animation: borderGlow 12s linear infinite;
+    animation: gradientShift 15s ease infinite;
+    pointer-events: none;
+    z-index: 0;
   }
 
-  &:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow:
-      0 0 60px rgba(255, 107, 53, 0.5),
-      0 0 120px rgba(155, 77, 202, 0.3),
-      inset 0 0 80px rgba(255, 215, 0, 0.1);
+  // Mandala overlay.
+  body::after {
+    content: '';
+    position: fixed;
+    // Explicit offsets rather than `inset`: the build targets safari14 and
+    // `inset` only shipped in Safari 14.1, and esbuild does not lower it.
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+      radial-gradient(circle at 50% 50%, transparent 40%, rgba(255, 215, 0, 0.03) 41%, transparent 42%),
+      repeating-conic-gradient(from 0deg at 50% 50%,
+        transparent 0deg,
+        rgba(255, 107, 53, 0.05) 10deg,
+        transparent 20deg,
+        rgba(155, 77, 202, 0.05) 30deg,
+        transparent 40deg,
+        rgba(0, 217, 255, 0.05) 50deg,
+        transparent 60deg);
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 0;
   }
+
+  // Rotating rainbow card border.
+  .q-card {
+    background-clip: padding-box;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #FF6B35, #9B4DCA, #00D9FF, #FFD700, #FF1493, #FF6B35);
+      background-size: 400% 400%;
+      border-radius: var(--radius-card);
+      z-index: -1;
+      animation: borderGlow 12s linear infinite;
+    }
+  }
+
+  .q-btn.yoga-btn-primary {
+    background: linear-gradient(135deg, #FF6B35 0%, #FF1493 100%);
+    box-shadow: 0 4px 20px rgba(255, 107, 53, 0.5), 0 0 40px rgba(255, 20, 147, 0.3);
+    &:hover { transform: scale(1.1); }
+  }
+
+  .q-btn.yoga-btn-secondary {
+    background: linear-gradient(135deg, #9B4DCA 0%, #00D9FF 100%);
+    color: #FFFFFF;
+    border: none;
+    box-shadow: 0 4px 20px rgba(155, 77, 202, 0.5), 0 0 40px rgba(0, 217, 255, 0.3);
+    &:hover { transform: scale(1.1); }
+  }
+
+  .q-header { backdrop-filter: blur(20px); }
+
+  .q-item {
+    margin: 6px 12px;
+    &:hover { transform: translateX(8px); }
+    .q-icon { filter: drop-shadow(0 0 5px currentColor); }
+  }
+
+  .q-badge { box-shadow: 0 0 15px currentColor; text-transform: uppercase; }
+
+  .yoga-loading .q-spinner {
+    filter: drop-shadow(0 0 10px #FF6B35) drop-shadow(0 0 20px #9B4DCA);
+  }
+
+  // Hue-cycling rainbow divider.
+  .yoga-divider {
+    height: 3px;
+    background: linear-gradient(90deg,
+      transparent 0%, #FF6B35 20%, #FFD700 40%,
+      #9B4DCA 60%, #00D9FF 80%, transparent 100%);
+    box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+    animation: rainbowFlow 3s linear infinite;
+  }
+
+  // Pulsing neon text.
+  .neon-glow {
+    text-shadow:
+      0 0 10px rgba(255, 107, 53, 0.8),
+      0 0 20px rgba(255, 107, 53, 0.6),
+      0 0 30px rgba(255, 107, 53, 0.4),
+      0 0 40px rgba(155, 77, 202, 0.6);
+    animation: neonPulse 2s ease-in-out infinite;
+  }
+
+  .yoga-float { animation: floatPsychedelic 4s ease-in-out infinite; }
+
+  .mandala-decoration {
+    position: relative;
+    &::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle, transparent 30%, rgba(255, 107, 53, 0.1) 31%, transparent 32%),
+        repeating-conic-gradient(from 0deg, transparent 0deg, rgba(255, 215, 0, 0.1) 5deg, transparent 10deg);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+  }
+
+  *:focus-visible {
+    outline: 3px solid #FF6B35;
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
+  }
+}
+
+// The other three themes deliberately define no keyframes. These exist only
+// for neon, but keyframes cannot be nested inside a selector block.
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @keyframes borderGlow {
@@ -145,389 +750,36 @@ html {
   100% { background-position: 0% 50%; }
 }
 
-// Neon glow effect
-.neon-glow {
-  text-shadow:
-    0 0 10px rgba(255, 107, 53, 0.8),
-    0 0 20px rgba(255, 107, 53, 0.6),
-    0 0 30px rgba(255, 107, 53, 0.4),
-    0 0 40px rgba(155, 77, 202, 0.6);
-  animation: neonPulse 2s ease-in-out infinite;
-}
-
-@keyframes neonPulse {
-  0%, 100% {
-    text-shadow:
-      0 0 10px rgba(255, 107, 53, 0.8),
-      0 0 20px rgba(255, 107, 53, 0.6),
-      0 0 30px rgba(255, 107, 53, 0.4),
-      0 0 40px rgba(155, 77, 202, 0.6);
-  }
-  50% {
-    text-shadow:
-      0 0 20px rgba(255, 107, 53, 1),
-      0 0 30px rgba(255, 107, 53, 0.8),
-      0 0 40px rgba(255, 107, 53, 0.6),
-      0 0 60px rgba(155, 77, 202, 0.8);
-  }
-}
-
-// Vibrant button styling
-.q-btn {
-  border-radius: 16px;
-  text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-
-  &.yoga-btn-primary {
-    background: linear-gradient(135deg, #FF6B35 0%, #FF1493 100%);
-    color: white;
-    box-shadow:
-      0 4px 20px rgba(255, 107, 53, 0.5),
-      0 0 40px rgba(255, 20, 147, 0.3);
-
-    &:hover {
-      transform: scale(1.1);
-      box-shadow:
-        0 6px 30px rgba(255, 107, 53, 0.7),
-        0 0 60px rgba(255, 20, 147, 0.5);
-    }
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    &:hover::before {
-      width: 300px;
-      height: 300px;
-    }
-  }
-
-  &.yoga-btn-secondary {
-    background: linear-gradient(135deg, #9B4DCA 0%, #00D9FF 100%);
-    color: white;
-    box-shadow:
-      0 4px 20px rgba(155, 77, 202, 0.5),
-      0 0 40px rgba(0, 217, 255, 0.3);
-
-    &:hover {
-      transform: scale(1.1);
-      box-shadow:
-        0 6px 30px rgba(155, 77, 202, 0.7),
-        0 0 60px rgba(0, 217, 255, 0.5);
-    }
-  }
-}
-
-// Input fields with neon styling
-.q-field {
-  .q-field__control {
-    border-radius: 16px;
-    background: rgba(26, 11, 46, 0.6);
-    border: 2px solid rgba(255, 107, 53, 0.3);
-
-    &:before {
-      border: none;
-    }
-  }
-
-  &.q-field--focused {
-    .q-field__control {
-      border-color: #FF6B35;
-      box-shadow:
-        0 0 20px rgba(255, 107, 53, 0.5),
-        inset 0 0 20px rgba(255, 107, 53, 0.1);
-    }
-  }
-
-  .q-field__label,
-  .q-field__native {
-    color: #FFFFFF;
-  }
-}
-
-// Page transitions with flair
-.page-enter-active,
-.page-leave-active {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.page-enter-from {
-  opacity: 0;
-  transform: translateY(30px) scale(0.95);
-}
-
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(-30px) scale(1.05);
-}
-
-// Psychedelic divider
-.yoga-divider {
-  height: 3px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    #FF6B35 20%,
-    #FFD700 40%,
-    #9B4DCA 60%,
-    #00D9FF 80%,
-    transparent 100%
-  );
-  margin: 2rem 0;
-  border: none;
-  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
-  animation: rainbowFlow 3s linear infinite;
-}
-
 @keyframes rainbowFlow {
   0% { filter: hue-rotate(0deg); }
   100% { filter: hue-rotate(360deg); }
 }
 
-// Floating elements with dynamic animation
-@keyframes floatPsychedelic {
+@keyframes neonPulse {
   0%, 100% {
-    transform: translateY(0px) rotate(0deg);
+    text-shadow:
+      0 0 10px rgba(255, 107, 53, 0.8), 0 0 20px rgba(255, 107, 53, 0.6),
+      0 0 30px rgba(255, 107, 53, 0.4), 0 0 40px rgba(155, 77, 202, 0.6);
   }
-  25% {
-    transform: translateY(-15px) rotate(2deg);
-  }
-  75% {
-    transform: translateY(-5px) rotate(-2deg);
-  }
-}
-
-.yoga-float {
-  animation: floatPsychedelic 4s ease-in-out infinite;
-}
-
-// Cosmic loading state
-.yoga-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-
-  .q-spinner {
-    filter: drop-shadow(0 0 10px #FF6B35) drop-shadow(0 0 20px #9B4DCA);
+  50% {
+    text-shadow:
+      0 0 20px rgba(255, 107, 53, 1), 0 0 30px rgba(255, 107, 53, 0.8),
+      0 0 40px rgba(255, 107, 53, 0.6), 0 0 60px rgba(155, 77, 202, 0.8);
   }
 }
 
-// Header with cosmic gradient
-.q-header {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  );
-  backdrop-filter: blur(20px);
-  border-bottom: 2px solid rgba(255, 107, 53, 0.3);
-  box-shadow:
-    0 4px 30px rgba(255, 107, 53, 0.3),
-    0 0 60px rgba(155, 77, 202, 0.2);
-
-  .q-toolbar {
-    color: #FFFFFF;
-  }
+@keyframes floatPsychedelic {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-15px) rotate(2deg); }
+  75% { transform: translateY(-5px) rotate(-2deg); }
 }
 
-// Drawer with mandala background
-.q-drawer {
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 70% 70%, rgba(155, 77, 202, 0.1) 0%, transparent 50%),
-    linear-gradient(180deg, rgba(26, 11, 46, 0.98) 0%, rgba(74, 20, 140, 0.95) 100%);
-  border-right: 2px solid rgba(255, 107, 53, 0.3);
-  box-shadow: inset -5px 0 30px rgba(255, 107, 53, 0.2);
-}
-
-// List items with vibrant hover
-.q-item {
-  border-radius: 16px;
-  margin: 6px 12px;
-  transition: all 0.3s ease;
-  color: rgba(255, 255, 255, 0.9);
-
-  &:hover {
-    background: linear-gradient(90deg,
-      rgba(255, 107, 53, 0.2) 0%,
-      rgba(155, 77, 202, 0.2) 100%
-    );
-    transform: translateX(8px);
-    box-shadow:
-      0 0 20px rgba(255, 107, 53, 0.3),
-      inset 0 0 20px rgba(255, 107, 53, 0.1);
-  }
-
-  &.q-router-link--active {
-    background: linear-gradient(90deg,
-      rgba(255, 107, 53, 0.3) 0%,
-      transparent 100%
-    );
-    border-left: 4px solid #FF6B35;
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
-  }
-
-  .q-icon {
-    filter: drop-shadow(0 0 5px currentColor);
-  }
-}
-
-// Tooltip with neon glow
-.q-tooltip {
-  background: linear-gradient(135deg, #1A0B2E 0%, #4A148C 100%);
-  border: 1px solid rgba(255, 107, 53, 0.5);
-  border-radius: 12px;
-  box-shadow:
-    0 0 20px rgba(255, 107, 53, 0.4),
-    inset 0 0 20px rgba(255, 107, 53, 0.1);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-// Badge with glow
-.q-badge {
-  border-radius: 12px;
-  font-weight: 700;
-  padding: 6px 12px;
-  box-shadow: 0 0 15px currentColor;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-// Responsive utilities
-@media (max-width: 768px) {
-  .yoga-container {
-    padding: 1rem;
-  }
-
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.5rem; }
-}
-
-// Accessibility - focus states with glow
-*:focus-visible {
-  outline: 3px solid #FF6B35;
-  outline-offset: 3px;
-  border-radius: 8px;
-  box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
-}
-
-// Custom scrollbar with rainbow gradient
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(26, 11, 46, 0.8);
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg,
-    #FF6B35 0%,
-    #9B4DCA 50%,
-    #00D9FF 100%
-  );
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
-
-  &:hover {
-    background: linear-gradient(180deg,
-      #00D9FF 0%,
-      #9B4DCA 50%,
-      #FF6B35 100%
-    );
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
-  }
-}
-
-// Mandala decoration class
-.mandala-decoration {
-  position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background:
-      radial-gradient(circle, transparent 30%, rgba(255, 107, 53, 0.1) 31%, transparent 32%),
-      repeating-conic-gradient(from 0deg,
-        transparent 0deg,
-        rgba(255, 215, 0, 0.1) 5deg,
-        transparent 10deg
-      );
-    opacity: 0.4;
-    pointer-events: none;
-  }
-}
-
-// Admin dropdown menu styling (for all admin pages)
-.admin-dropdown-menu.q-menu {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  ) !important;
-  color: white !important;
-  border: 1px solid rgba(255, 107, 53, 0.3) !important;
-
-  .q-list {
-    background: transparent !important;
-  }
-
-  .q-item {
-    color: rgba(255, 255, 255, 0.9) !important;
-    background-color: transparent !important;
-
-    &:hover {
-      background: linear-gradient(90deg,
-        rgba(255, 107, 53, 0.2) 0%,
-        rgba(155, 77, 202, 0.2) 100%
-      ) !important;
-    }
-  }
-
-  .q-item__label {
-    color: white !important;
-  }
-
-  .q-item-section {
-    color: white !important;
-  }
-
-  .q-icon {
-    color: white !important;
-  }
-}
-
-// Fix table pagination dropdown text visibility (ONLY for pagination, not other dropdowns)
-.q-table__bottom .q-field__native,
-.q-table__bottom .q-field__label,
-.q-table__bottom option {
-  color: #000000 !important;
-  background-color: #FFFFFF !important;
-}
-
-// Only apply white background to pagination dropdown menu
-.q-table__bottom + .q-menu.q-position-engine {
-  .q-item {
-    color: #000000 !important;
-    background-color: #FFFFFF !important;
-
-    &:hover {
-      background-color: rgba(155, 77, 202, 0.2) !important;
-    }
+// Neon runs five simultaneous animations. Honour the OS-level request to stop.
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

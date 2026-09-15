@@ -471,33 +471,10 @@ onMounted(() => {
 }
 </style>
 
-<style>
-/* Global style for tag filter dropdown */
-.tag-filter-dropdown {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  ) !important;
-  color: white !important;
-  border: 1px solid rgba(255, 107, 53, 0.3) !important;
-}
-
-.tag-filter-dropdown .q-item {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.tag-filter-dropdown .q-item:hover {
-  background: linear-gradient(90deg,
-    rgba(255, 107, 53, 0.2) 0%,
-    rgba(155, 77, 202, 0.2) 100%
-  ) !important;
-}
-
-.tag-filter-dropdown .q-item__label {
-  color: white !important;
-}
-
-.tag-filter-dropdown .q-checkbox__inner {
-  color: white !important;
-}
-</style>
+<!--
+  The tag filter dropdown used to be styled by an UNSCOPED <style> block here,
+  which painted it psychedelic purple with !important and leaked those rules
+  app-wide - it would have survived any retheme. It is now themed centrally in
+  app.scss alongside the other popups, via the same .tag-filter-dropdown class
+  this page still passes as popup-content-class.
+-->
