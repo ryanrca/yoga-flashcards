@@ -73,6 +73,23 @@ Uses pytest with `@pytest.mark.django_db` and Factory Boy.
 - `import_cards` -- imports from CSV (`--dry-run` supported)
 - `generate_card_images` -- the image bot (`--dry-run`, `--limit`, `--card-id`, `--no-auto-queue`)
 
+### seed_initial_data has four modes, and three of them write
+
+| mode | effect |
+|---|---|
+| `--push` (default) | **Destructive.** Deletes every card and tag, then imports. Cards get new `version_group` values, which detaches their generated images. |
+| `--merge` | Additive. Matches by title, keeps `version_group`, records changes as new versions, deletes nothing. |
+| `--scorched-earth --confirm` | **Total reset.** Erases cards, all versions, tags, generated images and their files, per-card model choices, daily-card picks and the usage log, then reseeds at version 1 and queues every card for a new image. |
+| `--pull` | Export only. |
+
+Scorched earth preserves user accounts, profile avatars (`avatars/` is a
+`UserProfile` field, not card media) and the global image settings unless
+`--reset-settings` is passed. It refuses to run without `--confirm`, and
+`--dry-run` prints the inventory without touching anything.
+
+It also blanks `front_image`/`back_image` from the JSON on reseed: a file
+produced by `--pull` carries paths to media this command has just deleted.
+
 ## AI card images (invariants worth keeping)
 
 - Images key on `version_group`, not a Flashcard id: editing a card creates a new row, so an
