@@ -6,7 +6,7 @@
           <router-link to="/" class="no-underline">
             <div class="row items-center no-wrap">
               <q-icon name="self_improvement" size="md" class="q-mr-sm" color="primary" />
-              <div class="text-h5" style="font-family: 'Playfair Display', serif; font-weight: 600; color: #3D3D3D;">
+              <div class="text-h5 site-title">
                 Yoga Flashcards
               </div>
             </div>
@@ -15,21 +15,21 @@
 
         <q-space />
 
+        <theme-switcher class="q-mr-sm" />
+
         <!-- Auth buttons when not logged in -->
         <div v-if="!authStore.isAuthenticated" class="row q-gutter-md items-center">
           <q-btn
             flat
             label="Sign Up"
-            @click="$router.push('/signup')"
             class="yoga-btn-secondary auth-btn"
-            style="font-weight: 500; letter-spacing: 0.3px; padding: 8px 24px;"
+            @click="$router.push('/signup')"
           />
           <q-btn
             unelevated
             label="Login"
-            @click="$router.push('/login')"
             class="yoga-btn-primary auth-btn"
-            style="font-weight: 500; letter-spacing: 0.3px; padding: 8px 24px;"
+            @click="$router.push('/login')"
           />
         </div>
 
@@ -37,10 +37,10 @@
         <q-btn-dropdown
           v-if="authStore.isAuthenticated"
           flat
+          no-caps
           :label="authStore.user?.email || 'User'"
           icon="account_circle"
-          size="lg"
-          style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;"
+          content-class="user-dropdown-menu"
         >
           <q-list class="natural-user-menu">
             <q-item clickable v-close-popup @click="$router.push('/profile')">
@@ -48,7 +48,7 @@
                 <q-icon name="person" color="primary" />
               </q-item-section>
               <q-item-section>
-                <q-item-label style="font-weight: 500;">Profile</q-item-label>
+                <q-item-label>Profile</q-item-label>
               </q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="$router.push('/favorites')">
@@ -56,7 +56,7 @@
                 <q-icon name="favorite" color="primary" />
               </q-item-section>
               <q-item-section>
-                <q-item-label style="font-weight: 500;">Favorites</q-item-label>
+                <q-item-label>Favorites</q-item-label>
               </q-item-section>
             </q-item>
             <q-item
@@ -69,16 +69,16 @@
                 <q-icon name="dashboard" color="primary" />
               </q-item-section>
               <q-item-section>
-                <q-item-label style="font-weight: 500;">Admin</q-item-label>
+                <q-item-label>Admin</q-item-label>
               </q-item-section>
             </q-item>
-            <q-separator style="background: rgba(139, 115, 85, 0.2);" />
+            <q-separator class="menu-separator" />
             <q-item clickable v-close-popup @click="handleLogout">
               <q-item-section avatar>
                 <q-icon name="logout" color="primary" />
               </q-item-section>
               <q-item-section>
-                <q-item-label style="font-weight: 500;">Logout</q-item-label>
+                <q-item-label>Logout</q-item-label>
               </q-item-section>
             </q-item>
           </q-list>
@@ -106,6 +106,7 @@
 import { onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
+import ThemeSwitcher from 'components/ThemeSwitcher.vue'
 
 const $q = useQuasar()
 const authStore = useAuthStore()
@@ -127,53 +128,53 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+// Everything here reads the theme vocabulary from app.scss. This block used to
+// hardcode #3D3D3D (light-theme ink) in five places and set Playfair Display
+// inline on the title, a font the stylesheet never actually loaded - the
+// leftovers of a half-finished retheme.
 .no-underline {
   text-decoration: none;
   color: inherit;
 }
 
 .natural-header {
-  background: #FFFFFF;
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(139, 115, 85, 0.15);
-  box-shadow: 0 2px 8px rgba(61, 61, 61, 0.06);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
 }
 
 .natural-title {
   font-weight: 600;
-  letter-spacing: 0.5px;
+}
+
+.site-title {
+  font-family: var(--font-head);
+  font-weight: 700;
+  letter-spacing: var(--head-spacing);
+  text-transform: var(--head-transform);
+  font-size: 1.35rem;
+  color: var(--ink);
 }
 
 .auth-btn {
-  border-radius: 6px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-  }
+  border-radius: var(--radius-btn);
+  padding: 8px 24px;
+  transition: background-color var(--motion) ease, border-color var(--motion) ease;
 }
 
 .natural-user-menu {
-  min-width: 200px;
-  background: #FFFFFF;
-  color: #3D3D3D;
-  border: 1px solid rgba(139, 115, 85, 0.15);
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(61, 61, 61, 0.12);
+  min-width: 210px;
+  background: var(--surface);
+  color: var(--ink);
 
-  .q-item {
-    color: #3D3D3D;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: rgba(139, 115, 85, 0.08);
-    }
-  }
+  .q-item { color: var(--ink); }
 }
 
+.menu-separator { background: var(--line); }
+
 .natural-footer {
-  background: #FFFFFF;
-  border-top: 1px solid rgba(139, 115, 85, 0.15);
-  color: #3D3D3D;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
 }
 </style>

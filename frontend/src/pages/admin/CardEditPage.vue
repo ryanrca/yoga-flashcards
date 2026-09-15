@@ -593,51 +593,27 @@ watch(() => route.params.id, (newId, oldId) => {
 })
 </script>
 
-<style>
-/* Global style for admin dropdown menus */
-.admin-dropdown-menu {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  ) !important;
-  color: white !important;
-  border: 1px solid rgba(255, 107, 53, 0.3) !important;
+<!--
+  The .admin-dropdown-menu rules that used to live here were UNSCOPED and
+  marked !important - one of four near-identical copies across the admin
+  pages. Themed once in app.scss now.
+-->
+
+<style scoped>
+/* Version history table. Colours read the theme tokens rather than the old
+   orange/purple gradient. These reach into QTable's own DOM, so they need
+   :deep() now that the block is scoped. */
+.version-history-table :deep(.q-table__top),
+.version-history-table :deep(.q-table__bottom) {
+  background: var(--accent-soft);
 }
 
-.admin-dropdown-menu .q-item {
-  color: rgba(255, 255, 255, 0.9) !important;
+.version-history-table :deep(.q-table thead tr),
+.version-history-table :deep(.q-table tbody td) {
+  border-color: var(--line);
 }
 
-.admin-dropdown-menu .q-item:hover {
-  background: linear-gradient(90deg,
-    rgba(255, 107, 53, 0.2) 0%,
-    rgba(155, 77, 202, 0.2) 100%
-  ) !important;
-}
-
-.admin-dropdown-menu .q-item__label {
-  color: white !important;
-}
-
-.admin-dropdown-menu .q-checkbox__inner {
-  color: white !important;
-}
-
-/* Version history table styling */
-.version-history-table .q-table__top,
-.version-history-table .q-table__bottom {
-  background: linear-gradient(90deg,
-    rgba(255, 107, 53, 0.1) 0%,
-    rgba(155, 77, 202, 0.1) 100%
-  );
-}
-
-.version-history-table .q-table thead tr,
-.version-history-table .q-table tbody td {
-  border-color: rgba(155, 77, 202, 0.2);
-}
-
-.version-history-table .ellipsis-2-lines {
+.version-history-table :deep(.ellipsis-2-lines) {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -646,7 +622,8 @@ watch(() => route.params.id, (newId, oldId) => {
   max-width: 300px;
 }
 
-.current-version-row {
+/* Applied to a <tr> rendered inside QTable, so it needs :deep() too. */
+:deep(.current-version-row) {
   background: rgba(34, 197, 94, 0.08);
 }
 </style>
