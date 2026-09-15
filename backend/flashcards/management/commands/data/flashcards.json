@@ -5,24 +5,24 @@
       "description": "The eight limbs of yoga according to Patanjali"
     },
     {
+      "name": "Hinduism",
+      "description": "Core figures and realities of Hindu thought"
+    },
+    {
       "name": "Niyamas",
       "description": "Personal observances - how we relate to ourselves"
+    },
+    {
+      "name": "Sanskrit",
+      "description": "Key Sanskrit philosophical terms and concepts used in yoga"
     },
     {
       "name": "Yamas",
       "description": "Ethical restraints - how we relate to others"
     },
     {
-      "name": "Deities",
-      "description": "Hindu deities and divine concepts referenced in yoga philosophy"
-    },
-    {
-      "name": "Four Yogas",
-      "description": "The four classical paths to spiritual realization described in the Bhagavad Gita"
-    },
-    {
-      "name": "Sanskrit",
-      "description": "Key Sanskrit philosophical terms and concepts used in yoga"
+      "name": "Yoga",
+      "description": "The classical paths of yoga"
     }
   ],
   "flashcards": [
@@ -126,7 +126,7 @@
       "title": "Ahimsa",
       "phrase": "अहिंसा",
       "short_answer": "Non-violence; do no harm.",
-      "definition": "This is the practice of justice and non-violence toward all beings. In yoga class, it means finding a balance with Satya—for example, not pushing yourself or a student so hard that it causes injury, but also not avoiding the truth of where growth is needed.",
+      "definition": "This is the practice of justice and non-violence toward all beings. In yoga class, it means finding a balance with Satya - for example, not pushing yourself or a student so hard that it causes injury, but also not avoiding the truth of where growth is needed.",
       "front_image": null,
       "back_image": null,
       "tags": [
@@ -233,7 +233,7 @@
     {
       "title": "Isvara-pranidhana",
       "phrase": "ईश्वरप्रणिधान",
-      "short_answer": "Devotion to the \"absolute Brahma\", who is free from all hindrances and karma. Devotion to a higher power.",
+      "short_answer": "Devotion to the \"absolute Brahman\", who is free from all hindrances and karma. Devotion to a higher power.",
       "definition": "Some interpretations mean to \"lay all your actions at the feet of God\" by offering the \"fruits of your devotion\" to something larger than yourself. It is the realization and acceptance of the part of ourselves that does not change, and surrendering to the divine part of us that is unaffected by our samskara.",
       "front_image": "flashcard_images/shiva_trident_of_fire.jpg",
       "back_image": "flashcard_images/sutra_quantique.jpg",
@@ -244,7 +244,7 @@
     },
     {
       "title": "Yoga",
-      "phrase": "",
+      "phrase": "योग",
       "short_answer": "To \"yoke\" or \"union\" - to become one with our core essence.",
       "definition": "Yoga is a vast group of physical, mental, spiritual practices and philosophy originating in ancient India, aimed at controlling body and mind in order to attain liberation (moksha), health and connection with the universe. Yoga means to unify with all possible states of awareness, whether ordinary or extraordinary.",
       "front_image": null,
@@ -262,7 +262,7 @@
       "front_image": null,
       "back_image": null,
       "tags": [
-        "Deities"
+        "Hinduism"
       ],
       "is_active": true
     },
@@ -274,7 +274,7 @@
       "front_image": null,
       "back_image": null,
       "tags": [
-        "Deities"
+        "Hinduism"
       ],
       "is_active": true
     },
@@ -286,19 +286,19 @@
       "front_image": null,
       "back_image": null,
       "tags": [
-        "Deities"
+        "Hinduism"
       ],
       "is_active": true
     },
     {
       "title": "The Four Yogas",
-      "phrase": "",
+      "phrase": "योग",
       "short_answer": "Four classical paths to spiritual growth taught by Krishna in the Bhagavad Gita.",
       "definition": "In the Bhagavad Gita, Krishna teaches four main paths toward spiritual realization: Karma Yoga (selfless action), Bhakti Yoga (devotion), Jnana Yoga (knowledge/self-inquiry), and Dhyana Yoga (meditation). Each suits a different personality, but all lead toward the same goal of union with the divine.",
       "front_image": null,
       "back_image": null,
       "tags": [
-        "Four Yogas"
+        "Yoga"
       ],
       "is_active": true
     },
@@ -310,7 +310,7 @@
       "front_image": null,
       "back_image": null,
       "tags": [
-        "Four Yogas"
+        "Yoga"
       ],
       "is_active": true
     },
@@ -322,7 +322,7 @@
       "front_image": null,
       "back_image": null,
       "tags": [
-        "Four Yogas"
+        "Yoga"
       ],
       "is_active": true
     },
@@ -334,7 +334,7 @@
       "front_image": null,
       "back_image": null,
       "tags": [
-        "Four Yogas"
+        "Yoga"
       ],
       "is_active": true
     },
@@ -346,7 +346,7 @@
       "front_image": null,
       "back_image": null,
       "tags": [
-        "Four Yogas"
+        "Yoga"
       ],
       "is_active": true
     },
@@ -402,7 +402,7 @@
       "title": "Nirvana",
       "phrase": "निर्वाण",
       "short_answer": "The liberated state once the cycle of rebirth is broken.",
-      "definition": "Nirvana is the state of existence reached once the cycle of samsara is broken - union with the divine. It is the Buddhist term for this state, while Samadhi is the Hindu equivalent.",
+      "definition": "Nirvana is the state of existence reached once the cycle of samsara is broken - union with the divine.",
       "front_image": null,
       "back_image": null,
       "tags": [
