@@ -1,32 +1,23 @@
-// Quasar SCSS (& Sass) Variables
+// Dusk - a dark, luminous theme
 // --------------------------------------------------
-// To customize the look and feel of this app, you can override
-// the Sass/SCSS variables found in Quasar's source Sass/SCSS files.
+// Keeps the drama of the old dark site but removes the noise: a single warm
+// accent on a deep, still ground. Nothing animates, nothing pulses.
 
-// Check documentation for full list of Quasar variables
+$primary:   #E8A94B;   // warm amber, a cousin of the favicon's tan
+$secondary: #7FA07F;   // muted sage
+$accent:    #D98E5F;   // soft clay
 
-// Your own variables (that are declared here) and Quasar's own
-// ones will be available out of the box in your .vue/.scss/.sass files
+$dark:      #14161C;   // deep ink
+$dark-page: #0F1116;
 
-// Vibrant psychedelic Hindu-inspired color palette
-// Bold, energetic, spiritual colors
+$positive:  #7FA07F;
+$negative:  #D96A5A;
+$info:      #7E9BB8;
+$warning:   #E8A94B;
 
-$primary: #FF6B35;      // Vibrant saffron orange - sacred Hindu color
-$secondary: #9B4DCA;    // Deep purple - spiritual consciousness
-$accent: #00D9FF;       // Electric cyan - third eye chakra
-
-$dark: #1A0B2E;         // Deep cosmic purple
-$dark-page: #0D0221;    // Deepest space purple
-
-$positive: #00F5A0;     // Neon green
-$negative: #FF006E;     // Hot pink
-$info: #00B4D8;         // Bright cyan
-$warning: #FFBE0B;      // Golden yellow
-
-// Psychedelic theme variables
-$hindu-gold: #FFD700;
-$hindu-red: #DC143C;
-$hindu-pink: #FF1493;
-$hindu-turquoise: #40E0D0;
-$hindu-violet: #8B00FF;
-$hindu-lotus: #FF69B4;
+$dusk-ink:       #14161C;
+$dusk-ink-2:     #1B1F2A;
+$dusk-surface:   rgba(255, 255, 255, 0.045);
+$dusk-line:      rgba(255, 255, 255, 0.10);
+$dusk-text:      #F2F0EC;
+$dusk-text-soft: rgba(242, 240, 236, 0.66);

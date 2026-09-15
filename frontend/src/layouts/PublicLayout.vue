@@ -6,7 +6,7 @@
           <router-link to="/" class="no-underline">
             <div class="row items-center no-wrap">
               <q-icon name="self_improvement" size="md" class="q-mr-sm" color="primary" />
-              <div class="text-h5" style="font-family: 'Playfair Display', serif; font-weight: 600; color: #3D3D3D;">
+              <div class="text-h5">
                 Yoga Flashcards
               </div>
             </div>
@@ -40,7 +40,7 @@
           :label="authStore.user?.email || 'User'"
           icon="account_circle"
           size="lg"
-          style="font-weight: 500; letter-spacing: 0.3px; color: #3D3D3D;"
+          style="font-weight: 500; letter-spacing: 0.3px;"
         >
           <q-list class="natural-user-menu">
             <q-item clickable v-close-popup @click="$router.push('/profile')">
@@ -72,7 +72,7 @@
                 <q-item-label style="font-weight: 500;">Admin</q-item-label>
               </q-item-section>
             </q-item>
-            <q-separator style="background: rgba(139, 115, 85, 0.2);" />
+            <q-separator class="menu-separator" />
             <q-item clickable v-close-popup @click="handleLogout">
               <q-item-section avatar>
                 <q-icon name="logout" color="primary" />
@@ -133,47 +133,44 @@ onMounted(() => {
 }
 
 .natural-header {
-  background: #FFFFFF;
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(139, 115, 85, 0.15);
-  box-shadow: 0 2px 8px rgba(61, 61, 61, 0.06);
+  background: rgba(20, 22, 28, 0.88);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: none;
 }
 
 .natural-title {
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-family: 'Cinzel Decorative', Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-size: 1.3rem;
+  color: #F2F0EC;
 }
 
 .auth-btn {
   border-radius: 6px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-  }
+  transition: background-color 180ms ease, border-color 180ms ease;
 }
 
 .natural-user-menu {
-  min-width: 200px;
-  background: #FFFFFF;
-  color: #3D3D3D;
-  border: 1px solid rgba(139, 115, 85, 0.15);
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(61, 61, 61, 0.12);
+  min-width: 210px;
+  background: #1E222C;
+  color: #F2F0EC;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 8px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
 
   .q-item {
-    color: #3D3D3D;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background: rgba(139, 115, 85, 0.08);
-    }
+    color: #F2F0EC;
+    &:hover { background: rgba(255, 255, 255, 0.07); }
   }
 }
 
+.menu-separator { background: rgba(255, 255, 255, 0.10); }
+
 .natural-footer {
-  background: #FFFFFF;
-  border-top: 1px solid rgba(139, 115, 85, 0.15);
-  color: #3D3D3D;
+  background: rgba(20, 22, 28, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(242, 240, 236, 0.66);
 }
 </style>
