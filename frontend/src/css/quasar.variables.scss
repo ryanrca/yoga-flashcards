@@ -1,32 +1,22 @@
-// Quasar SCSS (& Sass) Variables
+// Clay - a warm, tactile theme
 // --------------------------------------------------
-// To customize the look and feel of this app, you can override
-// the Sass/SCSS variables found in Quasar's source Sass/SCSS files.
+// Earthy and grounded rather than cosmic. Terracotta and sage on warm sand,
+// big soft shapes, strong colour blocking. Bold without being loud.
 
-// Check documentation for full list of Quasar variables
+$primary:   #C1663F;   // terracotta
+$secondary: #5F7A61;   // sage, from the favicon
+$accent:    #D4A373;   // tan, from the favicon
 
-// Your own variables (that are declared here) and Quasar's own
-// ones will be available out of the box in your .vue/.scss/.sass files
+$dark:      #3A322B;
+$dark-page: #2C2621;
 
-// Vibrant psychedelic Hindu-inspired color palette
-// Bold, energetic, spiritual colors
+$positive:  #5F7A61;
+$negative:  #B4472F;
+$info:      #7E8F9B;
+$warning:   #D99A3D;
 
-$primary: #FF6B35;      // Vibrant saffron orange - sacred Hindu color
-$secondary: #9B4DCA;    // Deep purple - spiritual consciousness
-$accent: #00D9FF;       // Electric cyan - third eye chakra
-
-$dark: #1A0B2E;         // Deep cosmic purple
-$dark-page: #0D0221;    // Deepest space purple
-
-$positive: #00F5A0;     // Neon green
-$negative: #FF006E;     // Hot pink
-$info: #00B4D8;         // Bright cyan
-$warning: #FFBE0B;      // Golden yellow
-
-// Psychedelic theme variables
-$hindu-gold: #FFD700;
-$hindu-red: #DC143C;
-$hindu-pink: #FF1493;
-$hindu-turquoise: #40E0D0;
-$hindu-violet: #8B00FF;
-$hindu-lotus: #FF69B4;
+$clay-page:     #F2EAE0;
+$clay-surface:  #FFFDF9;
+$clay-ink:      #3A322B;
+$clay-ink-soft: #7A6E63;
+$clay-line:     rgba(58, 50, 43, 0.12);

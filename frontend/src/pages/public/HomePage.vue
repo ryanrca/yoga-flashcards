@@ -1,101 +1,82 @@
 <template>
-  <q-page class="flex flex-center">
-    <div class="column items-center q-gutter-lg" style="max-width: 800px; width: 100%;">
-      <!-- Hero Section -->
-      <div class="text-center q-pa-lg">
-        <h1 class="text-h2 text-primary q-mb-md">Yoga Sutra Flashcards</h1>
-        <p class="text-h6 text-grey-7 q-mb-lg">
-          Discover the wisdom of yoga through daily practice with our curated flashcards
+  <q-page>
+    <div class="yoga-container">
+      <!-- Hero sits inside a soft clay block rather than on the bare page -->
+      <section class="clay-hero">
+        <div class="clay-eyebrow">Daily practice</div>
+        <h1 class="q-mb-md">Yoga Sutra Flashcards</h1>
+        <p class="clay-lede q-mb-lg">
+          The eight limbs, the yamas and niyamas, and the Sanskrit that carries them -
+          gathered into one warm, unhurried deck.
         </p>
-      </div>
-
-      <!-- Daily Card Preview - Moved to top -->
-      <q-card v-if="dailyCard" class="full-width">
-        <q-card-section>
-          <div class="text-h5 text-center q-mb-md">Today's Sutra</div>
-          <div class="text-center">
-            <div class="text-h6 text-primary">{{ dailyCard.title }}</div>
-            <div v-if="dailyCard.phrase" class="text-subtitle1 text-italic q-mt-sm">
-              {{ dailyCard.phrase }}
-            </div>
-
-            <!-- Short Answer Preview -->
-            <div v-if="dailyCard.short_answer" class="q-mt-md q-pa-md" style="background-color: rgba(155, 77, 202, 0.1); border-radius: 8px;">
-              <p class="text-body1" style="margin: 0;">{{ dailyCard.short_answer }}</p>
-            </div>
-
-            <!-- Fallback to definition if no short answer -->
-            <p v-else class="q-mt-md">{{ dailyCard.definition }}</p>
-          </div>
-        </q-card-section>
-
-        <q-card-actions align="center">
+        <div class="q-gutter-sm">
           <q-btn
-            color="primary"
-            label="Go Deeper"
-            icon="info"
-            @click="$router.push('/daily')"
+            v-if="!authStore.isAuthenticated"
+            class="yoga-btn-primary"
+            label="Create an account"
             unelevated
+            @click="$router.push('/signup')"
           />
-        </q-card-actions>
-      </q-card>
+          <q-btn
+            v-if="authStore.isAuthenticated"
+            class="yoga-btn-primary"
+            label="Browse all cards"
+            unelevated
+            @click="$router.push('/cards')"
+          />
+          <q-btn
+            class="yoga-btn-secondary"
+            label="Today's card"
+            unelevated
+            @click="$router.push('/daily')"
+          />
+        </div>
+      </section>
 
-      <!-- Action Buttons -->
-      <div class="q-gutter-md">
-        <q-btn
-          v-if="!authStore.isAuthenticated"
-          size="lg"
-          outline
-          color="primary"
-          label="SIGN UP"
-          @click="$router.push('/signup')"
-          icon="person_add"
-          style="font-weight: 700; letter-spacing: 1.5px;"
-        />
-        <q-btn
-          v-if="authStore.isAuthenticated"
-          size="lg"
-          outline
-          color="primary"
-          label="BROWSE ALL CARDS"
-          @click="$router.push('/cards')"
-          icon="auto_stories"
-          style="font-weight: 700; letter-spacing: 1.5px;"
-        />
-      </div>
-
-      <!-- Features Section -->
-      <div class="row q-gutter-md full-width justify-center q-mb-xl q-pb-xl">
-        <q-card class="col-md-3 col-sm-6 col-xs-12">
-          <q-card-section class="text-center">
-            <q-icon name="search" size="3rem" color="primary" />
-            <div class="text-h6 q-mt-sm">Search & Learn</div>
-            <p class="text-grey-7 q-mt-sm">
-              Explore our comprehensive collection of yoga poses, philosophy, and Sanskrit terms
-            </p>
+      <section v-if="dailyCard" class="q-mb-xl">
+        <div class="clay-eyebrow">Today</div>
+        <q-card>
+          <q-card-section>
+            <div v-if="dailyCard.phrase" class="text-h3 q-mb-xs">{{ dailyCard.phrase }}</div>
+            <div class="text-h5 q-mb-md">{{ dailyCard.title }}</div>
+            <div v-if="dailyCard.short_answer" class="answer-callout">
+              <p class="text-body1 q-mb-none">{{ dailyCard.short_answer }}</p>
+            </div>
+            <p v-else class="text-body1 q-mb-none">{{ dailyCard.definition }}</p>
+          </q-card-section>
+          <q-card-section class="q-pt-none">
+            <q-btn flat dense color="primary" label="Read the full card" @click="$router.push('/daily')" />
           </q-card-section>
         </q-card>
+      </section>
 
-        <q-card class="col-md-3 col-sm-6 col-xs-12">
-          <q-card-section class="text-center">
-            <q-icon name="favorite" size="3rem" color="primary" />
-            <div class="text-h6 q-mt-sm">Personal Favorites</div>
-            <p class="text-grey-7 q-mt-sm">
-              Save your favorite cards and create your personal yoga study collection
+      <!-- Features as colour tiles, not cards -->
+      <section class="row q-col-gutter-md q-pb-xl">
+        <div class="col-12 col-md-4">
+          <q-card flat class="clay-tile tile-terra">
+            <div class="text-h6 q-mb-sm">Search and learn</div>
+            <p class="text-grey-7 q-mb-none">
+              The full collection, searchable by word or by theme.
             </p>
-          </q-card-section>
-        </q-card>
-
-        <q-card class="col-md-3 col-sm-6 col-xs-12">
-          <q-card-section class="text-center">
-            <q-icon name="school" size="3rem" color="primary" />
-            <div class="text-h6 q-mt-sm">Yoga Philosophy</div>
-            <p class="text-grey-7 q-mt-sm">
-              Learn the 8 limbs of yoga, yamas, niyamas and deepen your understanding
+          </q-card>
+        </div>
+        <div class="col-12 col-md-4">
+          <q-card flat class="clay-tile tile-sage">
+            <div class="text-h6 q-mb-sm">Keep what matters</div>
+            <p class="text-grey-7 q-mb-none">
+              Save the cards you return to and build a personal study set.
             </p>
-          </q-card-section>
-        </q-card>
-      </div>
+          </q-card>
+        </div>
+        <div class="col-12 col-md-4">
+          <q-card flat class="clay-tile">
+            <div class="text-h6 q-mb-sm">Philosophy, in order</div>
+            <p class="text-grey-7 q-mb-none">
+              Each limb, yama and niyama with its own card and Devanagari.
+            </p>
+          </q-card>
+        </div>
+      </section>
     </div>
   </q-page>
 </template>
@@ -111,7 +92,6 @@ const flashcardsStore = useFlashcardsStore()
 const dailyCard = ref(null)
 
 onMounted(async () => {
-  // Fetch daily card for preview
   const result = await flashcardsStore.fetchDailyCard()
   if (result.success) {
     dailyCard.value = result.data

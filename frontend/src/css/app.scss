@@ -1,533 +1,243 @@
-// Psychedelic Hindu-Inspired Yoga Flashcards
-// Vibrant, colorful, spiritual design
+// Clay - warm, organic, tactile
+//
+// Design intent: the feel of a printed studio workbook. Warm sand ground,
+// generous rounding, confident colour blocking in terracotta and sage.
+// Movement is slow and slight, never decorative.
 
-// Import Google Fonts - bold and modern
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@300;400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Cinzel+Decorative:wght@400;700&display=swap');
 
-// Base typography
+$page:     #F2EAE0;
+$surface:  #FFFDF9;
+$ink:      #3A322B;
+$ink-soft: #7A6E63;
+$line:     rgba(58, 50, 43, 0.12);
+$terra:    #C1663F;
+$sage:     #5F7A61;
+$tan:      #D4A373;
+
+html { scroll-behavior: smooth; }
+
 body {
   font-family: 'Poppins', sans-serif;
-  background:
-    radial-gradient(circle at 20% 50%, rgba(255, 107, 53, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(155, 77, 202, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 40% 20%, rgba(0, 217, 255, 0.2) 0%, transparent 50%),
-    linear-gradient(135deg, #1A0B2E 0%, #4A148C 50%, #311B92 100%);
-  background-attachment: fixed;
-  color: #FFFFFF;
-  letter-spacing: 0.3px;
-  overflow-x: hidden;
+  background: $page;
+  color: $ink;
+  font-size: 16.5px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
 }
 
-// Animated gradient background
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background:
-    linear-gradient(45deg,
-      transparent 0%,
-      rgba(255, 107, 53, 0.1) 25%,
-      transparent 50%,
-      rgba(155, 77, 202, 0.1) 75%,
-      transparent 100%
-    );
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-// Mandala pattern overlay
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image:
-    radial-gradient(circle at 50% 50%, transparent 40%, rgba(255, 215, 0, 0.03) 41%, transparent 42%),
-    repeating-conic-gradient(from 0deg at 50% 50%,
-      transparent 0deg,
-      rgba(255, 107, 53, 0.05) 10deg,
-      transparent 20deg,
-      rgba(155, 77, 202, 0.05) 30deg,
-      transparent 40deg,
-      rgba(0, 217, 255, 0.05) 50deg,
-      transparent 60deg
-    );
-  opacity: 0.6;
-  pointer-events: none;
-  z-index: 0;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Cinzel Decorative', serif;
+h1, h2, h3, h4, h5, h6,
+.text-h1, .text-h2, .text-h3, .text-h4, .text-h5, .text-h6 {
+  font-family: 'Cinzel Decorative', Georgia, serif;
+  color: $ink;
   font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  background: linear-gradient(135deg, #FF6B35 0%, #FFD700 50%, #FF1493 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  position: relative;
-  z-index: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.18;
 }
 
-// Smooth scrolling
-html {
-  scroll-behavior: smooth;
-}
+h1, .text-h1 { font-size: clamp(2.6rem, 6vw, 4rem); color: $terra; }
+h2, .text-h2 { font-size: clamp(2rem, 4.4vw, 2.9rem); }
 
-// Global container styling
-.yoga-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-  position: relative;
-  z-index: 1;
-}
+.text-italic { font-family: 'Playfair Display', Georgia, serif; font-style: italic; }
+.text-grey-7, .text-grey-6, .text-grey-8 { color: $ink-soft !important; }
 
-// Psychedelic card styling
+.yoga-container { max-width: 1120px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+// ---- Surfaces -----------------------------------------------------------
 .q-card {
-  border-radius: 24px;
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.95) 0%,
-    rgba(74, 20, 140, 0.9) 100%
-  );
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    0 0 40px rgba(255, 107, 53, 0.3),
-    0 0 80px rgba(155, 77, 202, 0.2),
-    inset 0 0 60px rgba(255, 215, 0, 0.05);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg,
-      #FF6B35, #9B4DCA, #00D9FF, #FFD700, #FF1493, #FF6B35
-    );
-    background-size: 400% 400%;
-    border-radius: 24px;
-    z-index: -1;
-    animation: borderGlow 12s linear infinite;
-  }
+  background: $surface;
+  color: $ink;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 2px 4px rgba(58, 50, 43, 0.05), 0 12px 28px rgba(58, 50, 43, 0.06);
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 240ms ease;
 
   &:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow:
-      0 0 60px rgba(255, 107, 53, 0.5),
-      0 0 120px rgba(155, 77, 202, 0.3),
-      inset 0 0 80px rgba(255, 215, 0, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(58, 50, 43, 0.06), 0 18px 40px rgba(58, 50, 43, 0.10);
   }
 }
 
-@keyframes borderGlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
+.q-card__section { padding: 1.6rem; }
 
-// Neon glow effect
-.neon-glow {
-  text-shadow:
-    0 0 10px rgba(255, 107, 53, 0.8),
-    0 0 20px rgba(255, 107, 53, 0.6),
-    0 0 30px rgba(255, 107, 53, 0.4),
-    0 0 40px rgba(155, 77, 202, 0.6);
-  animation: neonPulse 2s ease-in-out infinite;
-}
-
-@keyframes neonPulse {
-  0%, 100% {
-    text-shadow:
-      0 0 10px rgba(255, 107, 53, 0.8),
-      0 0 20px rgba(255, 107, 53, 0.6),
-      0 0 30px rgba(255, 107, 53, 0.4),
-      0 0 40px rgba(155, 77, 202, 0.6);
-  }
-  50% {
-    text-shadow:
-      0 0 20px rgba(255, 107, 53, 1),
-      0 0 30px rgba(255, 107, 53, 0.8),
-      0 0 40px rgba(255, 107, 53, 0.6),
-      0 0 60px rgba(155, 77, 202, 0.8);
-  }
-}
-
-// Vibrant button styling
+// ---- Buttons ------------------------------------------------------------
 .q-btn {
-  border-radius: 16px;
-  text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  border-radius: 999px;          // pill buttons, the signature of this theme
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.55rem 1.5rem;
+  box-shadow: none;
+  transition: background-color 200ms ease, color 200ms ease, transform 200ms ease;
 
   &.yoga-btn-primary {
-    background: linear-gradient(135deg, #FF6B35 0%, #FF1493 100%);
-    color: white;
-    box-shadow:
-      0 4px 20px rgba(255, 107, 53, 0.5),
-      0 0 40px rgba(255, 20, 147, 0.3);
-
-    &:hover {
-      transform: scale(1.1);
-      box-shadow:
-        0 6px 30px rgba(255, 107, 53, 0.7),
-        0 0 60px rgba(255, 20, 147, 0.5);
-    }
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    &:hover::before {
-      width: 300px;
-      height: 300px;
-    }
+    background: $terra;
+    color: #FFF8F3;
+    &:hover { background: darken($terra, 6%); transform: translateY(-1px); }
   }
 
   &.yoga-btn-secondary {
-    background: linear-gradient(135deg, #9B4DCA 0%, #00D9FF 100%);
-    color: white;
-    box-shadow:
-      0 4px 20px rgba(155, 77, 202, 0.5),
-      0 0 40px rgba(0, 217, 255, 0.3);
-
-    &:hover {
-      transform: scale(1.1);
-      box-shadow:
-        0 6px 30px rgba(155, 77, 202, 0.7),
-        0 0 60px rgba(0, 217, 255, 0.5);
-    }
+    background: rgba(95, 122, 97, 0.12);
+    color: $sage;
+    &:hover { background: rgba(95, 122, 97, 0.2); transform: translateY(-1px); }
   }
 }
 
-// Input fields with neon styling
+// ---- Fields -------------------------------------------------------------
 .q-field {
   .q-field__control {
-    border-radius: 16px;
-    background: rgba(26, 11, 46, 0.6);
-    border: 2px solid rgba(255, 107, 53, 0.3);
-
-    &:before {
-      border: none;
-    }
+    border-radius: 14px;
+    background: $surface;
+    color: $ink;
   }
-
-  &.q-field--focused {
-    .q-field__control {
-      border-color: #FF6B35;
-      box-shadow:
-        0 0 20px rgba(255, 107, 53, 0.5),
-        inset 0 0 20px rgba(255, 107, 53, 0.1);
-    }
-  }
-
-  .q-field__label,
-  .q-field__native {
-    color: #FFFFFF;
-  }
+  .q-field__native, .q-field__input { color: $ink; }
+  .q-field__label { color: $ink-soft; }
+  &.q-field--focused .q-field__control { box-shadow: 0 0 0 2px rgba(193, 102, 63, 0.3); }
 }
 
-// Page transitions with flair
-.page-enter-active,
-.page-leave-active {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+// ---- Chrome -------------------------------------------------------------
+.q-header {
+  background: $page;
+  color: $ink;
+  border-bottom: 1px solid $line;
+  box-shadow: none;
+  .q-toolbar { color: $ink; min-height: 72px; }
 }
 
-.page-enter-from {
-  opacity: 0;
-  transform: translateY(30px) scale(0.95);
+.q-footer {
+  background: $page;
+  color: $ink-soft;
+  border-top: 1px solid $line;
 }
 
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(-30px) scale(1.05);
+.q-drawer {
+  background: $surface;
+  color: $ink;
+  border-right: 1px solid $line;
 }
 
-// Psychedelic divider
+.q-item {
+  border-radius: 14px;
+  color: $ink;
+  transition: background-color 180ms ease;
+  &:hover { background: rgba(193, 102, 63, 0.08); }
+  &.q-router-link--active { background: rgba(193, 102, 63, 0.14); font-weight: 600; }
+}
+
+.q-tooltip {
+  background: $ink;
+  color: #FFF8F3;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+}
+
+// Colour-blocked chips are a big part of this theme's character.
+.q-chip {
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: rgba(95, 122, 97, 0.14);
+  color: $sage;
+}
+
+.q-badge { border-radius: 999px; font-weight: 600; }
+
 .yoga-divider {
   height: 3px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    #FF6B35 20%,
-    #FFD700 40%,
-    #9B4DCA 60%,
-    #00D9FF 80%,
-    transparent 100%
-  );
-  margin: 2rem 0;
+  width: 48px;
+  background: $sage;
   border: none;
-  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
-  animation: rainbowFlow 3s linear infinite;
+  border-radius: 999px;
+  margin: 2rem 0;
 }
 
-@keyframes rainbowFlow {
-  0% { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(360deg); }
-}
+.neon-glow { color: $terra; text-shadow: none; }
+.yoga-float { animation: none; }
+.mandala-decoration { position: relative; }
 
-// Floating elements with dynamic animation
-@keyframes floatPsychedelic {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  25% {
-    transform: translateY(-15px) rotate(2deg);
-  }
-  75% {
-    transform: translateY(-5px) rotate(-2deg);
-  }
-}
-
-.yoga-float {
-  animation: floatPsychedelic 4s ease-in-out infinite;
-}
-
-// Cosmic loading state
 .yoga-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   min-height: 200px;
-
-  .q-spinner {
-    filter: drop-shadow(0 0 10px #FF6B35) drop-shadow(0 0 20px #9B4DCA);
-  }
+  .q-spinner { color: $terra; }
 }
 
-// Header with cosmic gradient
-.q-header {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  );
-  backdrop-filter: blur(20px);
-  border-bottom: 2px solid rgba(255, 107, 53, 0.3);
-  box-shadow:
-    0 4px 30px rgba(255, 107, 53, 0.3),
-    0 0 60px rgba(155, 77, 202, 0.2);
-
-  .q-toolbar {
-    color: #FFFFFF;
-  }
-}
-
-// Drawer with mandala background
-.q-drawer {
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 70% 70%, rgba(155, 77, 202, 0.1) 0%, transparent 50%),
-    linear-gradient(180deg, rgba(26, 11, 46, 0.98) 0%, rgba(74, 20, 140, 0.95) 100%);
-  border-right: 2px solid rgba(255, 107, 53, 0.3);
-  box-shadow: inset -5px 0 30px rgba(255, 107, 53, 0.2);
-}
-
-// List items with vibrant hover
-.q-item {
+// ---- Popups -------------------------------------------------------------
+.tag-filter-dropdown.q-menu,
+.admin-dropdown-menu.q-menu,
+.user-dropdown-menu {
+  background: $surface;
+  color: $ink;
+  border: 1px solid $line;
   border-radius: 16px;
-  margin: 6px 12px;
-  transition: all 0.3s ease;
-  color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 36px rgba(58, 50, 43, 0.14);
 
-  &:hover {
-    background: linear-gradient(90deg,
-      rgba(255, 107, 53, 0.2) 0%,
-      rgba(155, 77, 202, 0.2) 100%
-    );
-    transform: translateX(8px);
-    box-shadow:
-      0 0 20px rgba(255, 107, 53, 0.3),
-      inset 0 0 20px rgba(255, 107, 53, 0.1);
-  }
-
-  &.q-router-link--active {
-    background: linear-gradient(90deg,
-      rgba(255, 107, 53, 0.3) 0%,
-      transparent 100%
-    );
-    border-left: 4px solid #FF6B35;
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
-  }
-
-  .q-icon {
-    filter: drop-shadow(0 0 5px currentColor);
-  }
+  .q-item { color: $ink; &:hover { background: rgba(193, 102, 63, 0.08); } }
+  .q-item__label, .q-item-section, .q-icon { color: $ink; }
+  .q-checkbox__inner { color: $terra; }
 }
 
-// Tooltip with neon glow
-.q-tooltip {
-  background: linear-gradient(135deg, #1A0B2E 0%, #4A148C 100%);
-  border: 1px solid rgba(255, 107, 53, 0.5);
-  border-radius: 12px;
-  box-shadow:
-    0 0 20px rgba(255, 107, 53, 0.4),
-    inset 0 0 20px rgba(255, 107, 53, 0.1);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
+.q-table__bottom { color: $ink-soft; }
 
-// Badge with glow
-.q-badge {
-  border-radius: 12px;
-  font-weight: 700;
-  padding: 6px 12px;
-  box-shadow: 0 0 15px currentColor;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-// Responsive utilities
-@media (max-width: 768px) {
-  .yoga-container {
-    padding: 1rem;
-  }
-
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.5rem; }
-}
-
-// Accessibility - focus states with glow
 *:focus-visible {
-  outline: 3px solid #FF6B35;
+  outline: 2px solid $terra;
   outline-offset: 3px;
   border-radius: 8px;
-  box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
 }
 
-// Custom scrollbar with rainbow gradient
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(26, 11, 46, 0.8);
-}
-
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: darken($page, 3%); }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg,
-    #FF6B35 0%,
-    #9B4DCA 50%,
-    #00D9FF 100%
-  );
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
-
-  &:hover {
-    background: linear-gradient(180deg,
-      #00D9FF 0%,
-      #9B4DCA 50%,
-      #FF6B35 100%
-    );
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
-  }
+  background: rgba(193, 102, 63, 0.35);
+  border-radius: 999px;
+  &:hover { background: rgba(193, 102, 63, 0.6); }
 }
 
-// Mandala decoration class
-.mandala-decoration {
-  position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background:
-      radial-gradient(circle, transparent 30%, rgba(255, 107, 53, 0.1) 31%, transparent 32%),
-      repeating-conic-gradient(from 0deg,
-        transparent 0deg,
-        rgba(255, 215, 0, 0.1) 5deg,
-        transparent 10deg
-      );
-    opacity: 0.4;
-    pointer-events: none;
-  }
+// ---- Home hero helpers --------------------------------------------------
+.clay-hero {
+  background: linear-gradient(135deg, rgba(212, 163, 115, 0.22) 0%, rgba(95, 122, 97, 0.14) 100%);
+  border-radius: 28px;
+  padding: clamp(2.5rem, 7vw, 4.5rem) clamp(1.5rem, 5vw, 3.5rem);
+  margin-bottom: 3rem;
 }
 
-// Admin dropdown menu styling (for all admin pages)
-.admin-dropdown-menu.q-menu {
-  background: linear-gradient(135deg,
-    rgba(26, 11, 46, 0.98) 0%,
-    rgba(74, 20, 140, 0.95) 100%
-  ) !important;
-  color: white !important;
-  border: 1px solid rgba(255, 107, 53, 0.3) !important;
-
-  .q-list {
-    background: transparent !important;
-  }
-
-  .q-item {
-    color: rgba(255, 255, 255, 0.9) !important;
-    background-color: transparent !important;
-
-    &:hover {
-      background: linear-gradient(90deg,
-        rgba(255, 107, 53, 0.2) 0%,
-        rgba(155, 77, 202, 0.2) 100%
-      ) !important;
-    }
-  }
-
-  .q-item__label {
-    color: white !important;
-  }
-
-  .q-item-section {
-    color: white !important;
-  }
-
-  .q-icon {
-    color: white !important;
-  }
+.clay-eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: $sage;
+  font-weight: 700;
+  margin-bottom: 1rem;
 }
 
-// Fix table pagination dropdown text visibility (ONLY for pagination, not other dropdowns)
-.q-table__bottom .q-field__native,
-.q-table__bottom .q-field__label,
-.q-table__bottom option {
-  color: #000000 !important;
-  background-color: #FFFFFF !important;
+.clay-lede {
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  color: $ink-soft;
+  max-width: 36rem;
+  line-height: 1.7;
 }
 
-// Only apply white background to pagination dropdown menu
-.q-table__bottom + .q-menu.q-position-engine {
-  .q-item {
-    color: #000000 !important;
-    background-color: #FFFFFF !important;
+// Feature blocks as soft colour tiles rather than cards.
+.clay-tile {
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: none;
+  background: rgba(212, 163, 115, 0.16);
+  &:hover { transform: none; box-shadow: none; background: rgba(212, 163, 115, 0.24); }
+  &.tile-sage { background: rgba(95, 122, 97, 0.14); &:hover { background: rgba(95, 122, 97, 0.2); } }
+  &.tile-terra { background: rgba(193, 102, 63, 0.12); &:hover { background: rgba(193, 102, 63, 0.18); } }
+}
 
-    &:hover {
-      background-color: rgba(155, 77, 202, 0.2) !important;
-    }
-  }
+@media (max-width: 768px) {
+  .yoga-container { padding: 1.5rem 1rem; }
+  .q-card__section { padding: 1.2rem; }
+  .clay-hero { border-radius: 20px; }
+}
+
+// Callout used for the daily card's short answer. Replaces a hardcoded
+// purple that was inlined in the template.
+.answer-callout {
+  background: rgba(95, 122, 97, 0.12);
+  border-radius: 16px;
+  padding: 1.15rem 1.35rem;
 }
