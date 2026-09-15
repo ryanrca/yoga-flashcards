@@ -828,6 +828,8 @@ Health check for Kubernetes.
 | `/admin/cards/:id` | admin-card-detail | CardDetailPage.vue | Curator+ |
 | `/admin/cards/:id/edit` | admin-card-edit | CardEditPage.vue | Curator+ |
 | `/admin/tags` | admin-tags | TagsPage.vue | Curator+ |
+| `/admin/image-settings` | admin-image-settings | ImageSettingsPage.vue | Curator+ |
+| `/admin/appearance` | admin-appearance | AppearancePage.vue | Admin |
 | `/admin/users` | admin-users | UsersPage.vue | Admin |
 
 ### 7.2 State Management

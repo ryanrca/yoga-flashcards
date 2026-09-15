@@ -15,8 +15,6 @@
 
         <q-space />
 
-        <theme-switcher class="q-mr-sm" />
-
         <!-- Auth buttons when not logged in -->
         <div v-if="!authStore.isAuthenticated" class="row q-gutter-md items-center">
           <q-btn
@@ -106,7 +104,6 @@
 import { onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
-import ThemeSwitcher from 'components/ThemeSwitcher.vue'
 
 const $q = useQuasar()
 const authStore = useAuthStore()

@@ -5,11 +5,11 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Flashcard, Tag, CardImage, ImageGenerationSettings
+from .models import Flashcard, Tag, CardImage, ImageGenerationSettings, SiteSettings
 from .serializers import (
     FlashcardSerializer, TagSerializer, FlashcardVersionHistorySerializer,
     CardImageSerializer, CardImageCreateSerializer, ImageGenerationSettingsSerializer,
-    CardImageModelSerializer,
+    CardImageModelSerializer, SiteSettingsSerializer,
 )
 from .permissions import IsCuratorOrAdmin, IsAdminOnly
 from .pagination import CardPagination
@@ -304,6 +304,42 @@ class ImageGenerationSettingsView(APIView):
     def put(self, request):
         config = ImageGenerationSettings.load()
         serializer = ImageGenerationSettingsSerializer(config, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(updated_by=request.user)
+        return Response(serializer.data)
+
+
+class SiteSettingsView(APIView):
+    """
+    The theme every visitor sees.
+
+    GET is AllowAny deliberately: the SPA resolves the theme on every page
+    load, including for anonymous visitors, so gating it would leave signed-out
+    users on the fallback palette.
+
+    PUT is IsAdminOnly. Appearance is a whole-site decision, unlike the image
+    settings next door, which curators share because that is editorial work.
+    """
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAdminOnly()]
+
+    def get(self, request):
+        data = SiteSettingsSerializer(SiteSettings.load()).data
+
+        user = request.user
+        if not (user and user.is_authenticated and user.is_admin()):
+            # The audit fields name an admin. An anonymous visitor only needs
+            # to know which palette to paint, so do not hand out a username.
+            return Response({'theme': data['theme']})
+
+        return Response(data)
+
+    def put(self, request):
+        config = SiteSettings.load()
+        serializer = SiteSettingsSerializer(config, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save(updated_by=request.user)
         return Response(serializer.data)

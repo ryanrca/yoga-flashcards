@@ -9,5 +9,6 @@ router.register(r'card-images', views.CardImageViewSet, basename='card-image')
 
 urlpatterns = [
     path('image-settings/', views.ImageGenerationSettingsView.as_view(), name='image-settings'),
+    path('site-settings/', views.SiteSettingsView.as_view(), name='site-settings'),
     path('', include(router.urls)),
 ]

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Flashcard, Tag, DailyCard, CardUsageLog, CardImage, ImageGenerationSettings,
-    CardImagePreference,
+    CardImagePreference, SiteSettings,
 )
 
 
@@ -56,6 +56,25 @@ class ImageGenerationSettingsAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         # One row only; it is created on demand by ImageGenerationSettings.load().
         return not ImageGenerationSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    """Singleton: the theme every visitor sees."""
+
+    list_display = ['theme', 'updated_at', 'updated_by']
+    readonly_fields = ['updated_at', 'updated_by']
+
+    def has_add_permission(self, request):
+        # One row only; created on demand by SiteSettings.load().
+        return not SiteSettings.objects.exists()
 
     def has_delete_permission(self, request, obj=None):
         return False
