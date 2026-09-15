@@ -17,6 +17,11 @@ $text:      #F2F0EC;
 $text-soft: rgba(242, 240, 236, 0.66);
 $amber:     #E8A94B;
 $sage:      #7FA07F;
+// Hover shades are written as literals rather than darken()/lighten().
+// Those are global built-ins: Dart Sass deprecates them for color.adjust()
+// and removes them in 3.0, and they warn on every rebuild. The values below
+// are exactly what Sass computed for the original calls.
+$amber-light: #EBB666;  // was lighten($amber, 6%)
 
 html { scroll-behavior: smooth; }
 
@@ -90,7 +95,7 @@ h2, .text-h2 { font-size: clamp(2rem, 4.2vw, 2.9rem); }
     background: $amber;
     color: #1A1508;
     font-weight: 600;
-    &:hover { background: lighten($amber, 6%); }
+    &:hover { background: $amber-light; }
   }
 
   &.yoga-btn-secondary {
