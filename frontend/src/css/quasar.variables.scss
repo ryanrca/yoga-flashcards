@@ -1,32 +1,25 @@
-// Quasar SCSS (& Sass) Variables
+// Studio - a light, editorial theme
 // --------------------------------------------------
-// To customize the look and feel of this app, you can override
-// the Sass/SCSS variables found in Quasar's source Sass/SCSS files.
+// Drawn from the site's own favicon: warm off-white ground, taupe figure,
+// sage lotus, tan hands. Calm and legible first; the impact comes from the
+// type scale and the whitespace, not from effects.
 
-// Check documentation for full list of Quasar variables
+$primary:   #8B7355;   // taupe, straight from the favicon
+$secondary: #5F7A61;   // sage
+$accent:    #C1663F;   // terracotta, used sparingly for emphasis
 
-// Your own variables (that are declared here) and Quasar's own
-// ones will be available out of the box in your .vue/.scss/.sass files
+$dark:      #2E2A26;   // warm near-black
+$dark-page: #23201D;
 
-// Vibrant psychedelic Hindu-inspired color palette
-// Bold, energetic, spiritual colors
+$positive:  #5F7A61;
+$negative:  #B4472F;
+$info:      #6C8299;
+$warning:   #C08A2E;
 
-$primary: #FF6B35;      // Vibrant saffron orange - sacred Hindu color
-$secondary: #9B4DCA;    // Deep purple - spiritual consciousness
-$accent: #00D9FF;       // Electric cyan - third eye chakra
-
-$dark: #1A0B2E;         // Deep cosmic purple
-$dark-page: #0D0221;    // Deepest space purple
-
-$positive: #00F5A0;     // Neon green
-$negative: #FF006E;     // Hot pink
-$info: #00B4D8;         // Bright cyan
-$warning: #FFBE0B;      // Golden yellow
-
-// Psychedelic theme variables
-$hindu-gold: #FFD700;
-$hindu-red: #DC143C;
-$hindu-pink: #FF1493;
-$hindu-turquoise: #40E0D0;
-$hindu-violet: #8B00FF;
-$hindu-lotus: #FF69B4;
+// Surfaces and ink
+$studio-page:     #FAF9F6;
+$studio-surface:  #FFFFFF;
+$studio-ink:      #2E2A26;
+$studio-ink-soft: #6B6259;
+$studio-line:     rgba(139, 115, 85, 0.18);
+$studio-sand:     #F2EDE5;

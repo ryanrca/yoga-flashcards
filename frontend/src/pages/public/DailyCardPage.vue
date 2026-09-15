@@ -60,7 +60,7 @@
               </div>
 
               <!-- Short Answer (if available) -->
-              <div v-if="dailyCard.short_answer" class="q-mb-lg q-pa-md" style="background-color: rgba(155, 77, 202, 0.1); border-radius: 8px;">
+              <div v-if="dailyCard.short_answer" class="q-mb-lg answer-callout">
                 <div class="text-subtitle1 text-weight-medium text-primary q-mb-sm">Short Answer:</div>
                 <div class="text-body1" style="text-align: justify;">{{ dailyCard.short_answer }}</div>
               </div>
