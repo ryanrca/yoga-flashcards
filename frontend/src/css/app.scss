@@ -14,6 +14,12 @@ $line:     rgba(58, 50, 43, 0.12);
 $terra:    #C1663F;
 $sage:     #5F7A61;
 $tan:      #D4A373;
+// Hover shades are written as literals rather than darken()/lighten().
+// Those are global built-ins: Dart Sass deprecates them for color.adjust()
+// and removes them in 3.0, and they warn on every rebuild. The values below
+// are exactly what Sass computed for the original calls.
+$terra-dark: #AA5A37;   // was darken($terra, 6%)
+$page-dark:  #EDE3D5;   // was darken($page, 3%)
 
 html { scroll-behavior: smooth; }
 
@@ -74,7 +80,7 @@ h2, .text-h2 { font-size: clamp(2rem, 4.4vw, 2.9rem); }
   &.yoga-btn-primary {
     background: $terra;
     color: #FFF8F3;
-    &:hover { background: darken($terra, 6%); transform: translateY(-1px); }
+    &:hover { background: $terra-dark; transform: translateY(-1px); }
   }
 
   &.yoga-btn-secondary {
@@ -186,7 +192,7 @@ h2, .text-h2 { font-size: clamp(2rem, 4.4vw, 2.9rem); }
 }
 
 ::-webkit-scrollbar { width: 11px; height: 11px; }
-::-webkit-scrollbar-track { background: darken($page, 3%); }
+::-webkit-scrollbar-track { background: $page-dark; }
 ::-webkit-scrollbar-thumb {
   background: rgba(193, 102, 63, 0.35);
   border-radius: 999px;
