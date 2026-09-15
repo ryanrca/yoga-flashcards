@@ -11,6 +11,18 @@
     {
       "name": "Yamas",
       "description": "Ethical restraints - how we relate to others"
+    },
+    {
+      "name": "Deities",
+      "description": "Hindu deities and divine concepts referenced in yoga philosophy"
+    },
+    {
+      "name": "Four Yogas",
+      "description": "The four classical paths to spiritual realization described in the Bhagavad Gita"
+    },
+    {
+      "name": "Sanskrit",
+      "description": "Key Sanskrit philosophical terms and concepts used in yoga"
     }
   ],
   "flashcards": [
@@ -239,6 +251,234 @@
       "back_image": null,
       "tags": [
         "8 Limbs"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Brahman",
+      "phrase": "ब्रह्म",
+      "short_answer": "The supreme, universal reality underlying all existence.",
+      "definition": "Brahman is the ultimate, supreme reality - the infinite divine ground of all matter, energy, time, and space in the universe. It is the uncaused cause of everything, pervading every part of existence while also transcending it entirely.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Deities"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Atman",
+      "phrase": "आत्मन्",
+      "short_answer": "The true, immortal self or soul within each of us.",
+      "definition": "Atman is the true, immortal self or soul of a living being - not the physical body, mind, ego, or emotions, but the silent, unchanging witness residing within every creature. Its true nature is pure consciousness and eternity: it does not die when the body dies, it simply changes form.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Deities"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Lord Krishna",
+      "phrase": "कृष्ण",
+      "short_answer": "Revered in yoga as Yogeshvara, the Lord of Yoga.",
+      "definition": "Krishna is revered in yoga as Yogeshvara (the Lord of Yoga), the supreme teacher who defines yoga not just as physical postures but as the art of living, mental steadiness, and union with the divine. In the Bhagavad Gita, he teaches the warrior Arjuna the four core paths of yoga - Karma, Bhakti, Jnana, and Dhyana - as valid routes to liberation.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Deities"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "The Four Yogas",
+      "phrase": "",
+      "short_answer": "Four classical paths to spiritual growth taught by Krishna in the Bhagavad Gita.",
+      "definition": "In the Bhagavad Gita, Krishna teaches four main paths toward spiritual realization: Karma Yoga (selfless action), Bhakti Yoga (devotion), Jnana Yoga (knowledge/self-inquiry), and Dhyana Yoga (meditation). Each suits a different personality, but all lead toward the same goal of union with the divine.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Four Yogas"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Karma Yoga",
+      "phrase": "कर्मयोग",
+      "short_answer": "The path of selfless action.",
+      "definition": "Karma Yoga is performing one's duties without attachment to the results or personal gain. Krishna defines yoga itself through this path as samatva (evenness of mind) and skill in action - acting with excellence and steadiness rather than for reward.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Four Yogas"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Bhakti Yoga",
+      "phrase": "भक्तियोग",
+      "short_answer": "The path of devotion.",
+      "definition": "Bhakti Yoga is directing complete love, surrender, and remembrance toward the divine - which Krishna calls the highest form of yoga. It's often expressed through prayer, chanting, and worship, emphasizing an open heart as the route to spiritual connection.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Four Yogas"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Jnana Yoga",
+      "phrase": "ज्ञानयोग",
+      "short_answer": "The path of knowledge and self-inquiry.",
+      "definition": "Jnana Yoga is the path of wisdom - discriminating between the temporary, material body and the eternal spiritual self (Atman) through study, reflection, and self-inquiry. It is often considered the most intellectually demanding of the four paths.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Four Yogas"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Dhyana Yoga",
+      "phrase": "ध्यानयोग",
+      "short_answer": "The path of meditation.",
+      "definition": "Dhyana Yoga is controlling the restless mind through disciplined focus, breath, and inner meditation. It is the meditative path among the four yogas Krishna teaches in the Bhagavad Gita.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Four Yogas"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Karma",
+      "phrase": "कर्म",
+      "short_answer": "The law of action - our deeds and intentions shape our future.",
+      "definition": "Karma is the principle that our actions and the intentions behind them shape future outcomes. Right action alone isn't enough - the thought and intention behind it matter too, since karma accounts for both.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Samsara",
+      "phrase": "संसार",
+      "short_answer": "The cycle of birth, death, and rebirth.",
+      "definition": "Samsara is the ongoing cycle of being reborn into another life, the quality of which is shaped by one's karma from this life. The cycle can be broken through pure devotion (bhakti) to the divine.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Moksha",
+      "phrase": "मोक्ष",
+      "short_answer": "Liberation from the cycle of rebirth - the supreme goal.",
+      "definition": "Moksha is the freedom achieved by releasing attachment to the rewards of one's actions, breaking the cycle of samsara. It is considered the supreme goal of yoga and Hindu philosophy.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Maya",
+      "phrase": "माया",
+      "short_answer": "The illusion of a separate, purely physical existence.",
+      "definition": "Maya is the state of living inside the illusion that life is only physical and separate - dualistic thinking. Maya is often likened to \"magic,\" a veil that hides the deeper unity of existence.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Nirvana",
+      "phrase": "निर्वाण",
+      "short_answer": "The liberated state once the cycle of rebirth is broken.",
+      "definition": "Nirvana is the state of existence reached once the cycle of samsara is broken - union with the divine. It is the Buddhist term for this state, while Samadhi is the Hindu equivalent.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Prakriti",
+      "phrase": "प्रकृति",
+      "short_answer": "The base energy that forms all of nature.",
+      "definition": "Prakriti is the fundamental energy or matter that makes up all of nature, both physical and mental. It is the raw material from which the three gunas arise.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Gunas",
+      "phrase": "गुण",
+      "short_answer": "The three qualities of mind and nature: tamas, rajas, and sattva.",
+      "definition": "The gunas are the three forces at play in the mind that shape how we see and react to reality. At any moment we are a blend of all three - tamas, rajas, and sattva - each present to a different degree. The goal in yoga is to cultivate sattva as the dominant guna, though there are times each guna has its place.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Tamas",
+      "phrase": "तमस्",
+      "short_answer": "The guna of inertia, dullness, and ignorance.",
+      "definition": "Tamas is the guna of inertia and unconscious ignorance - acting purely out of habit without awareness of one's actions or their effects. A tamas-dominant mind tends toward low energy, procrastination, and being easily discouraged.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Rajas",
+      "phrase": "रजस्",
+      "short_answer": "The guna of activity, restlessness, and craving.",
+      "definition": "Rajas is the guna of unleashed energy - the \"monkey mind\" of racing thoughts: desire, worry, resentment, and competition. A rajas-dominant mind craves reward for its actions and can chase power, money, or status.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Sattva",
+      "phrase": "सत्त्व",
+      "short_answer": "The guna of clarity, balance, and calm awareness.",
+      "definition": "Sattva is the guna of a calm, clear, aware mind - self-controlled not through effort but through the clarity that comes with unity of purpose and character. A sattva-dominant mind seeks no reward for its actions and senses the unity connecting all beings.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
+      ],
+      "is_active": true
+    },
+    {
+      "title": "Samskara",
+      "phrase": "संस्कार",
+      "short_answer": "The mental filter or lens, shaped by past experience, through which we perceive reality.",
+      "definition": "Samskara refers to the subtle impressions left in the mind by our past thoughts, emotions, and actions. These accumulated impressions form a kind of lens or filter that colors how we perceive and react to the present moment - we rarely see things freshly, but through the conditioning of what came before. Yoga practice (asana, meditation, self-inquiry) is one way to become aware of these patterns and gradually loosen their grip, allowing clearer perception.",
+      "front_image": null,
+      "back_image": null,
+      "tags": [
+        "Sanskrit"
       ],
       "is_active": true
     }
