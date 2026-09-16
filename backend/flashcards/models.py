@@ -211,6 +211,62 @@ class ImageGenerationSettings(models.Model):
         return obj
 
 
+class SiteSettings(models.Model):
+    """
+    Singleton holding site-wide appearance. Currently just the theme.
+
+    Deliberately separate from ImageGenerationSettings: that row configures the
+    image bot, this one configures what every visitor sees. Folding appearance
+    into a model named "Image generation settings" would be a lie in the admin.
+
+    There is exactly one row (pk=1). `load()` creates it on first access so the
+    public endpoint never has to deal with a missing record - anonymous
+    visitors read this on every page load.
+    """
+
+    class Theme(models.TextChoices):
+        STUDIO = 'studio', 'Studio - light, editorial, quiet'
+        DUSK = 'dusk', 'Dusk - dark, luminous, still'
+        CLAY = 'clay', 'Clay - warm, organic, tactile'
+        NEON = 'neon', 'Neon - the original psychedelic'
+
+    DEFAULT_THEME = Theme.STUDIO
+
+    theme = models.CharField(
+        max_length=20,
+        choices=Theme.choices,
+        default=DEFAULT_THEME,
+        help_text=(
+            "The theme every visitor sees. Takes effect on their next page load. "
+            "Must stay in step with THEMES in frontend/src/composables/useTheme.js."
+        ),
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+'
+    )
+
+    class Meta:
+        verbose_name = 'Site settings'
+        verbose_name_plural = 'Site settings'
+
+    def __str__(self):
+        return f"Site settings (theme: {self.theme})"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Configuration, not data. Deleting it would blank the site for everyone.
+        raise NotImplementedError('The site settings row cannot be deleted.')
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class CardImage(models.Model):
     """
     One AI image generation for a card, plus the prompt that produced it.

@@ -27,6 +27,7 @@ const routes = [
       { path: 'cards/:id/edit', name: 'admin-card-edit', component: () => import('pages/admin/CardEditPage.vue') },
       { path: 'tags', name: 'admin-tags', component: () => import('pages/admin/TagsPage.vue') },
       { path: 'image-settings', name: 'admin-image-settings', component: () => import('pages/admin/ImageSettingsPage.vue') },
+      { path: 'appearance', name: 'admin-appearance', component: () => import('pages/admin/AppearancePage.vue'), meta: { requiresAdmin: true } },
       { path: 'users', name: 'admin-users', component: () => import('pages/admin/UsersPage.vue'), meta: { requiresAdmin: true } }
     ]
   },

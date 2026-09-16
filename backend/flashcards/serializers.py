@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from .models import (
     Flashcard, Tag, DailyCard, CardImage, ImageGenerationSettings,
-    CardImagePreference,
+    CardImagePreference, SiteSettings,
 )
 
 
@@ -203,6 +203,23 @@ class ImageGenerationSettingsSerializer(serializers.ModelSerializer):
         if not 1 <= value <= 10:
             raise serializers.ValidationError('max_attempts must be between 1 and 10.')
         return value
+
+
+class SiteSettingsSerializer(serializers.ModelSerializer):
+    """
+    The site-wide theme. Read by everyone, written by admins.
+
+    `theme` needs no explicit validator: ModelSerializer renders it as a
+    ChoiceField from the model's Theme choices, so an unknown id is already a
+    400 rather than something that would leave every visitor unstyled.
+    """
+
+    updated_by_username = serializers.CharField(source='updated_by.username', read_only=True)
+
+    class Meta:
+        model = SiteSettings
+        fields = ['theme', 'updated_at', 'updated_by_username']
+        read_only_fields = ['updated_at', 'updated_by_username']
 
 
 class CardImageModelSerializer(serializers.Serializer):

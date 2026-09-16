@@ -105,10 +105,10 @@ per-namespace Issuer, pinned MySQL 8.0.28, probe Host headers).
 
 ## API Overview
 
-Public (no auth): `GET /api/health/`, `GET /api/dailycard/`, `GET /api/tags/`, `GET /api/users/csrf/`
+Public (no auth): `GET /api/health/`, `GET /api/dailycard/`, `GET /api/tags/`, `GET /api/users/csrf/`, `GET /api/site-settings/` (the site theme; anonymous visitors resolve it on every page load, so it returns only `theme`)
 Authenticated: `GET /api/cards/`, `GET /api/cards/{id}/`, `GET|PUT /api/users/profile/`, `POST /api/users/change-password/`, `DELETE /api/users/delete-account/`
 Curator+: CRUD on `/api/cards/`, `/api/tags/`, version history, revert
-Admin only: `/api/users/manage/` for user CRUD, plus its `stats/`, `toggle_active/` and `restore/` actions. `?include_deleted=true` reveals soft-deleted accounts; they are hidden otherwise.
+Admin only: `/api/users/manage/` for user CRUD, plus its `stats/`, `toggle_active/` and `restore/` actions. `?include_deleted=true` reveals soft-deleted accounts; they are hidden otherwise. Also `PUT /api/site-settings/` to change the site theme -- admin only, unlike the image settings, which curators share.
 Curator+ (card images): `GET|POST /api/cards/{id}/images/`, `GET|PUT /api/cards/{id}/image-model/`, `/api/card-images/{id}/` with `accept/`, `unaccept/`, `regenerate/`, and `GET|PUT /api/image-settings/`.
 
 Not implemented despite appearing in the UI: favorites, social (Google/Facebook) auth.

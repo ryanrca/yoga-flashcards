@@ -128,6 +128,13 @@ Curator or admin only. Prompts are never returned to any other role.
 
 Cards expose a single public field, `generated_image`: the URL of the accepted image, or `null`.
 
+### Site Settings Endpoints
+
+- `GET /api/site-settings/` - The site theme. Public, because the SPA resolves it on every page load including for signed-out visitors. Returns only `theme` to anyone who is not an admin; the audit fields name an admin and are withheld
+- `PUT /api/site-settings/` - Change the site theme. **Admin only**, unlike `/api/image-settings/`, which curators share: appearance is a whole-site decision rather than editorial work
+
+Valid themes are `studio`, `dusk`, `clay` and `neon`. An unrecognised value is rejected with 400 rather than stored, since a theme with no matching block in the stylesheet would leave every visitor unstyled.
+
 ### Authentication Endpoints
 
 - `POST /api/users/register/` - Signup (email, password, password_confirm)

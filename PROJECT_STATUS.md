@@ -84,8 +84,17 @@ Note: there is no shared flashcard component. Card markup is duplicated inline a
 4. **UI/UX Improvements**:
    - Better card design with image placeholders
    - Animation improvements
-   - Dark/light theme toggle
    - Accessibility features
+
+   Theming is done, though not in the form this list originally imagined. There are
+   four themes -- Studio, Dusk, Clay, and the original psychedelic design preserved as
+   Neon -- selected by an admin at `/admin/appearance` and stored on the `SiteSettings`
+   singleton. Everything themeable is a CSS custom property, including Quasar's own
+   `--q-*` brand colours, so switching needs no rebuild.
+
+   Not delivered, by choice: a per-visitor light/dark preference. The public picker and
+   the `?theme=` override both existed briefly and were removed when the setting moved
+   to the admin, so every visitor now sees the one theme the admin has selected.
 
 ### Backend Enhancements
 1. **Email System**:

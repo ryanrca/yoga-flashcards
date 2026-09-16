@@ -120,6 +120,21 @@
         </q-item>
 
         <q-item
+          v-if="authStore.isAdmin"
+          clickable
+          @click="$router.push('/admin/appearance')"
+          class="nav-item"
+        >
+          <q-item-section avatar>
+            <q-icon name="palette" size="md" color="primary" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="nav-label">Appearance</q-item-label>
+            <q-item-label caption class="nav-caption">Site theme</q-item-label>
+          </q-item-section>
+        </q-item>
+
+        <q-item
           v-if="authStore.isCurator"
           clickable
           @click="$router.push('/admin/image-settings')"

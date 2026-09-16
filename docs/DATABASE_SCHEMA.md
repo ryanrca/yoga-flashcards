@@ -374,6 +374,30 @@ The OpenRouter API key is **not** stored here; it is read from `OPENROUTER_API_K
 
 ---
 
+### SiteSettings Model
+
+`flashcards_sitesettings` -- singleton (pk is forced to 1) holding site-wide appearance.
+
+Deliberately separate from `ImageGenerationSettings`: that row configures the image
+bot, this one configures what every visitor sees. Folding appearance into a model
+named "Image generation settings" would be a lie in the Django admin.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| theme | CharField(20) | studio | One of `studio`, `dusk`, `clay`, `neon`. Becomes the `data-theme` attribute on `<html>` |
+| updated_at | DateTimeField | auto | |
+| updated_by | ForeignKey(User) | NULL | The admin who last changed it; withheld from non-admin API responses |
+
+Read by everyone -- `GET /api/site-settings/` is AllowAny, because anonymous visitors
+resolve the theme on every page load -- and written only by admins.
+
+The theme ids are one contract shared with `THEMES` in
+`frontend/src/composables/useTheme.js` and the `[data-theme=...]` blocks in
+`frontend/src/css/app.scss`. A test asserts the model and the composable agree, since
+a drifted id would leave visitors on a theme the stylesheet has no block for.
+
+---
+
 ## Junction Tables (Auto-generated)
 
 ### flashcards_flashcard_tags
@@ -435,11 +459,21 @@ DATABASES = {
 ### Key Migrations
 
 1. `users/0001_initial.py` - User and UserProfile models
-2. `flashcards/0001_initial.py` - Flashcard, Tag models
-3. `flashcards/0002_*` - DailyCard, CardUsageLog models
-4. `flashcards/0003_*` - Version fields (version_group, version_number, is_live)
-5. `flashcards/0004_*` - Populate version_group UUIDs for existing cards
-6. `flashcards/0005_*` - short_answer field
+2. `users/0002_user_deleted_at_user_is_deleted.py` - Soft-delete fields on User
+3. `flashcards/0001_initial.py` - Flashcard, Tag models
+4. `flashcards/0002_*` - DailyCard, CardUsageLog models
+5. `flashcards/0003_*` - Version fields (version_group, version_number, is_live)
+6. `flashcards/0004_populate_version_groups.py` - Populate version_group UUIDs for existing cards
+7. `flashcards/0005_fix_version_groups.py` - Data repair for the same fields
+8. `flashcards/0006_flashcard_short_answer.py` - short_answer field
+9. `flashcards/0007_alter_flashcard_created_by.py` - created_by gains the `created_cards` reverse name
+10. `flashcards/0008_imagegenerationsettings_cardimage.py` - ImageGenerationSettings and CardImage
+11. `flashcards/0009_cardimagepreference.py` - Per-card model choice
+12. `flashcards/0010_sitesettings.py` - SiteSettings (the site theme)
+
+This list had drifted: it previously stopped at `0005` and described it as the
+short_answer field, which is actually `0006` -- `0005` is a data repair for the version
+groups. Current as of `0010`.
 
 ### Custom User Model Setting
 

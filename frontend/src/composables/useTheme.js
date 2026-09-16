@@ -1,7 +1,9 @@
 import { ref, readonly } from 'vue'
+import { api } from 'src/boot/axios'
 
-// The four themes, in the order they appear in the picker.
-// `id` is what lands in the data-theme attribute, localStorage and ?theme=.
+// The four themes, in the order they appear in the admin picker.
+// `id` is what lands in the data-theme attribute and in SiteSettings.theme -
+// these ids must stay in step with the Theme choices on the Django model.
 export const THEMES = [
   { id: 'studio', label: 'Studio', blurb: 'Light, editorial, quiet' },
   { id: 'dusk', label: 'Dusk', blurb: 'Dark, luminous, still' },
@@ -11,124 +13,99 @@ export const THEMES = [
 
 export const DEFAULT_THEME = 'studio'
 
-const STORAGE_KEY = 'yoga-theme'
+// A paint-time cache of the admin's choice, NOT a per-visitor preference.
+// Visitors cannot pick a theme; this only exists so a repeat visit paints the
+// right colours before the API call returns.
+const CACHE_KEY = 'yoga-site-theme'
 
 const VALID = new Set(THEMES.map((t) => t.id))
 
 const current = ref(DEFAULT_THEME)
 
-// The last ?theme= value seen, valid or not. Used so route changes only act on
-// an actual change to the query - otherwise every in-app navigation would
-// re-apply the URL theme and stomp a choice made in the picker.
-let lastUrlTheme = null
-
 function isValid (id) {
   return typeof id === 'string' && VALID.has(id)
 }
 
-// A silent no-op is the wrong failure mode here: ?theme=dark looks like it
-// should work, and without this you just get the previous theme with no clue why.
-function warnInvalid (raw) {
-  console.warn(
-    `[theme] "${raw}" is not a theme. Valid ids: ${THEMES.map((t) => t.id).join(', ')}`
-  )
-}
-
-// The router runs in hash mode, so a shared preview link can put the query
-// either before the hash (/?theme=dusk) or inside it (/#/?theme=dusk).
-// Accept both rather than making the person sharing the link think about it.
-function rawThemeFromUrl () {
-  if (typeof window === 'undefined') return null
-
-  const fromSearch = new URLSearchParams(window.location.search).get('theme')
-  if (fromSearch) return fromSearch
-
-  const hash = window.location.hash || ''
-  const q = hash.indexOf('?')
-  if (q !== -1) {
-    const fromHash = new URLSearchParams(hash.slice(q + 1)).get('theme')
-    if (fromHash) return fromHash
-  }
-
-  return null
-}
-
-// localStorage throws in some privacy modes, and can be cleared at any time.
-// Never let a storage failure stop the app from rendering.
-function readStored () {
+function readCache () {
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    return isValid(stored) ? stored : null
+    const cached = window.localStorage.getItem(CACHE_KEY)
+    return isValid(cached) ? cached : null
   } catch {
     return null
   }
 }
 
-function writeStored (id) {
+function writeCache (id) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, id)
+    window.localStorage.setItem(CACHE_KEY, id)
   } catch {
-    // Preference simply will not persist. Not worth surfacing.
+    // Cache is an optimisation. Without it the first paint uses the default
+    // and corrects itself a moment later.
   }
 }
 
 // Applying a theme is one attribute write. Quasar's components follow because
 // quasar.css consumes --q-primary and friends via var(), and each theme block
 // in app.scss redefines them at higher specificity than Quasar's bare :root.
-export function applyTheme (id, { persist = true } = {}) {
+export function applyTheme (id, { cache = false } = {}) {
   const next = isValid(id) ? id : DEFAULT_THEME
   current.value = next
 
   if (typeof document !== 'undefined') {
     document.documentElement.dataset.theme = next
   }
-  if (persist) writeStored(next)
+  if (cache) writeCache(next)
 
   return next
 }
 
-// Resolution order: ?theme= wins so a preview link always shows what it says,
-// then the stored preference, then the default.
-// A URL theme is not persisted - following a link should not silently change
-// what the recipient sees on their next visit.
-export function initTheme () {
-  const raw = rawThemeFromUrl()
-  lastUrlTheme = raw
-
-  if (raw) {
-    if (isValid(raw)) return applyTheme(raw, { persist: false })
-    warnInvalid(raw)
+// GET is AllowAny - anonymous visitors need the theme on every page load.
+export async function fetchSiteTheme () {
+  try {
+    const response = await api.get('/api/site-settings/')
+    return { success: true, data: response.data }
+  } catch (err) {
+    console.error('Error fetching site settings:', err)
+    return { success: false, error: 'Failed to load site settings' }
   }
-
-  return applyTheme(readStored() || DEFAULT_THEME, { persist: false })
 }
 
-// Called on every route change. In hash mode, editing ?theme= in the address
-// bar changes only the fragment, so the document never reloads and the boot
-// file never runs again - without this, a preview link only takes effect on a
-// full reload, which looks exactly like a caching bug.
-export function syncThemeFromRoute (queryValue) {
-  // Vue Router hands back an array if the key appears more than once.
-  const raw = Array.isArray(queryValue) ? queryValue[0] : queryValue
-  if (raw === undefined || raw === null || raw === '') return
-
-  // Only react to an actual change, so navigating around the app does not
-  // override a theme picked from the menu.
-  if (raw === lastUrlTheme) return
-  lastUrlTheme = raw
-
-  if (!isValid(raw)) {
-    warnInvalid(raw)
-    return
+// PUT is admin-only, enforced server side by IsAdminOnly.
+export async function saveSiteTheme (theme) {
+  try {
+    const response = await api.put('/api/site-settings/', { theme })
+    applyTheme(response.data.theme, { cache: true })
+    return { success: true, data: response.data }
+  } catch (err) {
+    console.error('Error saving site settings:', err)
+    return { success: false, error: err.response?.data || 'Failed to save site settings' }
   }
+}
 
-  applyTheme(raw, { persist: false })
+// Paint the cached theme immediately, then reconcile with the server.
+//
+// The theme is now server state, so resolving it is asynchronous. Without the
+// cache every visitor would get a frame of Studio before the real theme
+// arrived. The cache is only ever written from a server response, so it cannot
+// drift into being a personal preference.
+export function initTheme () {
+  applyTheme(readCache() || DEFAULT_THEME, { cache: false })
+
+  fetchSiteTheme().then((result) => {
+    if (result.success && result.data?.theme) {
+      applyTheme(result.data.theme, { cache: true })
+    }
+  })
+
+  return current.value
 }
 
 export function useTheme () {
   return {
     theme: readonly(current),
     themes: THEMES,
-    setTheme: applyTheme
+    applyTheme,
+    fetchSiteTheme,
+    saveSiteTheme
   }
 }

@@ -802,6 +802,61 @@ Partial update of the above. `max_attempts` must be between 1 and 10.
 
 ---
 
+## Site Settings
+
+### GET /site-settings/
+
+The theme every visitor sees. The SPA resolves this on every page load,
+including for signed-out visitors, which is why it is public.
+
+**Permission:** AllowAny
+
+**Response (200 OK)** -- anonymous, or any non-admin:
+```json
+{
+  "theme": "studio"
+}
+```
+
+**Response (200 OK)** -- admin, which also gets the audit fields:
+```json
+{
+  "theme": "studio",
+  "updated_at": "2026-09-15T20:10:00Z",
+  "updated_by_username": "admin"
+}
+```
+
+`updated_by_username` names an admin, so it is withheld from everyone else.
+
+Valid themes: `studio`, `dusk`, `clay`, `neon`. These ids are also the
+`data-theme` values in `frontend/src/css/app.scss` and the `THEMES` list in
+`frontend/src/composables/useTheme.js` -- one contract across three files, with
+a test asserting the model and the composable agree.
+
+---
+
+### PUT /site-settings/
+
+Change the site theme. Each visitor picks it up on their next page load.
+
+**Permission:** IsAdminOnly -- unlike `/image-settings/`, which curators share.
+Appearance is a whole-site decision rather than editorial work.
+
+**Request:**
+```json
+{
+  "theme": "clay"
+}
+```
+
+**Response (200 OK):** the full record, including the audit fields.
+
+An unrecognised theme is rejected with 400 rather than stored: a value with no
+matching block in the stylesheet would leave every visitor unstyled.
+
+---
+
 ## Daily Card
 
 ### GET /dailycard/
