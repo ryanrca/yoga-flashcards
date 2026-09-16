@@ -945,13 +945,18 @@ Health check for Kubernetes.
 
 #### Admin CardsPage
 - Data table with all cards
-- Search input
+- Row thumbnail: the uploaded front image, falling back to the accepted AI image
+- Search input (debounced)
 - Tag filter
 - Sort controls
 - Add new card button
 - Row click to view/edit
 - Delete button per row
 - Version count indicator
+- Search, tag filter, sort, page and page size are held in the URL query and
+  restored on return: by the browser back button, by a link from TagsPage
+  (`?tags=<id>`), or from the last used view when arriving at a bare
+  `/admin/cards`
 
 #### Admin CardEditPage
 - Form fields: title, phrase, definition, short_answer

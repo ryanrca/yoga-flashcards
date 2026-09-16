@@ -150,8 +150,10 @@
               @click="$router.push(`/admin/cards/${card.id}`)"
             >
               <q-item-section avatar>
-                <q-avatar v-if="card.front_image" rounded>
-                  <img :src="card.front_image" alt="Card image">
+                <!-- An accepted AI image is the card front outside the admin
+                     area, so show it here too. An uploaded image still wins. -->
+                <q-avatar v-if="card.front_image || card.generated_image" rounded>
+                  <img :src="card.front_image || card.generated_image" alt="">
                 </q-avatar>
                 <q-avatar v-else color="primary" text-color="white" icon="view_cards" />
               </q-item-section>
