@@ -1,11 +1,11 @@
-from django.db.models import Q
+from django.db.models import Exists, F, OuterRef, Q
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Flashcard, Tag, CardImage, ImageGenerationSettings, SiteSettings
+from .models import Flashcard, Tag, CardImage, Favorite, ImageGenerationSettings, SiteSettings
 from .serializers import (
     FlashcardSerializer, TagSerializer, FlashcardVersionHistorySerializer,
     CardImageSerializer, CardImageCreateSerializer, ImageGenerationSettingsSerializer,
@@ -31,14 +31,18 @@ class FlashcardViewSet(viewsets.ModelViewSet):
         ignored once get_permissions is overridden. Images and prompts are
         admin-only, while cards themselves stay curator-editable.
         """
-        if self.action in ['list', 'retrieve']:
+        # `favorite` has to be named here for the same reason `images` does, and
+        # it matters more: the else branch below locks every unnamed action to
+        # curators, so without this an ordinary user could not favourite
+        # anything - which is the one thing favourites are for.
+        if self.action in ['list', 'retrieve', 'favorite']:
             permission_classes = [IsAuthenticated]
         elif self.action in ['images', 'image_model']:
             permission_classes = [IsCuratorOrAdmin]
         else:
             permission_classes = [IsCuratorOrAdmin]
         return [permission() for permission in permission_classes]
-    
+
     def get_queryset(self):
         """Return active live flashcards with filtering and search."""
         # This used to carry a Subquery annotation to find each card's accepted
@@ -49,7 +53,31 @@ class FlashcardViewSet(viewsets.ModelViewSet):
             .select_related('created_by', 'front_image', 'back_image')
             .prefetch_related('tags')
         )
-        
+
+        user = self.request.user
+
+        # Annotated, not computed per row: the grid draws a heart on every card,
+        # and resolving that one at a time would be a page of queries.
+        if user.is_authenticated:
+            queryset = queryset.annotate(
+                is_favorited=Exists(
+                    Favorite.objects.filter(
+                        user=user, version_group=OuterRef('version_group')
+                    )
+                )
+            )
+
+        # ?favorites=true narrows this same list rather than adding a second
+        # endpoint with its own shape. Because the base query already filters
+        # is_live, a favourite always resolves to whichever version is current:
+        # favourite v1, a curator publishes v4, and the user is shown v4.
+        if self.request.query_params.get('favorites') in ('true', '1'):
+            if not user.is_authenticated:
+                return queryset.none()
+            queryset = queryset.filter(
+                version_group__in=Favorite.objects.filter(user=user).values('version_group')
+            )
+
         # Search functionality
         search = self.request.query_params.get('search', None)
         if search:
@@ -77,7 +105,47 @@ class FlashcardViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Set the created_by field when creating a new flashcard."""
         serializer.save(created_by=self.request.user)
-    
+
+    @action(detail=True, methods=['post'])
+    def favorite(self, request, pk=None):
+        """
+        Toggle this card in the caller's favourites. Clicking the heart again
+        removes it.
+
+        Keyed on version_group, so the favourite belongs to the card family: a
+        later edit cannot lose it, and the favourites list always resolves to the
+        version that is live now.
+
+        favorite_count is incremented when a favourite is added and deliberately
+        NOT decremented when one is removed. It is a lifetime tally of how often
+        a card has been favourited, not a count of who currently has it - those
+        two numbers diverge the first time anyone unfavourites, by design.
+        """
+        card = self.get_object()
+        existing = Favorite.objects.filter(
+            user=request.user, version_group=card.version_group
+        )
+
+        if existing.exists():
+            existing.delete()
+            favorited = False
+        else:
+            Favorite.objects.create(
+                user=request.user, version_group=card.version_group
+            )
+            # F() rather than read-modify-write: two people favouriting at once
+            # would otherwise lose an increment.
+            Flashcard.objects.filter(version_group=card.version_group).update(
+                favorite_count=F('favorite_count') + 1
+            )
+            favorited = True
+
+        card.refresh_from_db()
+        return Response({
+            'favorited': favorited,
+            'favorite_count': card.favorite_count,
+        })
+
     @action(detail=True, methods=['get'])
     def versions(self, request, pk=None):
         """Get version history for a flashcard."""

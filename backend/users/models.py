@@ -71,6 +71,9 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(blank=True, null=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
-    favorite_cards = models.ManyToManyField('flashcards.Flashcard', blank=True, related_name='favorited_by')
+    # favorite_cards was a ManyToMany to Flashcard that nothing ever read or
+    # wrote. Favourites now live in flashcards.Favorite, keyed on version_group
+    # so an edit cannot orphan them. Keeping the dead M2M beside a real table
+    # would be a second source of truth for the same fact.
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

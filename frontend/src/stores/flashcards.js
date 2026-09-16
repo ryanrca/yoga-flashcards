@@ -293,6 +293,22 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     }
   }
 
+  // Toggle: the backend adds the favourite if it is missing and removes it if
+  // it is there, and reports which happened. The caller does not track state
+  // and cannot get out of step with the server.
+  const toggleFavorite = async (cardId) => {
+    try {
+      const response = await api.post(`/api/cards/${cardId}/favorite/`)
+      return { success: true, data: response.data }
+    } catch (err) {
+      console.error('Error updating favorites:', err)
+      return {
+        success: false,
+        error: err.response?.data?.detail || 'Failed to update favorites'
+      }
+    }
+  }
+
   const fetchCardVersions = async (id) => {
     loading.value = true
     error.value = null
@@ -348,6 +364,7 @@ export const useFlashcardsStore = defineStore('flashcards', () => {
     createTag,
     updateTag,
     deleteTag,
+    toggleFavorite,
     fetchCardVersions,
     revertCardVersion,
     fetchCardImages,
