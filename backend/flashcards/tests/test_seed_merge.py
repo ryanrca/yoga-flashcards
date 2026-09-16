@@ -14,7 +14,7 @@ from io import StringIO
 
 from flashcards.models import CardImage, CardImagePreference, Flashcard, Tag
 from flashcards.services import CardImageService
-from .factories import FlashcardFactory, TagFactory
+from .factories import CardImageFactory, FlashcardFactory, TagFactory
 from .test_card_images import PNG_BYTES
 
 
@@ -137,13 +137,23 @@ class TestMergeUpdates:
         assert '1 unchanged' in output
 
     def test_update_does_not_wipe_an_uploaded_image(self, tmp_path):
-        """The JSON carries nulls for images; those must not overwrite a real upload."""
+        """
+        The JSON carries nulls for images; those must not overwrite a real
+        upload. The pointer has to survive create_new_version too, which is what
+        actually carries it onto the new row.
+        """
         card = FlashcardFactory(title='Ahimsa', definition='old')
-        card.front_image.save('front.png', ContentFile(PNG_BYTES), save=True)
+        media = CardImageFactory(
+            card=card, status=CardImage.UPLOADED, prompt='', model='',
+        )
+        media.image.save('front.png', ContentFile(PNG_BYTES), save=True)
+        card.front_image = media
+        card.save(update_fields=['front_image'])
+
         path = write_json(tmp_path, [card_payload('Ahimsa', definition='new', tags=[])])
         run_merge(path)
         live = Flashcard.objects.filter(title='Ahimsa', is_live=True).first()
-        assert live.front_image, 'the uploaded image should survive a text update'
+        assert live.front_image == media, 'the uploaded image should survive a text update'
 
 
 @pytest.mark.django_db

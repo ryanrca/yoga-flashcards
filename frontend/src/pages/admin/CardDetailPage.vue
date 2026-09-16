@@ -50,17 +50,14 @@
             </q-card-section>
 
             <!--
-              Falls back to the accepted AI image, which is the card front
-              everywhere outside the admin area. The label says which one is
-              being shown, since only an uploaded image is editable from the
-              card's own edit form.
+              One image field. The label used to distinguish an upload from an
+              accepted AI image because they lived in different places; they do
+              not any more, so there is nothing to distinguish.
             -->
-            <q-card-section v-if="card.front_image || card.generated_image">
-              <div class="text-body1 q-mb-sm">
-                {{ card.front_image ? 'Front Image:' : 'Front Image (accepted AI image):' }}
-              </div>
+            <q-card-section v-if="card.front_image">
+              <div class="text-body1 q-mb-sm">Front Image:</div>
               <q-img
-                :src="card.front_image || card.generated_image"
+                :src="card.front_image"
                 style="max-width: 400px; max-height: 300px; border-radius: 8px;"
               />
             </q-card-section>

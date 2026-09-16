@@ -2,7 +2,7 @@
 
 **Base URL:** `http://localhost:8000/api/`
 
-**Card images:** every card payload carries `generated_image`, the URL of the accepted AI image or `null`. Prompts and unaccepted images are only in the admin endpoints below.
+**Card images:** every card payload carries `front_image` (and `back_image`), the URL of the media the card points at or `null`. One media table holds both uploads and generations, so there is no separate `generated_image` field. Prompts, and any image no card points at, are only in the admin endpoints below.
 
 **Authentication:** Session-based (Django sessions)
 
@@ -333,8 +333,12 @@ Create a new flashcard.
 | `definition` | string | Yes | Full definition |
 | `short_answer` | string | No | Brief summary |
 | `tags` | string/array | No | Tag names or IDs (repeatable) |
-| `front_image` | file | No | Front image file |
-| `back_image` | file | No | Back image file |
+| `front_image_upload` | file | No | Front image file. Creates a media row and points the card at it |
+| `back_image_upload` | file | No | Back image file. Same |
+
+`front_image` and `back_image` are read-only URLs in the response. Uploading uses the
+`_upload` names because the API returns a URL but accepts a file, and one field cannot do
+both now that the card holds a foreign key to the media table.
 
 **Example (curl):**
 ```bash
@@ -346,7 +350,7 @@ curl -X POST http://localhost:8000/api/cards/ \
   -F "short_answer=Truthfulness" \
   -F "tags=Yamas" \
   -F "tags=Sanskrit" \
-  -F "front_image=@/path/to/image.jpg"
+  -F "front_image_upload=@/path/to/image.jpg"
 ```
 
 **Response (201 Created):**
@@ -625,6 +629,10 @@ Generation history for the card, plus the prompt a new generation would use.
 one, otherwise the global default. `preview.model_source` is `"card"` or `"global"`, and
 `preview.global_model` is the global default for comparison.
 
+`is_accepted` in the rows below is **computed, not stored**. There is no such column: it
+means "the live card points at this row", derived from `Flashcard.front_image`. The name is
+kept because it is what the admin screens display.
+
 **Response (200 OK):**
 ```json
 {
@@ -737,19 +745,30 @@ Every generation, newest first. Paginated.
 
 ### POST /card-images/{id}/accept/
 
-Make this the one image the rest of the users see. Any previously accepted image for the
-same card is withdrawn in the same transaction.
+Point the card's live version at this image, which is what makes it the one the rest of the
+users see.
+
+Any image the card was showing is displaced simply by being replaced -- there is no
+transaction and nothing to withdraw, because the card holds a single foreign key and cannot
+point at two rows. The displaced image is kept; it is history, not deleted.
+
+Only the live version is repointed. An older version keeps whatever it was showing, since
+that is what it showed at the time.
 
 **Permission:** IsCuratorOrAdmin
 
 **Errors:**
 - `400` - Only a successfully generated image can be accepted
+- `400` - That card family no longer has a live version
 
 ---
 
 ### POST /card-images/{id}/unaccept/
 
-Withdraw the image from public view. The row and the file are kept.
+Clear the live version's pointer, so the card shows no image. The row and the file are kept.
+
+Only the live version is cleared. An older version that pointed at this image keeps pointing
+at it -- history is not rewritten.
 
 **Permission:** IsCuratorOrAdmin
 

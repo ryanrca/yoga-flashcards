@@ -1,4 +1,4 @@
-from django.db.models import OuterRef, Q, Subquery
+from django.db.models import Q
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -41,16 +41,13 @@ class FlashcardViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Return active live flashcards with filtering and search."""
-        accepted_image = CardImage.objects.filter(
-            version_group=OuterRef('version_group'),
-            is_accepted=True,
-            status=CardImage.SUCCEEDED,
-        ).order_by('-accepted_at')
+        # This used to carry a Subquery annotation to find each card's accepted
+        # image without a query per row. The card points at its media directly
+        # now, so an ordinary join does the same job and says what it means.
         queryset = (
             Flashcard.objects.filter(is_active=True, is_live=True)
-            .select_related('created_by')
+            .select_related('created_by', 'front_image', 'back_image')
             .prefetch_related('tags')
-            .annotate(accepted_image_path=Subquery(accepted_image.values('image')[:1]))
         )
         
         # Search functionality
@@ -108,7 +105,7 @@ class FlashcardViewSet(viewsets.ModelViewSet):
 
         if request.method == 'GET':
             images = CardImage.objects.filter(version_group=card.version_group).select_related(
-                'card', 'requested_by', 'accepted_by'
+                'card', 'requested_by'
             )
             override = request.query_params.get('look_and_feel_override', '')
             return Response({
@@ -225,7 +222,7 @@ class CardImageViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = CardPagination
 
     def get_queryset(self):
-        queryset = CardImage.objects.select_related('card', 'requested_by', 'accepted_by')
+        queryset = CardImage.objects.select_related('card', 'requested_by')
         version_group = self.request.query_params.get('version_group')
         if version_group:
             queryset = queryset.filter(version_group=version_group)

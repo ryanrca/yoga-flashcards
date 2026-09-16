@@ -451,8 +451,10 @@ class Flashcard(Model):
     phrase = CharField(max_length=500)  # Sanskrit
     definition = TextField()
     short_answer = TextField(blank=True)
-    front_image = ImageField(upload_to='flashcard_images/', blank=True, null=True)
-    back_image = ImageField(upload_to='flashcard_images/', blank=True, null=True)
+    # Pointers into the media table, not files. One table holds every image,
+    # uploaded or generated, told apart only by its status.
+    front_image = ForeignKey('CardImage', on_delete=SET_NULL, null=True, blank=True)
+    back_image = ForeignKey('CardImage', on_delete=SET_NULL, null=True, blank=True)
     tags = ManyToManyField('Tag', blank=True)
 
     # Versioning
@@ -613,7 +615,7 @@ List all live, active flashcards. Requires authentication.
       "phrase": "अहिंसा",
       "definition": "Non-violence or non-harming...",
       "short_answer": "Non-violence",
-      "front_image": "/media/flashcard_images/ahimsa_front.jpg",
+      "front_image": "/media/card_images/generated/ahimsa-4f2c1a9b.png",
       "back_image": null,
       "tags": [
         {"id": 1, "name": "Yamas"}
@@ -651,7 +653,7 @@ back_image: [file]
   "phrase": "सत्य",
   "definition": "Truthfulness in thought, word, and deed...",
   "short_answer": "Truthfulness",
-  "front_image": "/media/flashcard_images/satya_front.jpg",
+  "front_image": "/media/card_images/generated/satya-9d3e7f21.png",
   "back_image": null,
   "tags": [
     {"id": 1, "name": "Yamas"},
@@ -947,7 +949,7 @@ Health check for Kubernetes.
 
 #### Admin CardsPage
 - Data table with all cards
-- Row thumbnail: the uploaded front image, falling back to the accepted AI image
+- Row thumbnail: the card's front image, whether uploaded or generated
 - Search input (debounced)
 - Tag filter
 - Sort controls
@@ -1125,7 +1127,9 @@ API_BASE_URL=https://api.your-domain.com
 
 ### 10.4 Image Handling
 
-1. Images stored in `media/flashcard_images/`
+1. Images stored in `media/card_images/generated/`, one media table for uploads and
+   generations alike. `media/flashcard_images/` is legacy: nothing writes there now, and it
+   is retained only so the scorched-earth sweep can clear files left by the old schema
 2. Accepted formats: JPEG, PNG, GIF, WebP
 3. Images are copied when creating new versions
 4. Original filenames are preserved with unique prefix

@@ -7,9 +7,10 @@ import base64
 
 import pytest
 from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 
-from flashcards.models import CardImage, ImageGenerationSettings
+from flashcards.models import CardImage, Flashcard, ImageGenerationSettings
 from flashcards.openrouter import OpenRouterClient, OpenRouterError
 from flashcards.services import CardImageService
 from .factories import CardImageFactory, FlashcardFactory, TagFactory
@@ -136,7 +137,7 @@ class TestGenerateOnlyOnce:
 
     def test_rejected_image_is_not_requeued_automatically(self):
         card = FlashcardFactory()
-        succeeded_image(card, is_accepted=False)
+        succeeded_image(card)
         assert CardImageService.queue_missing() == []
 
     def test_new_card_gets_queued(self):
@@ -244,28 +245,28 @@ class TestClaimAndRun:
 
 @pytest.mark.django_db
 class TestAcceptance:
-    def test_accept_marks_the_image(self):
+    def test_accept_points_the_card_at_the_image(self):
         card = FlashcardFactory()
         image = succeeded_image(card)
-        admin = UserFactory(role='admin')
-        CardImageService.accept(image, user=admin)
-        image.refresh_from_db()
-        assert image.is_accepted
-        assert image.accepted_by == admin
+        CardImageService.accept(image, user=UserFactory(role='admin'))
+        card.refresh_from_db()
+        assert card.front_image == image
 
-    def test_accepting_unaccepts_the_previous_one(self):
+    def test_accepting_replaces_the_previous_one(self):
+        """
+        One image per card is structural now: the card holds a single foreign
+        key, so it cannot point at two. This used to need a transaction and a
+        select_for_update because MySQL has no partial unique index.
+        """
         card = FlashcardFactory()
         first = succeeded_image(card)
         second = succeeded_image(card)
         CardImageService.accept(first)
         CardImageService.accept(second)
-        first.refresh_from_db()
-        second.refresh_from_db()
-        assert not first.is_accepted
-        assert second.is_accepted
-        assert CardImage.objects.filter(
-            version_group=card.version_group, is_accepted=True
-        ).count() == 1
+        card.refresh_from_db()
+        assert card.front_image == second
+        # The replaced image is history, not deleted.
+        assert CardImage.objects.filter(pk=first.pk).exists()
 
     def test_cannot_accept_an_image_that_never_generated(self):
         image = CardImageFactory(status=CardImage.QUEUED)
@@ -284,6 +285,87 @@ class TestAcceptance:
 
 
 @pytest.mark.django_db
+class TestUploads:
+    """
+    A human upload is media like any other.
+
+    None of this was covered before, which is how the upload path stayed broken
+    while the whole suite passed: the serializer had a read-only front_image and
+    silently discarded the file.
+    """
+
+    @staticmethod
+    def _png(name='front.png'):
+        return SimpleUploadedFile(name, PNG_BYTES, content_type='image/png')
+
+    def test_upload_creates_a_media_row_and_points_the_card_at_it(self, api_client):
+        api_client.force_authenticate(user=UserFactory(role='admin'))
+        response = api_client.post(
+            '/api/cards/',
+            {
+                'title': 'Uploaded Card', 'definition': 'd',
+                'front_image_upload': self._png(),
+            },
+            format='multipart',
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+
+        card = Flashcard.objects.get(title='Uploaded Card')
+        assert card.front_image is not None
+        assert card.front_image.status == CardImage.UPLOADED
+        # No prompt and no model: a photograph has neither.
+        assert card.front_image.prompt == ''
+        assert card.front_image.model == ''
+
+    def test_upload_is_returned_as_a_url(self, api_client):
+        api_client.force_authenticate(user=UserFactory(role='admin'))
+        response = api_client.post(
+            '/api/cards/',
+            {'title': 'Url Card', 'definition': 'd', 'front_image_upload': self._png()},
+            format='multipart',
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        # Read side is a URL string, exactly as it was when this was an ImageField.
+        assert isinstance(response.data['front_image'], str)
+        assert '.png' in response.data['front_image']
+
+    def test_an_upload_and_a_generated_image_are_the_same_kind_of_thing(self, api_client):
+        """Accepting a generated image replaces an upload, and vice versa."""
+        api_client.force_authenticate(user=UserFactory(role='admin'))
+        api_client.post(
+            '/api/cards/',
+            {'title': 'Both', 'definition': 'd', 'front_image_upload': self._png()},
+            format='multipart',
+        )
+        card = Flashcard.objects.get(title='Both')
+        uploaded = card.front_image
+
+        generated = succeeded_image(card)
+        CardImageService.accept(generated)
+        card.refresh_from_db()
+        assert card.front_image == generated
+
+        # The upload is still on record; it was replaced, not destroyed.
+        assert CardImage.objects.filter(pk=uploaded.pk).exists()
+
+    def test_upload_on_edit_lands_on_the_new_version_only(self, api_client):
+        card = FlashcardFactory(title='Versioned', definition='old')
+        api_client.force_authenticate(user=UserFactory(role='admin'))
+        response = api_client.put(
+            f'/api/cards/{card.id}/',
+            {'title': 'Versioned', 'definition': 'new', 'front_image_upload': self._png()},
+            format='multipart',
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        card.refresh_from_db()
+        assert card.front_image is None, 'the old version keeps showing what it showed'
+        live = Flashcard.objects.get(version_group=card.version_group, is_live=True)
+        assert live.front_image is not None
+        assert live.front_image.status == CardImage.UPLOADED
+
+
+@pytest.mark.django_db
 class TestVisibility:
     """Images reach non-admins only once accepted; prompts never do."""
 
@@ -293,7 +375,7 @@ class TestVisibility:
         user = UserFactory(role='user')
         api_client.force_authenticate(user=user)
         response = api_client.get(f'/api/cards/{card.id}/')
-        assert response.data['generated_image'] is None
+        assert response.data['front_image'] is None
 
     def test_accepted_image_is_exposed(self, api_client):
         card = FlashcardFactory()
@@ -302,8 +384,8 @@ class TestVisibility:
         user = UserFactory(role='user')
         api_client.force_authenticate(user=user)
         response = api_client.get(f'/api/cards/{card.id}/')
-        assert response.data['generated_image']
-        assert '.png' in response.data['generated_image']
+        assert response.data['front_image']
+        assert '.png' in response.data['front_image']
 
     def test_card_payload_never_contains_a_prompt(self, api_client):
         card = FlashcardFactory()
@@ -321,7 +403,7 @@ class TestVisibility:
         CardImageService.accept(image)
         response = api_client.get('/api/dailycard/')
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['generated_image']
+        assert response.data['front_image']
         assert 'prompt' not in response.data
 
 
@@ -416,8 +498,8 @@ class TestImageApi:
         api_client.force_authenticate(user=UserFactory(role='admin'))
         response = api_client.post(f'/api/card-images/{image.id}/accept/')
         assert response.status_code == status.HTTP_200_OK
-        image.refresh_from_db()
-        assert image.is_accepted
+        card.refresh_from_db()
+        assert card.front_image == image
 
     def test_unaccept_endpoint_keeps_the_row(self, api_client):
         card = FlashcardFactory()
@@ -426,8 +508,8 @@ class TestImageApi:
         api_client.force_authenticate(user=UserFactory(role='admin'))
         response = api_client.post(f'/api/card-images/{image.id}/unaccept/')
         assert response.status_code == status.HTTP_200_OK
-        image.refresh_from_db()
-        assert not image.is_accepted
+        card.refresh_from_db()
+        assert card.front_image is None
         assert CardImage.objects.filter(pk=image.pk).exists()
 
     def test_regenerate_creates_a_new_row(self, api_client):
