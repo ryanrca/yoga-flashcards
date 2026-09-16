@@ -114,8 +114,17 @@
 // One warm accent, a single static gradient, and no keyframes anywhere.
 :root[data-theme='dusk'] {
   --page-bg: linear-gradient(170deg, #1B1F2A 0%, #14161C 55%, #0F1116 100%);
-  --surface: rgba(255, 255, 255, 0.045);
-  --surface-2: rgba(255, 255, 255, 0.07);
+  // Cards and modals were a 4.5% white film, so the page gradient read straight
+  // through them. Now a dark tint at 55%: "more opaque" on a dark theme has to
+  // mean more solid, not lighter - raising the white alpha instead would have
+  // turned every card pale grey.
+  //
+  // 55% rather than the literal 1.5x of 0.045, which would be 0.0675 and
+  // invisible. Read as +50 percentage points it actually stops the leak, and
+  // still lets a whisper of the sunbeams through behind a card, which is the
+  // point of having them.
+  --surface: rgba(30, 35, 46, 0.55);
+  --surface-2: rgba(48, 55, 70, 0.62);
   --ink: #F2F0EC;
   --ink-soft: rgba(242, 240, 236, 0.66);
   --line: rgba(255, 255, 255, 0.10);
