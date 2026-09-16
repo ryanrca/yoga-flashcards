@@ -18,7 +18,9 @@ from flashcards.models import (
     ImageGenerationSettings, Tag,
 )
 from flashcards.services import CardImageService
-from .factories import CardUsageLogFactory, DailyCardFactory, FlashcardFactory, TagFactory
+from .factories import (
+    CardImageFactory, CardUsageLogFactory, DailyCardFactory, FlashcardFactory, TagFactory,
+)
 from .test_card_images import PNG_BYTES
 from users.tests.factories import UserFactory
 
@@ -123,9 +125,16 @@ class TestErasesEverything:
         assert not default_storage.exists(name)
 
     def test_deletes_uploaded_card_images_too(self, tmp_path):
+        # An upload is a media row like any other; only its status says who
+        # made it. The card points at it rather than storing the file itself.
         card = FlashcardFactory(title='Uploaded')
-        card.front_image.save('front.png', ContentFile(PNG_BYTES), save=True)
-        name = card.front_image.name
+        media = CardImageFactory(
+            card=card, status=CardImage.UPLOADED, prompt='', model='',
+        )
+        media.image.save('front.png', ContentFile(PNG_BYTES), save=True)
+        card.front_image = media
+        card.save(update_fields=['front_image'])
+        name = media.image.name
         path = write_json(tmp_path, ['New Card'])
         run(path, '--confirm')
         assert not default_storage.exists(name)

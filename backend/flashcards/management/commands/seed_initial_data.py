@@ -234,17 +234,44 @@ class Command(BaseCommand):
             phrase=card_data.get('phrase', ''),
             short_answer=card_data.get('short_answer', ''),
             definition=card_data.get('definition', ''),
-            front_image=card_data.get('front_image') or None,
-            back_image=card_data.get('back_image') or None,
             created_by=admin_user,
             is_active=card_data.get('is_active', True),
         )
+
+        # Images are set after the card exists: a media row is keyed to the
+        # card's version_group, which is only assigned when the card is created.
+        front = self._media_for_path(card_data.get('front_image'), flashcard)
+        back = self._media_for_path(card_data.get('back_image'), flashcard)
+        if front or back:
+            flashcard.front_image = front
+            flashcard.back_image = back
+            flashcard.save(update_fields=['front_image', 'back_image'])
 
         for tag_name in card_data.get('tags', []):
             if tag_name in tag_map:
                 flashcard.tags.add(tag_map[tag_name])
 
         return flashcard
+
+    @staticmethod
+    def _media_for_path(path, card):
+        """
+        Turn a media path from the JSON into a row in the media table.
+
+        The seed format is unchanged - it still carries plain paths - because
+        only the location of the pointer moved, not the files. The row is marked
+        UPLOADED: a path sitting in a seed file did not come from the bot, and
+        there is no prompt or model to record for it.
+        """
+        path = (path or '').strip()
+        if not path:
+            return None
+        media, _ = CardImage.objects.get_or_create(
+            version_group=card.version_group,
+            image=path,
+            defaults={'status': CardImage.UPLOADED},
+        )
+        return media
 
     # Merge (additive) --------------------------------------------------
     def _merge_from_json(self, file_path: Path, dry_run=False):
@@ -471,14 +498,13 @@ class Command(BaseCommand):
         the two card media directories, so images orphaned by an earlier run get
         cleared too. Strictly limited to those directories.
         """
+        # One media table means one place to look. This used to sweep the
+        # CardImage rows and then both Flashcard image columns separately,
+        # because a file could be referenced from either.
         names = set()
         for path in CardImage.objects.exclude(image='').values_list('image', flat=True):
             if path:
                 names.add(path)
-        for field in ('front_image', 'back_image'):
-            for path in Flashcard.objects.exclude(**{field: ''}).values_list(field, flat=True):
-                if path:
-                    names.add(path)
         for directory in self.CARD_MEDIA_DIRS:
             try:
                 _, files = default_storage.listdir(directory)
@@ -518,7 +544,12 @@ class Command(BaseCommand):
         tags = list(Tag.objects.all().order_by('name').values('name', 'description'))
 
         flashcards = []
-        queryset = Flashcard.objects.all().select_related('created_by').prefetch_related('tags').order_by('version_group', 'version_number')
+        queryset = (
+            Flashcard.objects.all()
+            .select_related('created_by', 'front_image', 'back_image')
+            .prefetch_related('tags')
+            .order_by('version_group', 'version_number')
+        )
         for card in queryset:
             flashcards.append({
                 'id': card.id,
@@ -526,8 +557,10 @@ class Command(BaseCommand):
                 'phrase': card.phrase,
                 'definition': card.definition,
                 'short_answer': card.short_answer,
-                'front_image': str(card.front_image) if card.front_image else None,
-                'back_image': str(card.back_image) if card.back_image else None,
+                # Still a plain path, so the JSON format did not change when the
+                # pointer moved onto a media row.
+                'front_image': card.front_image.image.name if (card.front_image and card.front_image.image) else None,
+                'back_image': card.back_image.image.name if (card.back_image and card.back_image.image) else None,
                 'tags': [tag.name for tag in card.tags.all()],
                 'is_active': card.is_active,
                 'version_group': str(card.version_group),

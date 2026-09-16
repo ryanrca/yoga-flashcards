@@ -17,11 +17,11 @@ Logged in users can see all flashcards.
 - **Admin and curator access** - All admin and curator routes require authentication.  
 - **Flashcard management** - Curators have all CRUD operations with versioning.
 - **Version Control** - All card edits create new versions while preserving history. Each edit creates a new version marked as "LIVE". Previous versions remain accessible and can be reverted to at any time. All versions of a card share a version_group UUID.
-- **Image support** - Front and back photos can be uploaded, edited and deleted for each card
+- **Image support** - Front and back photos can be uploaded, edited and deleted for each card. Uploads and AI generations land in the same media table; a card points at a row in it rather than storing the file.
 - **Tagging system** - Organize cards with flexible tags
 - **Search and filtering** - Find cards across all text fields
 - **Version history** - View complete edit history for each card with ability to revert to any previous version
-- **AI card images** - A bot illustrates each card's front through OpenRouter, seeding the prompt from the card's own text. Prompts and unaccepted images are visible to curators and admins only; an image reaches users only when one of them accepts it. Every prompt and image is kept, and each card can pin its own model.
+- **AI card images** - A bot illustrates each card's front through OpenRouter, seeding the prompt from the card's own text. Prompts, and any image no card points at, are visible to curators and admins only; an image reaches users when one of them accepts it, which simply points the card at that row. Every prompt and image is kept, and each card can pin its own model.
 - **CSV import** - Bulk import cards from CSV files.  A script is provided to import new or update existing cards in bulk.
 - **Default photo** *(planned, not implemented)* - A single .jpg or vector placeholder for cards with no image. Cards without an image currently render a CSS placeholder block.
 - **Initial Data** - `backend/flashcards/management/commands/data/flashcards.json` seeds 19 cards:
@@ -126,7 +126,9 @@ Curator or admin only. Prompts are never returned to any other role.
 - `POST /api/card-images/{id}/regenerate/` - Queue a new generation from this row's prompt
 - `GET|PUT /api/image-settings/` - Global look and feel, default model and bot switches
 
-Cards expose a single public field, `generated_image`: the URL of the accepted image, or `null`.
+Cards expose a single image field, `front_image`: the URL of whatever media the card points at, or `null`. There is no separate `generated_image` -- an uploaded photo and a generated image are the same kind of thing, so one field covers both.
+
+Uploads are sent as `front_image_upload` / `back_image_upload`. The read and write names differ because the API returns a URL but accepts a file, and those cannot be one field now that the card holds a foreign key.
 
 ### Site Settings Endpoints
 

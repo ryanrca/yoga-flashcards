@@ -1,4 +1,3 @@
-from django.core.files.storage import default_storage
 from rest_framework import serializers
 
 from .models import (
@@ -26,58 +25,100 @@ class FlashcardSerializer(serializers.ModelSerializer):
         required=False
     )
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
-    generated_image = serializers.SerializerMethodField()
-    
+    # Foreign keys underneath, URL strings on the wire - the same shape the API
+    # had when these were ImageFields, so nothing downstream had to change.
+    #
+    # There is no `generated_image` any more. It existed only because an AI
+    # image lived somewhere a human upload did not, which forced every consumer
+    # to remember a fallback. One card has one front image, whatever produced
+    # it, and this is it.
+    front_image = serializers.SerializerMethodField()
+    back_image = serializers.SerializerMethodField()
+
+    # Asymmetric on purpose: the API hands out a URL on read and takes a file on
+    # write, and those cannot be the same declared field once the model field is
+    # a foreign key. An upload creates a row in the media table and points the
+    # card at it - precisely what accepting a generated image does.
+    front_image_upload = serializers.ImageField(write_only=True, required=False, allow_null=True)
+    back_image_upload = serializers.ImageField(write_only=True, required=False, allow_null=True)
+
     class Meta:
         model = Flashcard
         fields = [
             'id', 'title', 'phrase', 'definition', 'short_answer', 'front_image', 'back_image',
-            'generated_image',
+            'front_image_upload', 'back_image_upload',
             'tags', 'tag_names', 'created_by', 'created_by_username',
             'created_at', 'updated_at', 'is_active', 'version_group', 'version_number', 'is_live'
         ]
         read_only_fields = ['created_by', 'created_at', 'updated_at', 'version_group', 'version_number', 'is_live']
 
-    def get_generated_image(self, obj):
+    def _media_url(self, media):
         """
-        URL of the accepted AI image, or None.
+        Absolute URL for a media row, or None.
 
-        Deliberately the only image field non-admins ever see: an image that has
-        not been accepted, and the prompt behind any image, stay in the admin
-        API. The list view annotates `accepted_image_path` to avoid a query per
-        card; a lone object (the daily card) falls back to a direct lookup.
+        A row can exist without a file - queued and failed generations do - so
+        the file is checked, not just the pointer.
         """
-        if hasattr(obj, 'accepted_image_path'):
-            path = obj.accepted_image_path
-        else:
-            path = (
-                CardImage.objects.filter(
-                    version_group=obj.version_group,
-                    is_accepted=True,
-                    status=CardImage.SUCCEEDED,
-                )
-                .values_list('image', flat=True)
-                .first()
-            )
-        if not path:
+        if media is None or not media.image:
             return None
-        url = default_storage.url(path)
         request = self.context.get('request')
-        return request.build_absolute_uri(url) if request else url
+        return request.build_absolute_uri(media.image.url) if request else media.image.url
+
+    def get_front_image(self, obj):
+        return self._media_url(obj.front_image)
+
+    def get_back_image(self, obj):
+        return self._media_url(obj.back_image)
+
+    @staticmethod
+    def _attach_uploads(card, front, back):
+        """
+        Store uploaded files as media rows and point the card at them.
+
+        An upload is not special. It lands in the same table a generated image
+        does, with a status saying where it came from and no prompt or model,
+        because a photograph has neither.
+        """
+        slots = []
+        for uploaded, slot in ((front, 'front_image'), (back, 'back_image')):
+            if uploaded is None:
+                continue
+            media = CardImage.objects.create(
+                version_group=card.version_group,
+                card=card,
+                status=CardImage.UPLOADED,
+                prompt='',
+                model='',
+            )
+            media.image.save(uploaded.name, uploaded, save=True)
+            setattr(card, slot, media)
+            slots.append(slot)
+        if slots:
+            card.save(update_fields=slots)
+        return card
 
     def create(self, validated_data):
         tag_names = validated_data.pop('tag_names', [])
+        # Popped before the model call: these are serializer fields, not columns.
+        front = validated_data.pop('front_image_upload', None)
+        back = validated_data.pop('back_image_upload', None)
         flashcard = Flashcard.objects.create(**validated_data)
-        
+
+        # Uploads come second - a media row is keyed to the card's
+        # version_group, which does not exist until the card does.
+        self._attach_uploads(flashcard, front, back)
+
         # Handle tags
         for tag_name in tag_names:
             tag, created = Tag.objects.get_or_create(name=tag_name.strip())
             flashcard.tags.add(tag)
-        
+
         return flashcard
 
     def update(self, instance, validated_data):
         tag_names = validated_data.pop('tag_names', None)
+        front = validated_data.pop('front_image_upload', None)
+        back = validated_data.pop('back_image_upload', None)
         
         # Prepare tags list for new version
         tags_to_set = None
@@ -109,7 +150,12 @@ class FlashcardSerializer(serializers.ModelSerializer):
             tags=tags_to_set,
             **validated_data
         )
-        
+
+        # The new version inherits the old pointers through create_new_version;
+        # an upload sent with this edit replaces them on the new row only, so
+        # the previous version still shows what it showed.
+        self._attach_uploads(new_version, front, back)
+
         return new_version
 
 
@@ -147,20 +193,27 @@ class CardImageSerializer(serializers.ModelSerializer):
 
     image_url = serializers.SerializerMethodField()
     requested_by_username = serializers.CharField(source='requested_by.username', read_only=True)
-    accepted_by_username = serializers.CharField(source='accepted_by.username', read_only=True)
     card_title = serializers.CharField(source='card.title', read_only=True)
+    # Computed, not stored. "Accepted" now means "the live card points at me",
+    # so it is derived from the pointer rather than kept alongside it where the
+    # two could disagree. The field name is unchanged so the admin screens that
+    # show an accepted badge keep working.
+    is_accepted = serializers.SerializerMethodField()
 
     class Meta:
         model = CardImage
         fields = [
             'id', 'version_group', 'card', 'card_title', 'status', 'image_url',
             'prompt', 'prompt_seed', 'look_and_feel', 'look_and_feel_override', 'model',
-            'is_accepted', 'accepted_at', 'accepted_by_username',
+            'is_accepted',
             'attempts', 'error', 'cost_usd', 'provider_response_id',
             'requested_by_username', 'is_auto', 'created_at', 'updated_at',
             'started_at', 'finished_at',
         ]
         read_only_fields = fields
+
+    def get_is_accepted(self, obj):
+        return Flashcard.objects.filter(is_live=True, front_image=obj).exists()
 
     def get_image_url(self, obj):
         if not obj.image:

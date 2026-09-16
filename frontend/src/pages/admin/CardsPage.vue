@@ -291,7 +291,9 @@ const hasFilters = computed(() =>
 
 // An accepted AI image is the card front everywhere outside the admin area.
 // An explicitly uploaded image still takes precedence over a generated one.
-const cardImage = (card) => card.front_image || card.generated_image || null
+// One field now: a card points at its media, whoever made it. The fallback this
+// used to carry existed only because AI images lived somewhere uploads did not.
+const cardImage = (card) => card.front_image || null
 
 // ---- filter state <-> URL ---------------------------------------------------
 

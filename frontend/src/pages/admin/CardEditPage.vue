@@ -452,12 +452,15 @@ const saveCard = async () => {
       formData.append('tags', '')
     }
 
-    // Add images if they exist
+    // Uploads go to *_upload, not front_image. The API hands out a URL on read
+    // and takes a file on write, and those cannot be the same field now that a
+    // card points at a row in the media table rather than storing the file.
+    // An upload creates a media row exactly as a generated image does.
     if (frontImageFile.value) {
-      formData.append('front_image', frontImageFile.value)
+      formData.append('front_image_upload', frontImageFile.value)
     }
     if (backImageFile.value) {
-      formData.append('back_image', backImageFile.value)
+      formData.append('back_image_upload', backImageFile.value)
     }
 
     let result

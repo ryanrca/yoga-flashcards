@@ -357,41 +357,63 @@ class CardImageService:
 
     # ---------- acceptance ----------
 
+    # "Accepted" is no longer a flag on the image. The card points at the image
+    # it shows, so the pointer IS the acceptance, and setting it is the whole
+    # operation.
+    #
+    # That deletes an invariant this code used to enforce by hand. One accepted
+    # image per card family needed a transaction and select_for_update here,
+    # purely because MySQL has no partial unique index to express it
+    # declaratively. A row cannot hold two foreign keys, so the rule is now
+    # structural and the machinery is gone.
+
+    @staticmethod
+    def _live_card(version_group):
+        return Flashcard.objects.filter(
+            version_group=version_group, is_live=True
+        ).first()
+
     @classmethod
     def accept(cls, image, user=None):
         """
-        Make this the one image visible outside the admin area.
+        Point the card's live version at this image.
 
-        Single-accepted is enforced here rather than by a database constraint:
-        MySQL has no partial unique indexes, so a conditional UniqueConstraint
-        would hold in tests (SQLite) and quietly do nothing in production.
+        Older versions keep whatever they were showing: a version records the
+        image chosen at the time, and an edit carries the pointer forward
+        through create_new_version.
+
+        `user` is accepted and ignored. Acceptance used to be audited on the
+        image via accepted_by; there is no natural home for that now, because
+        accepting does not create a card version. Kept in the signature so the
+        call sites did not all have to change.
         """
         if image.status != CardImage.SUCCEEDED or not image.image:
             raise ValueError('Only a successfully generated image can be accepted.')
-        with transaction.atomic():
-            (
-                CardImage.objects.select_for_update()
-                .filter(version_group=image.version_group, is_accepted=True)
-                .exclude(pk=image.pk)
-                .update(is_accepted=False, accepted_at=None, accepted_by=None)
-            )
-            image.is_accepted = True
-            image.accepted_at = timezone.now()
-            image.accepted_by = user
-            image.save(update_fields=['is_accepted', 'accepted_at', 'accepted_by', 'updated_at'])
+        card = cls._live_card(image.version_group)
+        if card is None:
+            raise ValueError('That card family no longer has a live version.')
+        card.front_image = image
+        card.save(update_fields=['front_image', 'updated_at'])
         return image
 
     @classmethod
     def unaccept(cls, image):
-        """Withdraw an image from public view without deleting it."""
-        image.is_accepted = False
-        image.accepted_at = None
-        image.accepted_by = None
-        image.save(update_fields=['is_accepted', 'accepted_at', 'accepted_by', 'updated_at'])
+        """
+        Stop showing this image. The row and its file are kept.
+
+        Only the live version is cleared. An older version that pointed at this
+        image keeps pointing at it, because that is what it was showing at the
+        time and history is not rewritten.
+        """
+        Flashcard.objects.filter(
+            version_group=image.version_group, is_live=True, front_image=image
+        ).update(front_image=None)
         return image
 
     @staticmethod
     def accepted_for(version_group):
-        return CardImage.objects.filter(
-            version_group=version_group, is_accepted=True, status=CardImage.SUCCEEDED
-        ).first()
+        """The image the live version of this card family is showing, or None."""
+        card = Flashcard.objects.filter(
+            version_group=version_group, is_live=True
+        ).only('front_image').first()
+        return card.front_image if card else None

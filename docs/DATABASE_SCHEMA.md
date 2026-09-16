@@ -38,18 +38,22 @@ This document provides the complete database schema specification for regenerati
 │ title               │ M:M │ name (unique)       │          │  │
 │ phrase              │     │ description         │          │  │
 │ definition          │     └─────────────────────┘          │  │
-│ short_answer        │                                      │  │
-│ front_image         │◄─────────────────────────────────────┘  │
-│ back_image          │◄────────────────────────────────────────┘
-│ tags (M2M)          │
-│ version_group (UUID)│
-│ version_number      │
-│ is_live             │
-│ is_active           │
-│ created_by (FK)     │
-│ created_at          │
-│ updated_at          │
-└─────────────────────┘
+│ short_answer        │◄─────────────────────────────────────┘  │
+│ front_image (FK)    │──┐                                      │
+│ back_image (FK)     │──┤                                      │
+│ tags (M2M)          │  │                                      │
+│ version_group (UUID)│  │                                      │
+│ version_number      │  │   ┌─────────────────────┐            │
+│ is_live             │  │   │      CardImage      │            │
+│ is_active           │  └──►├─────────────────────┤            │
+│ created_by (FK)     │◄─────│ id (PK)             │            │
+│ created_at          │ 1:M  │ version_group (UUID)│            │
+│ updated_at          │ card │ card_id (FK, prov.) │            │
+└─────────────────────┘      │ status              │            │
+          ▲                  │ image               │            │
+          └──────────────────│ prompt / model      │            │
+                     M:M     └─────────────────────┘            │
+                     favorite_cards ◄───────────────────────────┘
           │
           │ 1:M
           ▼
@@ -158,8 +162,8 @@ def create_user_profile(sender, instance, created, **kwargs):
 | phrase | CharField(500) | | required | Sanskrit phrase |
 | definition | TextField | | required | Full definition |
 | short_answer | TextField | blank | '' | Brief summary |
-| front_image | ImageField | blank, null | None | Front image |
-| back_image | ImageField | blank, null | None | Back image |
+| front_image | ForeignKey(CardImage) | SET_NULL, null | NULL | The media shown on this version's front. A pointer, not a file. SET_NULL so removing an image never removes the card. |
+| back_image | ForeignKey(CardImage) | SET_NULL, null | NULL | The media shown on this version's back |
 | tags | ManyToManyField | blank | [] | Associated tags |
 | version_group | UUIDField | | uuid4() | Groups all versions |
 | version_number | PositiveIntegerField | | 1 | Version sequence |
@@ -169,7 +173,12 @@ def create_user_profile(sender, instance, created, **kwargs):
 | created_at | DateTimeField | auto_now_add | auto | Creation time |
 | updated_at | DateTimeField | auto_now | auto | Update time |
 
-**Image Upload Path:** `flashcard_images/`
+**Image Upload Path:** none. The card stores no files -- `front_image` and `back_image` are
+foreign keys into `CardImage`, whose own `upload_to` is `card_images/generated/`. An upload
+creates a row there like any generation.
+
+`flashcard_images/` is legacy: nothing writes to it now, and it stays in the scorched-earth
+sweep only so files left by the old schema can still be cleared.
 
 **Indexes:**
 ```python
@@ -240,6 +249,11 @@ def revert_to_this_version(self, reverted_by: User) -> 'Flashcard':
     )
 ```
 
+**Note:** these image lines are unchanged from when `front_image` was an `ImageField`, and
+still correct. The value passed is now a `CardImage` instance rather than a path, but it is
+copied the same way -- which is what makes each version record the image it was showing at
+the time, with no special handling.
+
 ---
 
 ### Tag Model
@@ -297,7 +311,12 @@ class Meta:
 
 ### CardImage Model
 
-`flashcards_cardimage` -- one AI generation, with the prompt that produced it.
+`flashcards_cardimage` -- the media table. One row per image, however it came to exist.
+
+A row is either something the bot generated, carrying the prompt, model and cost that
+produced it, or something a person uploaded, where those are blank and the status is
+`uploaded`. Nothing else separates them, and nothing downstream should care: a card points
+at a row, and that is the whole relationship.
 
 Append-only: regenerating inserts a new row and never edits or deletes an old one, so every
 prompt and image ever tried stays inspectable.
@@ -307,16 +326,13 @@ prompt and image ever tried stays inspectable.
 | id | BigAutoField | PK | auto | |
 | version_group | UUIDField | index | | The card family. Keyed here rather than on a Flashcard id because editing a card creates a new row, which would orphan an id-keyed image. |
 | card | ForeignKey(Flashcard) | SET_NULL, null | NULL | The card version whose text seeded the prompt. Provenance only. |
-| status | CharField(12) | index | queued | queued, generating, succeeded, failed |
-| image | ImageField | null | NULL | `card_images/generated/` |
-| prompt | TextField | | | Full prompt sent, look and feel included |
+| status | CharField(12) | index | queued | queued, generating, succeeded, failed, uploaded |
+| image | ImageField | null | NULL | `card_images/generated/`. Null for queued and failed rows, which have no file |
+| prompt | TextField | blank | '' | Full prompt sent, look and feel included. Blank for uploads |
 | prompt_seed | TextField | blank | '' | Card-derived portion, before style guidance |
 | look_and_feel | TextField | blank | '' | Style actually used, snapshotted at generation time |
 | look_and_feel_override | TextField | blank | '' | Per-image style. When set, replaces the global one. |
-| model | CharField(200) | | | OpenRouter model slug |
-| is_accepted | BooleanField | index | False | Only an accepted image is visible outside the admin area |
-| accepted_at | DateTimeField | null | NULL | |
-| accepted_by | ForeignKey(User) | SET_NULL, null | NULL | |
+| model | CharField(200) | blank | '' | OpenRouter model slug. Blank for uploads |
 | attempts | PositiveSmallIntegerField | | 0 | Incremented at claim time; capped by `max_attempts` |
 | error | TextField | blank | '' | Last provider error |
 | cost_usd | DecimalField(8,4) | null | NULL | Cost reported by OpenRouter |
@@ -326,12 +342,17 @@ prompt and image ever tried stays inspectable.
 | created_at / updated_at | DateTimeField | auto | auto | |
 | started_at / finished_at | DateTimeField | null | NULL | Generation window |
 
-**Indexes:** `(version_group, -created_at)`, `(version_group, is_accepted)`, `(status, created_at)`
+**Indexes:** `(version_group, -created_at)`, `(status, created_at)`
 
-**Note on single-accepted:** there is deliberately no partial `UniqueConstraint` on
-`(version_group, is_accepted)`. MySQL has no partial indexes, so Django would skip it
-silently and the guarantee would hold in tests (SQLite) but not in production.
-`CardImageService.accept()` enforces it inside a transaction instead.
+**Note on single-accepted:** there is no `is_accepted` column. Acceptance is not a property
+of an image, it is which image a card points at -- so it lives on `Flashcard.front_image`
+and cannot disagree with itself.
+
+This also removed a workaround. The rule "one accepted image per card family" could not be a
+database constraint, because MySQL has no partial indexes and Django would have skipped a
+conditional `UniqueConstraint` silently, leaving the guarantee true in SQLite tests and false
+in production. It was enforced by hand in a transaction instead. A row holds one foreign key,
+so the invariant is now structural and that machinery is gone.
 
 ---
 
