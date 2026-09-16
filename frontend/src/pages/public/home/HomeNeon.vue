@@ -19,7 +19,7 @@
               {{ dailyCard.phrase }}
             </div>
 
-            <div v-if="dailyCard.short_answer" class="answer-callout q-mt-md text-left">
+            <div v-if="dailyCard.short_answer" class="answer-callout q-mt-md">
               <p class="text-body1 q-mb-none">{{ dailyCard.short_answer }}</p>
             </div>
 

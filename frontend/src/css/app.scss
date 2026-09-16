@@ -34,7 +34,9 @@
 // is Studio, and that reads as a bug rather than a default.
 //
 //   --page-bg      full background shorthand for <body> (may be a gradient)
-//   --surface      card / panel background (may be a gradient)
+//   --surface      card / panel background (may be a gradient, may be translucent)
+//   --surface-solid opaque version of the above, for anything that FLOATS over
+//                  the page: dialogs and menus. Never translucent, in any theme
 //   --surface-2    hover + secondary surface
 //   --ink          primary text
 //   --ink-soft     secondary text
@@ -58,6 +60,7 @@
 :root[data-theme='studio'] {
   --page-bg: #FAF9F6;
   --surface: #FFFFFF;
+  --surface-solid: #FFFFFF;
   --surface-2: #F2EDE5;
   --ink: #2E2A26;
   --ink-soft: #6B6259;
@@ -120,8 +123,21 @@
 // One warm accent, a single static gradient, and no keyframes anywhere.
 :root[data-theme='dusk'] {
   --page-bg: linear-gradient(170deg, #1B1F2A 0%, #14161C 55%, #0F1116 100%);
-  --surface: rgba(255, 255, 255, 0.045);
-  --surface-2: rgba(255, 255, 255, 0.07);
+  // Cards and modals were a 4.5% white film, so the page gradient read straight
+  // through them. Now a dark tint at 55%: "more opaque" on a dark theme has to
+  // mean more solid, not lighter - raising the white alpha instead would have
+  // turned every card pale grey.
+  //
+  // 55% rather than the literal 1.5x of 0.045, which would be 0.0675 and
+  // invisible. Read as +50 percentage points it actually stops the leak, and
+  // still lets a whisper of the sunbeams through behind a card, which is the
+  // point of having them.
+  --surface: rgba(30, 35, 46, 0.55);
+  // Fully opaque, for dialogs and menus. A translucent card on the page is the
+  // point; a translucent dialog is just hard to read, because the text it is
+  // covering shows straight through the text you are trying to read.
+  --surface-solid: #1F242F;
+  --surface-2: rgba(48, 55, 70, 0.62);
   --ink: #F2F0EC;
   --ink-soft: rgba(242, 240, 236, 0.66);
   --line: rgba(255, 255, 255, 0.10);
@@ -184,6 +200,7 @@
 :root[data-theme='clay'] {
   --page-bg: #F2EAE0;
   --surface: #FFFDF9;
+  --surface-solid: #FFFDF9;
   --surface-2: rgba(193, 102, 63, 0.08);
   --ink: #3A322B;
   --ink-soft: #7A6E63;
@@ -251,6 +268,9 @@
     radial-gradient(circle at 40% 20%, rgba(0, 217, 255, 0.2) 0%, transparent 50%),
     linear-gradient(135deg, #1A0B2E 0%, #4A148C 50%, #311B92 100%);
   --surface: linear-gradient(135deg, rgba(26, 11, 46, 0.95) 0%, rgba(74, 20, 140, 0.9) 100%);
+  // The same two colours at full alpha, so dialogs keep Neon's character
+  // without the page showing through them.
+  --surface-solid: linear-gradient(135deg, #1A0B2E 0%, #4A148C 100%);
   --surface-2: rgba(255, 107, 53, 0.2);
   --ink: #FFFFFF;
   --ink-soft: rgba(255, 255, 255, 0.75);
@@ -377,6 +397,29 @@ h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
   }
 }
 
+// ---- Floating layers are never translucent --------------------------------
+// A card sitting on the page may be see-through: in Dusk and Neon that is what
+// lets the sunbeams register behind content. A dialog may not. It covers text
+// it is not related to, and any transparency puts two competing paragraphs in
+// the same place - which is the bug this fixes.
+//
+// There were no q-dialog rules at all before, so every dialog in the app simply
+// inherited .q-card and its translucent --surface. One rule covers all nine
+// pages that open one, because none of them set a background of their own.
+//
+// .q-dialog .q-card is (0,2,0) against .q-card's (0,1,0), so it wins without
+// needing !important.
+.q-dialog .q-card {
+  background: var(--surface-solid);
+  border: var(--card-border);
+}
+
+// Dim the page harder behind a dialog. Quasar's default backdrop is light
+// enough that a busy page still reads through it.
+.q-dialog__backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
 .q-card__section { padding: 1.5rem; }
 
 // ---- Buttons --------------------------------------------------------------
@@ -485,7 +528,8 @@ h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
 .tag-filter-dropdown.q-menu,
 .admin-dropdown-menu.q-menu,
 .user-dropdown-menu {
-  background: var(--surface);
+  // Solid for the same reason dialogs are: a menu floats over unrelated text.
+  background: var(--surface-solid);
   color: var(--ink);
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
@@ -503,9 +547,12 @@ h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
 // was inlined in two templates.
 .answer-callout {
   background: var(--accent-soft);
-  border-left: 2px solid var(--brand);
-  border-radius: 0 var(--radius-chip) var(--radius-chip) 0;
+  // No left bar. It read as a blockquote rule, which implies a quotation, and a
+  // short answer is not one - it sat oddly in all four themes. The radius goes
+  // uniform with it: the square left corners only existed to meet the bar.
+  border-radius: var(--radius-chip);
   padding: 1rem 1.25rem;
+  text-align: center;
 }
 
 // ---- Accessibility --------------------------------------------------------
