@@ -107,6 +107,12 @@
   --scroll-thumb: rgba(139, 115, 85, 0.45);
   --scroll-thumb-hover: rgba(139, 115, 85, 0.7);
   --scroll-size: 10px;
+
+  // Sunbeams. On a light ground the rays have to be darker than the page to
+  // register at all, so these read as warm shafts of shade rather than light.
+  --ray-a: rgba(139, 115, 85, 0.10);
+  --ray-b: rgba(193, 102, 63, 0.07);
+  --ray-opacity: 0.55;
 }
 
 // ---- Dusk: dark, luminous, deliberately still -----------------------------
@@ -164,6 +170,12 @@
   --scroll-thumb: rgba(255, 255, 255, 0.16);
   --scroll-thumb-hover: rgba(232, 169, 75, 0.45);
   --scroll-size: 10px;
+
+  // Sunbeams. The one theme where light rays on a dark ground read literally,
+  // so it carries the strongest setting of the four.
+  --ray-a: rgba(232, 169, 75, 0.16);
+  --ray-b: rgba(242, 240, 236, 0.09);
+  --ray-opacity: 0.90;
 }
 
 // ---- Clay: warm, organic, tactile -----------------------------------------
@@ -221,6 +233,12 @@
   --scroll-thumb: rgba(193, 102, 63, 0.35);
   --scroll-thumb-hover: rgba(193, 102, 63, 0.6);
   --scroll-size: 11px;
+
+  // Sunbeams. Terracotta and sage on the sand ground - late afternoon light
+  // through a window rather than anything celestial, which suits this theme.
+  --ray-a: rgba(193, 102, 63, 0.09);
+  --ray-b: rgba(95, 122, 97, 0.07);
+  --ray-opacity: 0.60;
 }
 
 // ---- Neon: the original psychedelic design, preserved ---------------------
@@ -288,6 +306,12 @@
   --scroll-thumb: linear-gradient(180deg, #FF6B35 0%, #9B4DCA 50%, #00D9FF 100%);
   --scroll-thumb-hover: linear-gradient(180deg, #00D9FF 0%, #9B4DCA 50%, #FF6B35 100%);
   --scroll-size: 12px;
+
+  // Sunbeams. Gold and cyan, but held down: this theme already runs five
+  // animations, and the rays have to add depth rather than more noise.
+  --ray-a: rgba(255, 215, 0, 0.11);
+  --ray-b: rgba(0, 217, 255, 0.09);
+  --ray-opacity: 0.50;
 }
 
 // ===========================================================================
@@ -774,6 +798,107 @@ h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
   75% { transform: translateY(-5px) rotate(-2deg); }
 }
 
+// ===========================================================================
+// SUNBEAMS - glowing rays radiating from the centre of the viewport
+// ===========================================================================
+// Two counter-rotating fans of soft rays. Their angular periods are close but
+// deliberately unequal - 7deg against 7.6deg - so where they overlap they beat
+// against each other into a slow moire shimmer that drifts around the centre.
+// That interference IS the effect: a single fan is just a starburst, and it is
+// the beat between two that gives the sense of energy moving.
+//
+// repeating-conic-gradient is the one gradient that radiates from a point.
+// The angular colour stops are soft rather than hard edged, so each ray reads
+// as a beam of light instead of a wedge of paint - the glow is in the gradient
+// itself, which costs nothing, rather than in a filter: blur() over a
+// full-viewport layer, which would cost a great deal.
+//
+// A radial mask does two jobs: it keeps the rays off the exact centre, where
+// every wedge converges into an aliased dot, and fades them out before the far
+// corners - so the energy reads as coming from the middle and dissipating
+// outward rather than as a wheel filling the screen.
+//
+// The element lives in App.vue rather than on a pseudo-element: body::before
+// and ::after are Neon's gradient wash and mandala, and html's pseudo-elements
+// paint behind body, whose opaque --page-bg would bury them.
+
+.sunbeams {
+  position: fixed;
+  // Explicit offsets rather than `inset`: the build targets safari14, and
+  // `inset` only shipped in Safari 14.1.
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: var(--ray-opacity);
+  animation: rayBreath 17s ease-in-out infinite alternate;
+
+  // Oversized so rotation never drags an empty corner into view: a square
+  // rotated 45 degrees needs about 1.42x its own width to stay covered.
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    left: -30%;
+    width: 160%;
+    height: 160%;
+    transform-origin: center center;
+    will-change: transform;
+
+    // Off the convergence point, out before the corners. -webkit- first for
+    // Safari, which still wants the prefix at this target.
+    -webkit-mask-image: radial-gradient(circle at 50% 50%,
+      transparent 0%, #000 34%, #000 58%, transparent 82%);
+    mask-image: radial-gradient(circle at 50% 50%,
+      transparent 0%, #000 34%, #000 58%, transparent 82%);
+  }
+
+  &::before {
+    background: repeating-conic-gradient(from 0deg at 50% 50%,
+      transparent 0deg,
+      var(--ray-a) 1.1deg,
+      transparent 2.4deg,
+      transparent 7deg);
+    animation: rayTurnA 120s linear infinite;
+  }
+
+  // Counter-rotating, and a slightly wider period. The mismatch is small on
+  // purpose: too large and the two fans simply read as two fans.
+  &::after {
+    background: repeating-conic-gradient(from 0deg at 50% 50%,
+      transparent 0deg,
+      var(--ray-b) 0.9deg,
+      transparent 2.2deg,
+      transparent 7.6deg);
+    animation: rayTurnB 150s linear infinite;
+  }
+}
+
+// The gentle scale is what makes this read as radiating outward rather than
+// merely spinning. Rotation alone looks like a wheel.
+@keyframes rayTurnA {
+  from { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.12); }
+  to   { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes rayTurnB {
+  from { transform: rotate(360deg) scale(1.1); }
+  50%  { transform: rotate(180deg) scale(1); }
+  to   { transform: rotate(0deg) scale(1.1); }
+}
+
+// A long, shallow breath across the whole field, out of step with both turns
+// so the three never settle into an obvious rhythm.
+@keyframes rayBreath {
+  from { opacity: calc(var(--ray-opacity) * 0.6); }
+  to   { opacity: var(--ray-opacity); }
+}
+
 // Neon runs five simultaneous animations. Honour the OS-level request to stop.
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -782,4 +907,21 @@ h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  // The rays survive freezing better than the old star field did: the moire is
+  // spatial, produced by the two mismatched angular periods, so it is still
+  // there when nothing moves. Pin them at a fixed angle rather than wherever
+  // the timeline happens to stop, and offset the second fan so the beat is
+  // visible in the still image.
+  .sunbeams {
+    opacity: var(--ray-opacity);
+  }
+
+  .sunbeams::before,
+  .sunbeams::after {
+    animation: none !important;
+  }
+
+  .sunbeams::before { transform: rotate(0deg) scale(1.05); }
+  .sunbeams::after { transform: rotate(3deg) scale(1.05); }
 }
