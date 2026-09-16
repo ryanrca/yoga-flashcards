@@ -16,45 +16,48 @@ This document provides the complete database schema specification for regenerati
 │ password            │
 │ first_name          │
 │ last_name           │
-│ role                │──────────────────────────────────────┐
-│ is_active           │                                      │
-│ is_staff            │     ┌─────────────────────┐          │
-│ is_superuser        │     │    UserProfile      │          │
-│ daily_email_enabled │     ├─────────────────────┤          │
-│ email_verified      │     │ id (PK)             │          │
-│ email_verif_token   │──1:1│ user_id (FK,unique) │          │
-│ date_joined         │     │ bio                 │          │
-│ last_login          │     │ avatar              │          │
-│ created_at          │     │ favorite_cards (M2M)│──────────┼──┐
-│ updated_at          │     └─────────────────────┘          │  │
-└─────────────────────┘                                      │  │
-          │                                                  │  │
-          │ 1:M (created_by)                                 │  │
-          ▼                                                  │  │
-┌─────────────────────┐     ┌─────────────────────┐          │  │
-│     Flashcard       │     │        Tag          │          │  │
-├─────────────────────┤     ├─────────────────────┤          │  │
-│ id (PK)             │◄────│ id (PK)             │          │  │
-│ title               │ M:M │ name (unique)       │          │  │
-│ phrase              │     │ description         │          │  │
-│ definition          │     └─────────────────────┘          │  │
-│ short_answer        │◄─────────────────────────────────────┘  │
-│ front_image (FK)    │──┐                                      │
-│ back_image (FK)     │──┤                                      │
-│ tags (M2M)          │  │                                      │
-│ version_group (UUID)│  │                                      │
-│ version_number      │  │   ┌─────────────────────┐            │
-│ is_live             │  │   │      CardImage      │            │
-│ is_active           │  └──►├─────────────────────┤            │
-│ created_by (FK)     │◄─────│ id (PK)             │            │
-│ created_at          │ 1:M  │ version_group (UUID)│            │
-│ updated_at          │ card │ card_id (FK, prov.) │            │
-└─────────────────────┘      │ status              │            │
-          ▲                  │ image               │            │
-          └──────────────────│ prompt / model      │            │
-                     M:M     └─────────────────────┘            │
-                     favorite_cards ◄───────────────────────────┘
-          │
+│ role                │
+│ is_active           │     ┌─────────────────────┐
+│ is_staff            │     │    UserProfile      │
+│ is_superuser        │     ├─────────────────────┤
+│ daily_email_enabled │     │ id (PK)             │
+│ email_verified      │──1:1│ user_id (FK,unique) │
+│ email_verif_token   │     │ bio                 │
+│ date_joined         │     │ avatar              │
+│ last_login          │     └─────────────────────┘
+│ created_at          │
+│ updated_at          │     ┌─────────────────────┐
+└─────────────────────┘     │      Favorite       │
+          │           ──1:M─├─────────────────────┤
+          │                 │ id (PK)             │
+          │                 │ user_id (FK)        │
+          │                 │ version_group (UUID)│
+          │ 1:M             │ created_at          │
+          │ (created_by)    └─────────────────────┘
+          ▼
+┌─────────────────────┐     ┌─────────────────────┐
+│     Flashcard       │     │        Tag          │
+├─────────────────────┤     ├─────────────────────┤
+│ id (PK)             │◄────│ id (PK)             │
+│ title               │ M:M │ name (unique)       │
+│ phrase              │     │ description         │
+│ definition          │     └─────────────────────┘
+│ short_answer        │
+│ favorite_count      │
+│ front_image (FK)    │──┐
+│ back_image (FK)     │──┤
+│ tags (M2M)          │  │
+│ version_group (UUID)│  │
+│ version_number      │  │   ┌─────────────────────┐
+│ is_live             │  │   │      CardImage      │
+│ is_active           │  └──►├─────────────────────┤
+│ created_by (FK)     │◄─────│ id (PK)             │
+│ created_at          │ 1:M  │ version_group (UUID)│
+│ updated_at          │ card │ card_id (FK, prov.) │
+└─────────────────────┘      │ status              │
+          │                  │ image               │
+          │                  │ prompt / model      │
+          │                  └─────────────────────┘
           │ 1:M
           ▼
 ┌─────────────────────┐     ┌─────────────────────┐
@@ -135,11 +138,13 @@ def can_edit_users(self) -> bool:
 | user_id | OneToOneField | FK(User), unique | required | Reference to User |
 | bio | TextField | blank | '' | User biography |
 | avatar | ImageField | blank, null | None | Profile picture |
-| favorite_cards | ManyToManyField | blank | [] | Favorited flashcards |
 
 **Relationships:**
 - `user`: OneToOne to User (CASCADE on delete)
-- `favorite_cards`: ManyToMany to Flashcard
+
+Favourites are **not** stored here. They live in `flashcards_favorite`, keyed on a
+card's `version_group` rather than a row id, so that editing a card cannot orphan
+them. See the Favorite table below.
 
 **Signal:** Create UserProfile automatically when User is created:
 ```python
@@ -429,13 +434,35 @@ a drifted id would leave visitors on a theme the stylesheet has no block for.
 | flashcard_id | ForeignKey | Reference to Flashcard |
 | tag_id | ForeignKey | Reference to Tag |
 
-### users_userprofile_favorite_cards
+### flashcards_favorite
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | AutoField | Primary key |
-| userprofile_id | ForeignKey | Reference to UserProfile |
-| flashcard_id | ForeignKey | Reference to Flashcard |
+One row per user per favourited card family. Replaced the
+`users_userprofile_favorite_cards` join table, which was never read or written.
+
+**Table:** `flashcards_favorite`
+
+| Field | Type | Constraints | Default | Description |
+|-------|------|-------------|---------|-------------|
+| id | BigAutoField | PK | auto | Primary key |
+| user_id | ForeignKey | FK(User), CASCADE | required | Who saved it |
+| version_group | UUIDField | indexed | required | The card family saved |
+| created_at | DateTimeField | auto_now_add | now | When it was saved |
+
+**Constraints:**
+- `unique_together: (user, version_group)` -- the row's existence *is* the
+  favourite, so double-favouriting is impossible in the database rather than by
+  convention.
+- Index on `(user, -created_at)` for the favourites list.
+
+**Why `version_group` and not `card_id`:** editing a card creates a new Flashcard
+row and retires the old one, so an id-keyed favourite would silently vanish the
+moment a curator fixed a typo. Keying on the family also means the favourites
+list always resolves to whichever version is currently live.
+
+**Related field:** `flashcards_flashcard.favorite_count` is a lifetime tally of
+how many times a card has been favourited. It is incremented on favourite and
+deliberately never decremented, so it is not a count of current holders; it is
+carried forward when a new version is created.
 
 ---
 
