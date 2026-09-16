@@ -107,6 +107,12 @@
   --scroll-thumb: rgba(139, 115, 85, 0.45);
   --scroll-thumb-hover: rgba(139, 115, 85, 0.7);
   --scroll-size: 10px;
+
+  // Star field. On a light ground the motes have to be darker than the page to
+  // register at all, so these are warm shadows rather than lights.
+  --star-a: rgba(139, 115, 85, 0.30);
+  --star-b: rgba(193, 102, 63, 0.20);
+  --star-opacity: 0.45;
 }
 
 // ---- Dusk: dark, luminous, deliberately still -----------------------------
@@ -164,6 +170,12 @@
   --scroll-thumb: rgba(255, 255, 255, 0.16);
   --scroll-thumb-hover: rgba(232, 169, 75, 0.45);
   --scroll-size: 10px;
+
+  // Star field. The one theme where this reads literally as a night sky, so it
+  // carries the strongest setting of the four.
+  --star-a: rgba(232, 169, 75, 0.55);
+  --star-b: rgba(242, 240, 236, 0.42);
+  --star-opacity: 0.85;
 }
 
 // ---- Clay: warm, organic, tactile -----------------------------------------
@@ -221,6 +233,12 @@
   --scroll-thumb: rgba(193, 102, 63, 0.35);
   --scroll-thumb-hover: rgba(193, 102, 63, 0.6);
   --scroll-size: 11px;
+
+  // Star field. Terracotta and sage motes on the sand ground - closer to dust
+  // in a shaft of light than to stars, which suits this theme better.
+  --star-a: rgba(193, 102, 63, 0.24);
+  --star-b: rgba(95, 122, 97, 0.18);
+  --star-opacity: 0.50;
 }
 
 // ---- Neon: the original psychedelic design, preserved ---------------------
@@ -288,6 +306,12 @@
   --scroll-thumb: linear-gradient(180deg, #FF6B35 0%, #9B4DCA 50%, #00D9FF 100%);
   --scroll-thumb-hover: linear-gradient(180deg, #00D9FF 0%, #9B4DCA 50%, #FF6B35 100%);
   --scroll-size: 12px;
+
+  // Star field. Gold and cyan, but held down: this theme already runs five
+  // animations, and the drift has to add depth rather than more noise.
+  --star-a: rgba(255, 215, 0, 0.50);
+  --star-b: rgba(0, 217, 255, 0.38);
+  --star-opacity: 0.60;
 }
 
 // ===========================================================================
@@ -774,6 +798,91 @@ h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
   75% { transform: translateY(-5px) rotate(-2deg); }
 }
 
+// ===========================================================================
+// STAR FIELD - a slow drift outward from the centre of the viewport
+// ===========================================================================
+// Deliberately near the threshold of notice: faint, slow and themed. Anything
+// you can consciously sit and watch is already too strong for this.
+//
+// The sense of emission comes from transform-origin: center plus a scale that
+// starts just under 1 and ends near 2, with opacity fading in and out inside
+// that span - so motes appear near the middle and dissolve before the tiling
+// becomes legible at the edges.
+//
+// Two layers at different periods, with an offset delay, give parallax depth
+// and stop the whole field pulsing in unison.
+//
+// The element lives in App.vue rather than on a pseudo-element: body::before
+// and ::after are Neon's gradient wash and mandala, and html's pseudo-elements
+// paint behind body, whose opaque --page-bg would bury them.
+
+.star-field {
+  position: fixed;
+  // Explicit offsets rather than `inset`: the build targets safari14, and
+  // `inset` only shipped in Safari 14.1.
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: var(--star-opacity);
+  animation: starBreath 13s ease-in-out infinite alternate;
+
+  // Oversized and offset so scaling never exposes an edge. 160% at the
+  // smallest scale still covers the viewport.
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    left: -30%;
+    width: 160%;
+    height: 160%;
+    background-repeat: repeat;
+    transform-origin: center center;
+    will-change: transform, opacity;
+  }
+
+  // Near layer: tighter tiles, quicker drift.
+  &::before {
+    background-image:
+      radial-gradient(circle at 20% 30%, var(--star-a) 0 1.2px, transparent 1.8px),
+      radial-gradient(circle at 72% 58%, var(--star-b) 0 1px, transparent 1.6px),
+      radial-gradient(circle at 45% 84%, var(--star-a) 0 0.9px, transparent 1.4px);
+    // Three mutually prime-ish tile sizes, so the combined pattern takes a very
+    // long time to visibly repeat.
+    background-size: 170px 170px, 230px 230px, 290px 290px;
+    animation: starDrift 26s linear infinite;
+  }
+
+  // Far layer: wider tiles, slower, and started mid-cycle so the two layers
+  // never reach full opacity at the same moment.
+  &::after {
+    background-image:
+      radial-gradient(circle at 62% 22%, var(--star-b) 0 1.1px, transparent 1.7px),
+      radial-gradient(circle at 28% 66%, var(--star-a) 0 0.8px, transparent 1.3px);
+    background-size: 210px 210px, 330px 330px;
+    animation: starDrift 41s linear infinite;
+    animation-delay: -21s;
+  }
+}
+
+@keyframes starDrift {
+  0%   { transform: scale(0.85); opacity: 0; }
+  20%  { opacity: 1; }
+  75%  { opacity: 1; }
+  100% { transform: scale(1.85); opacity: 0; }
+}
+
+// A long, shallow breath across the whole field, out of step with the drift so
+// the two never settle into an obvious rhythm.
+@keyframes starBreath {
+  from { opacity: calc(var(--star-opacity) * 0.65); }
+  to   { opacity: var(--star-opacity); }
+}
+
 // Neon runs five simultaneous animations. Honour the OS-level request to stop.
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -781,5 +890,19 @@ h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  // The rule above lands every animation on its final keyframe, which for the
+  // star layers is opacity: 0 - so a motion-sensitive visitor would get no
+  // star field at all rather than a calm one. Give them a still field instead.
+  .star-field {
+    opacity: var(--star-opacity);
+  }
+
+  .star-field::before,
+  .star-field::after {
+    animation: none !important;
+    transform: scale(1.2);
+    opacity: 0.7;
   }
 }
