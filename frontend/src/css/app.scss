@@ -547,9 +547,12 @@ h3, .text-h3 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); }
 // was inlined in two templates.
 .answer-callout {
   background: var(--accent-soft);
-  border-left: 2px solid var(--brand);
-  border-radius: 0 var(--radius-chip) var(--radius-chip) 0;
+  // No left bar. It read as a blockquote rule, which implies a quotation, and a
+  // short answer is not one - it sat oddly in all four themes. The radius goes
+  // uniform with it: the square left corners only existed to meet the bar.
+  border-radius: var(--radius-chip);
   padding: 1rem 1.25rem;
+  text-align: center;
 }
 
 // ---- Accessibility --------------------------------------------------------

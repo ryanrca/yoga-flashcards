@@ -62,7 +62,10 @@
               <!-- Short Answer (if available) -->
               <div v-if="dailyCard.short_answer" class="answer-callout q-mb-lg">
                 <div class="text-subtitle1 text-weight-medium text-primary q-mb-sm">Short Answer:</div>
-                <div class="text-body1" style="text-align: justify;">{{ dailyCard.short_answer }}</div>
+                <!-- Alignment comes from .answer-callout now; an inline
+                     text-align here would override it. The Full Definition
+                     below deliberately stays justified. -->
+                <div class="text-body1">{{ dailyCard.short_answer }}</div>
               </div>
 
               <!-- Full Definition -->
