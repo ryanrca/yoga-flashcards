@@ -90,14 +90,23 @@
 
               <q-card-section v-else class="card-header-section">
                 <div class="text-h6 text-primary ellipsis">{{ card.title }}</div>
-                <div v-if="card.phrase" class="text-subtitle2 text-italic text-grey-7 ellipsis">
+                <div v-if="card.phrase" class="text-subtitle2 text-italic text-grey-7 ellipsis card-phrase">
                   {{ card.phrase }}
                 </div>
               </q-card-section>
 
-              <q-card-section class="card-definition-section">
-                <div class="text-body2 card-definition-text">
-                  {{ card.definition }}
+              <!--
+                The short answer, not the definition. Definitions run to a median
+                of 239 characters, so two clamped lines of one told you almost
+                nothing; short answers median 49 and fit whole.
+
+                Falls back to the definition because short_answer is optional on
+                the model and curator-editable - every seeded card has one today,
+                but a card created without one would otherwise render blank.
+              -->
+              <q-card-section class="card-summary-section">
+                <div class="text-body2 card-summary-text">
+                  {{ card.short_answer || card.definition }}
                 </div>
               </q-card-section>
 
@@ -192,11 +201,20 @@
               </div>
             </div>
 
-          <div class="text-body1 definition-text">{{ selectedCard.definition }}</div>
-
+          <!--
+            Short answer above the full definition: it is the summary you want
+            first, and it matches the order already used on /daily. The
+            definition gains a heading to match, since it was previously the
+            only unlabelled block on the card.
+          -->
           <div v-if="selectedCard.short_answer" class="q-mt-md">
             <div class="text-subtitle1 text-weight-medium text-primary">Short Answer:</div>
             <div class="text-body2 q-mt-xs">{{ selectedCard.short_answer }}</div>
+          </div>
+
+          <div class="q-mt-md">
+            <div class="text-subtitle1 text-weight-medium text-primary">Full Definition:</div>
+            <div class="text-body1 definition-text q-mt-xs">{{ selectedCard.definition }}</div>
           </div>
 
           <div v-if="selectedCard.back_image" class="text-center q-mt-md">
@@ -388,29 +406,45 @@ onMounted(() => {
   position: relative;
 }
 
+/* Raised from 250px to give the header the room the Devanagari needs. */
 .card-fixed-height {
-  height: 250px;
+  height: 272px;
   display: flex;
   flex-direction: column;
 }
 
+/*
+  Was a hard 60px, which is why the Sanskrit was cut off along the bottom: a
+  text-h6 title and a text-subtitle2 phrase plus the section's own padding need
+  roughly 83px, so the phrase was clipped vertically. Not a horizontal problem -
+  the longest phrase in the deck is 13 characters, well inside the ellipsis.
+*/
 .card-header-section {
-  min-height: 60px;
-  max-height: 60px;
+  min-height: 78px;
+  max-height: 78px;
   overflow: hidden;
 }
 
-.card-definition-section {
+/*
+  Devanagari carries vowel marks above the headstroke and below the baseline, so
+  it needs more leading than the Latin default to sit inside its line box.
+*/
+.card-phrase {
+  line-height: 1.9;
+}
+
+/* Renamed from card-definition-*: this shows the short answer now. */
+.card-summary-section {
   flex: 1;
-  min-height: 60px;
-  max-height: 60px;
+  min-height: 64px;
+  max-height: 64px;
   overflow: hidden;
   padding-top: 8px !important;
 }
 
-.card-definition-text {
+.card-summary-text {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
