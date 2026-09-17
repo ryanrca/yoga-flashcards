@@ -303,7 +303,7 @@ If the tag does not yet exist, it will be created. If the tag already exists, it
 - **Signup** asks users for password twice. After successful signup, users are automatically logged in and redirected to the home page.
 - **Flashcard of the day** Displays today's flashcard (all visitors)
 - **Real-time search** and filtering when logged in
-- **User favorites** *(planned, not implemented)* - The `/favorites` page and the star buttons are placeholders; there is no favorites API yet, though `UserProfile.favorite_cards` exists on the model. Card sharing (Web Share API / copy to clipboard) does work.
+- **User favorites** - The heart on any card saves it; clicking it again removes it. `/favorites` is the same card grid filtered to your saved cards, so search, tag filters and pagination work there too. A favourite is tied to the card family rather than one revision, so editing a card never loses it and you are always shown the current version. Card sharing (Web Share API / copy to clipboard) also works.
 - **Edit user** when logged in - name, email, password and the daily card email preference, plus account deletion.
 - **Session-based authentication**
 
@@ -431,7 +431,6 @@ Known gaps:
 
 ## TODO
 CODE:
-- Favorites API and wire up the `/favorites` page
 - Google / Facebook OAuth
 - Default card placeholder image
 - Soft delete for cards

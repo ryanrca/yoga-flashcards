@@ -167,8 +167,7 @@ Get current user's profile.
     "last_name": "Doe"
   },
   "bio": "Yoga enthusiast",
-  "avatar": "/media/avatars/user1.jpg",
-  "favorite_cards": [1, 3, 5]
+  "avatar": "/media/avatars/user1.jpg"
 }
 ```
 
@@ -281,9 +280,18 @@ List all live, active flashcards with pagination.
 |-----------|------|-------------|
 | `search` | string | Search across title, phrase, definition, tags |
 | `tags` | string | Comma-separated tag IDs or names |
+| `favorites` | boolean | `true` narrows the list to the caller's own favourites |
 | `page` | integer | Page number (default: 1) |
 
+`favorites=true` narrows this same endpoint rather than being a separate one, so
+`search`, `tags` and `page` all compose with it. It is what backs the `/favorites`
+page. Because the list is always filtered to live cards, a favourite resolves to
+whichever version is current -- save v1, and after a curator publishes v4 you are
+shown v4.
+
 **Example:** `GET /cards/?search=yoga&tags=Yamas,Sanskrit&page=1`
+
+**Example:** `GET /cards/?favorites=true`
 
 **Response (200 OK):**
 ```json
@@ -300,6 +308,8 @@ List all live, active flashcards with pagination.
       "short_answer": "Non-violence",
       "front_image": "http://localhost:8000/media/flashcard_images/ahimsa_front.jpg",
       "back_image": null,
+      "favorite_count": 12,
+      "is_favorited": true,
       "tags": [
         {"id": 1, "name": "Yamas", "description": "Ethical restraints"}
       ],
@@ -388,6 +398,42 @@ Get single card details.
 
 **Errors:**
 - `404` - Card not found
+
+---
+
+### POST /cards/{id}/favorite/
+
+Toggle this card in the caller's favourites. Posting a second time removes it --
+there is no separate `DELETE`.
+
+**Permission:** IsAuthenticated -- any signed-in user, not just curators.
+
+**Request Body:** none
+
+**Response (200 OK):**
+```json
+{
+  "favorited": true,
+  "favorite_count": 13
+}
+```
+
+`favorited` is the state *after* the call, so the client can set the heart from it
+directly.
+
+`favorite_count` is a **lifetime tally**: it is incremented when a card is
+favourited and deliberately never decremented. It is therefore not a count of how
+many people currently have the card saved -- the two diverge the first time anyone
+unfavourites. It is carried forward when a card is edited into a new version, so
+an edit does not reset a card's popularity.
+
+Favourites are stored against the card's `version_group` rather than its `id`.
+Editing a card creates a new Flashcard row, so an id-keyed favourite would vanish
+the moment a curator fixed a typo.
+
+**Errors:**
+- `403` - Not authenticated
+- `404` - Card not found, or not live and active
 
 ---
 

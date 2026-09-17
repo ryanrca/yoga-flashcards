@@ -8,9 +8,6 @@
 > describe behaviour that is **not implemented**; treat them as requirements, not as a
 > description of the running system:
 >
-> - **Favorites** (save/star a card, the `/favorites` page, the favourites list): the page
->   and buttons are placeholders. `UserProfile.favorite_cards` exists on the model but no
->   API endpoint reads or writes it.
 > - **Social authentication** (Google / Facebook): buttons are rendered disabled.
 > - **Email delivery**: the `daily_email_enabled` preference saves, and a verification token
 >   is generated on registration, but nothing is ever mailed -- the token is printed to the
@@ -323,7 +320,10 @@ Admin (Superuser)
 **FR-UM-004**: User profiles SHALL support:
 - Bio (optional text)
 - Avatar (optional image)
-- Favorite cards (many-to-many)
+
+Favourites are deliberately not a profile field. They live in their own
+`flashcards.Favorite` table, keyed on a card's `version_group`, so that editing a
+card cannot orphan them.
 
 ### 4.6 Authentication
 
@@ -368,11 +368,11 @@ Admin (Superuser)
 │ email           │       │ user_id (FK)    │
 │ username        │       │ bio             │
 │ password        │       │ avatar          │
-│ first_name      │       │ favorite_cards  │──┐
-│ last_name       │       └─────────────────┘  │
-│ role            │                            │
-│ is_active       │       ┌─────────────────┐  │
-│ daily_email_en. │──1:M──│   Flashcard     │◄─┘ (M:M)
+│ first_name      │       └─────────────────┘
+│ last_name       │
+│ role            │
+│ is_active       │       ┌─────────────────┐
+│ daily_email_en. │──1:M──│   Flashcard     │
 │ email_verified  │       ├─────────────────┤
 │ created_at      │       │ id (PK)         │
 │ updated_at      │       │ title           │
@@ -441,7 +441,17 @@ class UserProfile(Model):
     user = OneToOneField(User, on_delete=CASCADE, related_name='profile')
     bio = TextField(blank=True)
     avatar = ImageField(upload_to='avatars/', blank=True, null=True)
-    favorite_cards = ManyToManyField('flashcards.Flashcard', blank=True)
+```
+
+#### Favorite Model
+```python
+class Favorite(Model):
+    user = ForeignKey(User, on_delete=CASCADE, related_name='favorites')
+    version_group = UUIDField(db_index=True)
+    created_at = DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [('user', 'version_group')]
 ```
 
 #### Flashcard Model
@@ -818,7 +828,7 @@ Health check for Kubernetes.
 | `/signup` | signup | SignupPage.vue | No |
 | `/cards` | public-cards | CardsPage.vue | Yes |
 | `/profile` | profile | ProfilePage.vue | Yes |
-| `/favorites` | favorites | FavoritesPage.vue | Yes |
+| `/favorites` | favorites | CardsPage.vue (favourites mode) | Yes |
 
 #### Admin Routes (AdminLayout)
 

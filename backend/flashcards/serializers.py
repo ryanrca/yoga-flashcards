@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .models import (
-    Flashcard, Tag, DailyCard, CardImage, ImageGenerationSettings,
+    Flashcard, Tag, DailyCard, CardImage, Favorite, ImageGenerationSettings,
     CardImagePreference, SiteSettings,
 )
 
@@ -42,15 +42,25 @@ class FlashcardSerializer(serializers.ModelSerializer):
     front_image_upload = serializers.ImageField(write_only=True, required=False, allow_null=True)
     back_image_upload = serializers.ImageField(write_only=True, required=False, allow_null=True)
 
+    # Per-request: whether *this* caller has the card favourited. Comes from the
+    # list view's annotation where there is one, so the grid costs no extra
+    # queries. favorite_count beside it is a lifetime tally off the model and is
+    # the same for everyone.
+    is_favorited = serializers.SerializerMethodField()
+
     class Meta:
         model = Flashcard
         fields = [
             'id', 'title', 'phrase', 'definition', 'short_answer', 'front_image', 'back_image',
             'front_image_upload', 'back_image_upload',
+            'favorite_count', 'is_favorited',
             'tags', 'tag_names', 'created_by', 'created_by_username',
             'created_at', 'updated_at', 'is_active', 'version_group', 'version_number', 'is_live'
         ]
-        read_only_fields = ['created_by', 'created_at', 'updated_at', 'version_group', 'version_number', 'is_live']
+        read_only_fields = [
+            'created_by', 'created_at', 'updated_at', 'version_group', 'version_number',
+            'is_live', 'favorite_count',
+        ]
 
     def _media_url(self, media):
         """
@@ -69,6 +79,27 @@ class FlashcardSerializer(serializers.ModelSerializer):
 
     def get_back_image(self, obj):
         return self._media_url(obj.back_image)
+
+    def get_is_favorited(self, obj):
+        """
+        Whether the caller has this card family favourited.
+
+        Prefers the list view's annotation, which is what keeps a page of cards
+        to one query. A lone object - the daily card, a detail fetch - has no
+        annotation and falls back to a direct lookup. Anonymous callers never
+        have favourites, so they short-circuit to False.
+        """
+        annotated = getattr(obj, 'is_favorited', None)
+        if annotated is not None:
+            return bool(annotated)
+
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if not (user and user.is_authenticated):
+            return False
+        return Favorite.objects.filter(
+            user=user, version_group=obj.version_group
+        ).exists()
 
     @staticmethod
     def _attach_uploads(card, front, back):

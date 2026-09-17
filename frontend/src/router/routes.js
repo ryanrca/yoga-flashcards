@@ -10,7 +10,11 @@ const routes = [
       { path: 'signup', name: 'signup', component: () => import('pages/public/SignupPage.vue') },
       { path: 'cards', name: 'public-cards', component: () => import('pages/public/CardsPage.vue'), meta: { requiresAuth: true } },
       { path: 'profile', name: 'profile', component: () => import('pages/public/ProfilePage.vue'), meta: { requiresAuth: true } },
-      { path: 'favorites', name: 'favorites', component: () => import('pages/public/FavoritesPage.vue'), meta: { requiresAuth: true } }
+      // Deliberately the same component as /cards. Favourites are that list
+      // filtered server-side (?favorites=true), so they get the same grid,
+      // search, tag filters, pagination and detail dialog for free. CardsPage
+      // keys its favourites behaviour off this route's name.
+      { path: 'favorites', name: 'favorites', component: () => import('pages/public/CardsPage.vue'), meta: { requiresAuth: true } }
     ]
   },
 

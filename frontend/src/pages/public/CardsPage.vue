@@ -3,7 +3,7 @@
     <div class="row justify-center">
       <div class="col-12">
         <div class="text-h4 text-primary q-mb-md text-center">
-          All Yoga Flashcards
+          {{ favoritesMode ? 'My Favorite Cards' : 'All Yoga Flashcards' }}
         </div>
 
         <!-- Search and Filter Section -->
@@ -132,7 +132,8 @@
                   flat
                   round
                   color="red"
-                  icon="favorite_border"
+                  :icon="card.is_favorited ? 'favorite' : 'favorite_border'"
+                  :aria-label="card.is_favorited ? 'Remove from favorites' : 'Add to favorites'"
                   @click.stop="toggleFavorite(card)"
                 />
                 <q-btn
@@ -148,10 +149,26 @@
         </div>
 
         <!-- Empty State -->
+        <!--
+          Two different empty states, because they mean different things. An
+          empty favourites list is a new user with nothing saved yet, and the
+          useful next step is to go and find some cards. An empty card list is
+          a search that matched nothing.
+        -->
         <div v-if="!loading && !error && cards.length === 0" class="text-center q-py-lg">
-          <q-icon name="search_off" size="4em" color="grey-5" />
-          <div class="text-h6 text-grey-6 q-mt-md">No cards found</div>
-          <p class="text-grey-6">Try adjusting your search or filter criteria</p>
+          <template v-if="favoritesMode && !searchQuery && !selectedTags.length">
+            <q-icon name="favorite_border" size="4em" color="grey-5" />
+            <div class="text-h6 text-grey-6 q-mt-md">No favorites yet</div>
+            <p class="text-grey-6 q-mb-lg">
+              Tap the heart on any card to save it here.
+            </p>
+            <q-btn color="primary" label="Browse Cards" @click="$router.push('/cards')" />
+          </template>
+          <template v-else>
+            <q-icon name="search_off" size="4em" color="grey-5" />
+            <div class="text-h6 text-grey-6 q-mt-md">No cards found</div>
+            <p class="text-grey-6">Try adjusting your search or filter criteria</p>
+          </template>
         </div>
 
         <!-- Pagination -->
@@ -241,8 +258,8 @@
           <q-btn
             flat
             color="red"
-            icon="favorite_border"
-            label="Add to Favorites"
+            :icon="selectedCard?.is_favorited ? 'favorite' : 'favorite_border'"
+            :label="selectedCard?.is_favorited ? 'Remove from Favorites' : 'Add to Favorites'"
             @click="toggleFavorite(selectedCard)"
           />
           <q-btn
@@ -259,12 +276,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useFlashcardsStore } from 'src/stores/flashcards'
 
 const $q = useQuasar()
+const route = useRoute()
 const flashcardsStore = useFlashcardsStore()
+
+/*
+  /favorites is this same page with the list narrowed server-side, which is why
+  there is no second component: search, tag filtering, pagination and the card
+  dialog are identical, and the only differences are the heading, the empty
+  state and what an unfavourite does to the list you are looking at.
+*/
+const favoritesMode = computed(() => route.name === 'favorites')
 
 // Reactive data
 const cards = ref([])
@@ -302,6 +329,12 @@ const loadCards = async (params = {}) => {
 
   if (selectedTags.value && selectedTags.value.length > 0) {
     searchParams.tags = selectedTags.value.map(tag => tag.id).join(',')
+  }
+
+  // Narrows the same endpoint rather than calling a different one, so every
+  // filter above keeps working inside the favourites list.
+  if (favoritesMode.value) {
+    searchParams.favorites = 'true'
   }
 
   const result = await flashcardsStore.fetchCards(searchParams)
@@ -354,11 +387,52 @@ const selectCard = (card) => {
   showCardDialog.value = true
 }
 
-const toggleFavorite = () => {
+const toggleFavorite = async (card) => {
+  if (!card) return
+
+  const result = await flashcardsStore.toggleFavorite(card.id)
+
+  if (!result.success) {
+    $q.notify({ type: 'negative', message: result.error || 'Failed to update favorites' })
+    return
+  }
+
+  const { favorited, favorite_count: favoriteCount } = result.data
+
+  // The server is the authority on both values; the grid row and the dialog can
+  // be two references to the same object or two different ones depending on how
+  // the card was opened, so update whichever exist.
+  card.is_favorited = favorited
+  card.favorite_count = favoriteCount
+  if (selectedCard.value && selectedCard.value.id === card.id) {
+    selectedCard.value.is_favorited = favorited
+    selectedCard.value.favorite_count = favoriteCount
+  }
+
   $q.notify({
-    type: 'info',
-    message: 'Favorites feature coming soon!'
+    type: favorited ? 'positive' : 'info',
+    message: favorited ? 'Added to favorites' : 'Removed from favorites'
   })
+
+  // On /favorites an unfavourited card no longer belongs in the list you are
+  // looking at, so it leaves immediately rather than lingering as an empty
+  // heart. Reload instead when that empties the page, so pagination stays
+  // honest - otherwise removing the last card on page 3 leaves you staring at
+  // nothing with no way back.
+  if (favoritesMode.value && !favorited) {
+    const index = cards.value.findIndex(c => c.id === card.id)
+    if (index !== -1) {
+      cards.value.splice(index, 1)
+      totalItems.value = Math.max(0, totalItems.value - 1)
+    }
+    if (selectedCard.value && selectedCard.value.id === card.id) {
+      showCardDialog.value = false
+    }
+    if (cards.value.length === 0 && currentPage.value > 1) {
+      currentPage.value -= 1
+      loadCards()
+    }
+  }
 }
 
 const shareCard = (card) => {
@@ -384,6 +458,19 @@ const shareCard = (card) => {
     })
   }
 }
+
+/*
+  /cards and /favorites render the same component, so the router reuses the
+  instance and onMounted does NOT fire again when moving between them. Without
+  this watch, clicking Favorites while on the card list would leave the old,
+  unfiltered results on screen under the new heading.
+*/
+watch(favoritesMode, () => {
+  currentPage.value = 1
+  searchQuery.value = ''
+  selectedTags.value = []
+  loadCards()
+})
 
 // Lifecycle
 onMounted(() => {

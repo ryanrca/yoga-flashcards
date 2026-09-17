@@ -53,7 +53,21 @@ class Flashcard(models.Model):
         help_text="The media shown on the back of this card version.",
     )
     tags = models.ManyToManyField(Tag, blank=True, related_name='flashcards')
-    
+
+    # How many times this card has ever been favourited. Deliberately monotonic:
+    # unfavouriting does not decrement it, so this is a lifetime popularity
+    # figure and NOT a count of who currently has it favourited. Those two
+    # numbers diverge the first time anyone removes a favourite.
+    #
+    # The live count is Favorite.objects.filter(version_group=...).count().
+    #
+    # Carried forward by create_new_version like any other field, so editing a
+    # card does not reset it to zero.
+    favorite_count = models.PositiveIntegerField(
+        default=0,
+        help_text="Lifetime number of times this card has been favourited. Never decremented.",
+    )
+
     # Metadata
     # PROTECT, not CASCADE: deleting a user must never take their card library
     # (and its version history) with it. Accounts are soft deleted instead --
@@ -112,6 +126,10 @@ class Flashcard(models.Model):
             short_answer=kwargs.get('short_answer', self.short_answer),
             front_image=kwargs.get('front_image', self.front_image),
             back_image=kwargs.get('back_image', self.back_image),
+            # Carried forward, or an edit would reset the card's popularity to
+            # zero. Favourites themselves are keyed on version_group and are
+            # unaffected by versioning.
+            favorite_count=kwargs.get('favorite_count', self.favorite_count),
             created_by=updated_by,
             version_group=self.version_group,
             version_number=next_version,
@@ -412,6 +430,47 @@ class CardImage(models.Model):
         if self.look_and_feel_override.strip():
             return self.look_and_feel_override.strip()
         return ImageGenerationSettings.load().look_and_feel.strip()
+
+
+class Favorite(models.Model):
+    """
+    One user favouriting one card family.
+
+    Keyed on `version_group` rather than a Flashcard id for the same reason
+    CardImage and CardImagePreference are: editing a card creates a brand new
+    Flashcard row, so an id-keyed favourite would silently vanish the moment a
+    curator fixed a typo.
+
+    The row's existence IS the favourite. There is no boolean to disagree with
+    it, and `unique_together` makes double-favouriting impossible in the
+    database rather than by convention.
+
+    Separate from Flashcard.favorite_count on purpose: this table is the live
+    truth about who currently favourites what, while the counter is a lifetime
+    tally that never goes down.
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='favorites',
+        help_text="Cascades: a removed user's favourites are theirs alone and carry no history worth keeping.",
+    )
+    version_group = models.UUIDField(
+        db_index=True,
+        help_text="The card family favourited; survives card edits.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = [('user', 'version_group')]
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user} favourited {self.version_group}"
 
 
 class CardImagePreference(models.Model):

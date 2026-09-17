@@ -155,7 +155,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = UserProfile
-        fields = ['user', 'bio', 'avatar', 'favorite_cards']
+        fields = ['user', 'bio', 'avatar']
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
